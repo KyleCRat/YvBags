@@ -1,0 +1,28 @@
+local ADDON_NAME, NS = ...
+
+NS.ADDON_NAME = ADDON_NAME
+
+NS.defaults = {
+    global = {
+        debug = false,
+        features = {
+            autosellGrayJunk = false,
+        },
+        list = {
+            sortKey = "name",
+            sortAscending = true,
+            groupKey = "category",
+        },
+    },
+    character = {
+        frame = {
+            point = "CENTER",
+            relativePoint = "CENTER",
+            x = 0,
+            y = 0,
+            width = 720,
+            height = 520,
+            scale = 1,
+        },
+    },
+}

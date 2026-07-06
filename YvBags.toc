@@ -1,0 +1,15 @@
+## Interface: 120007
+## Title: YvBags
+## Notes: List-based player bag replacement.
+## Author: Yvairel
+## Version: 12.0.7-1
+## SavedVariables: YvBagsDB
+## SavedVariablesPerCharacter: YvBagsCharacterDB
+
+Libs\LibStub\LibStub.lua
+Libs\LibSimpleDB-1.0\embed.xml
+
+Defaults.lua
+Core.lua
+MainFrame.lua
+Commands.lua
