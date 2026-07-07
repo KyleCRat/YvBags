@@ -14,7 +14,7 @@ local ICON_TEX_COORD_LEFT = 0.08
 local ICON_TEX_COORD_RIGHT = 0.92
 local ICON_TEX_COORD_TOP = 0.08
 local ICON_TEX_COORD_BOTTOM = 0.92
-local ROW_TEXT_FONT = "GameFontHighlight"
+local ROW_TEXT_SIZE = 16
 local COOLDOWN_TEXT_FONT = "NumberFontNormalSmall"
 local FONT_STRING_LAYER = "OVERLAY"
 local DEFAULT_HIGHLIGHT_COLOR_R = 1
@@ -56,6 +56,10 @@ local ITEM_BUTTON_GLOBAL_NAME_PREFIX = "YvBagsItemListButton"
 
 local buttonCount = 0
 local cooldownCache = {}
+
+local function GetPrimaryFont()
+    return NS.Media and NS.Media.GetPrimaryFont and NS.Media.GetPrimaryFont() or STANDARD_TEXT_FONT
+end
 
 -- Row color helpers
 local function UpdateRowHighlightColor(row, item)
@@ -462,7 +466,8 @@ local function InitializeRow(row)
     row.text = {}
     for index = 2, #columns do
         local column = columns[index]
-        local text = row:CreateFontString(nil, FONT_STRING_LAYER, ROW_TEXT_FONT)
+        local text = row:CreateFontString(nil, FONT_STRING_LAYER)
+        text:SetFont(GetPrimaryFont(), ROW_TEXT_SIZE)
         text:SetJustifyV("MIDDLE")
         text:SetWordWrap(false)
         text:SetMaxLines(1)

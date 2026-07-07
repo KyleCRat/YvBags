@@ -8,8 +8,14 @@ local ItemRow = NS.ItemRow
 
 local HEADER_HEIGHT = 24
 local SCROLL_BAR_WIDTH = 14
-local HEADER_TEXT_FONT = "GameFontNormalSmall"
-local EMPTY_TEXT_FONT = "GameFontDisable"
+local HEADER_TEXT_SIZE = 16
+local EMPTY_TEXT_SIZE = 16
+local HEADER_TEXT_COLOR_R = 1
+local HEADER_TEXT_COLOR_G = 0.82
+local HEADER_TEXT_COLOR_B = 0
+local EMPTY_TEXT_COLOR_R = 0.5
+local EMPTY_TEXT_COLOR_G = 0.5
+local EMPTY_TEXT_COLOR_B = 0.5
 local FONT_STRING_LAYER = "OVERLAY"
 local LIST_FRAME_TYPE = "Frame"
 local SCROLL_BOX_TEMPLATE = "WowScrollBoxList"
@@ -29,6 +35,10 @@ local EMPTY_TEXT_X_OFFSET = 0
 local EMPTY_TEXT_Y_OFFSET = 0
 local EMPTY_LIST_TEXT = "No bag items"
 
+local function GetPrimaryFont()
+    return NS.Media and NS.Media.GetPrimaryFont and NS.Media.GetPrimaryFont() or STANDARD_TEXT_FONT
+end
+
 -- Header rendering
 local function CreateHeader(parent)
     local columns = Columns.GetColumns()
@@ -41,7 +51,9 @@ local function CreateHeader(parent)
 
     local xOffset = 0
     for _, column in ipairs(columns) do
-        local text = header:CreateFontString(nil, FONT_STRING_LAYER, HEADER_TEXT_FONT)
+        local text = header:CreateFontString(nil, FONT_STRING_LAYER)
+        text:SetFont(GetPrimaryFont(), HEADER_TEXT_SIZE)
+        text:SetTextColor(HEADER_TEXT_COLOR_R, HEADER_TEXT_COLOR_G, HEADER_TEXT_COLOR_B)
         text:SetPoint("LEFT", header, "LEFT", xOffset, 0)
         text:SetSize(column.width, HEADER_HEIGHT)
         text:SetJustifyH(column.justify or "LEFT")
@@ -93,7 +105,9 @@ function ItemList.Create(parent)
     ScrollUtil.InitScrollBoxListWithScrollBar(scrollBox, scrollBar, view)
     list.view = view
 
-    local emptyText = frame:CreateFontString(nil, FONT_STRING_LAYER, EMPTY_TEXT_FONT)
+    local emptyText = frame:CreateFontString(nil, FONT_STRING_LAYER)
+    emptyText:SetFont(GetPrimaryFont(), EMPTY_TEXT_SIZE)
+    emptyText:SetTextColor(EMPTY_TEXT_COLOR_R, EMPTY_TEXT_COLOR_G, EMPTY_TEXT_COLOR_B)
     emptyText:SetPoint("CENTER", scrollBox, "CENTER", EMPTY_TEXT_X_OFFSET, EMPTY_TEXT_Y_OFFSET)
     emptyText:SetText(EMPTY_LIST_TEXT)
     emptyText:Hide()

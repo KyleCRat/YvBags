@@ -16,10 +16,12 @@ local FRAME_INSET_TOP = -60
 local FRAME_INSET_BOTTOM = 34
 local FOOTER_LEFT_OFFSET = 14
 local FOOTER_RIGHT_OFFSET = -34
-local FOOTER_BOTTOM_OFFSET = 8
-local FOOTER_HEIGHT = 20
-local FOOTER_STATS_FONT = "GameFontDisableSmall"
-local FOOTER_MONEY_FONT = "GameFontHighlightSmall"
+local FOOTER_BOTTOM_OFFSET = 6
+local FOOTER_HEIGHT = 24
+local FOOTER_TEXT_SIZE = 18
+local FOOTER_TEXT_COLOR_R = 1
+local FOOTER_TEXT_COLOR_G = 1
+local FOOTER_TEXT_COLOR_B = 1
 local FOOTER_FONT_LAYER = "OVERLAY"
 local FOOTER_STATS_X_OFFSET = 0
 local FOOTER_STATS_Y_OFFSET = 0
@@ -161,18 +163,22 @@ local function RestoreFrameSize(frame)
 end
 
 -- Footer rendering
-local function FormatPlayerMoney()
-    local copper = GetMoney and GetMoney() or 0
-    if GetMoneyString then
-        return GetMoneyString(copper, true)
-    end
-
-    return tostring(copper)
+local function GetPrimaryFont()
+    return NS.Media and NS.Media.GetPrimaryFont and NS.Media.GetPrimaryFont() or STANDARD_TEXT_FONT
 end
 
 local function UpdateMoney(frame)
     if frame.moneyText then
-        frame.moneyText:SetText(FormatPlayerMoney())
+        local copper = GetMoney and GetMoney() or 0
+        local display = NS.Money and NS.Money.GetDisplay and NS.Money.GetDisplay(copper, true)
+        local color = display and display.color
+
+        frame.moneyText:SetText(display and display.text or "0")
+        if color then
+            frame.moneyText:SetTextColor(color.r, color.g, color.b)
+        else
+            frame.moneyText:SetTextColor(FOOTER_TEXT_COLOR_R, FOOTER_TEXT_COLOR_G, FOOTER_TEXT_COLOR_B)
+        end
     end
 end
 
@@ -182,9 +188,8 @@ local function UpdateInventoryStats(frame)
     end
 
     local stats = NS.Inventory:GetStats()
-    frame.statsText:SetText(("%d items, %d free / %d total"):format(
-        stats.itemCount or 0,
-        stats.freeSlots or 0,
+    frame.statsText:SetText(("%d/%d"):format(
+        stats.usedSlots or 0,
         stats.totalSlots or 0
     ))
 end
@@ -217,13 +222,17 @@ local function CreateFooter(frame)
     footer:SetHeight(FOOTER_HEIGHT)
     frame.footer = footer
 
-    local statsText = footer:CreateFontString(nil, FOOTER_FONT_LAYER, FOOTER_STATS_FONT)
+    local statsText = footer:CreateFontString(nil, FOOTER_FONT_LAYER)
+    statsText:SetFont(GetPrimaryFont(), FOOTER_TEXT_SIZE)
+    statsText:SetTextColor(FOOTER_TEXT_COLOR_R, FOOTER_TEXT_COLOR_G, FOOTER_TEXT_COLOR_B)
     statsText:SetPoint("LEFT", footer, "LEFT", FOOTER_STATS_X_OFFSET, FOOTER_STATS_Y_OFFSET)
     statsText:SetJustifyH("LEFT")
     statsText:SetText("")
     frame.statsText = statsText
 
-    local moneyText = footer:CreateFontString(nil, FOOTER_FONT_LAYER, FOOTER_MONEY_FONT)
+    local moneyText = footer:CreateFontString(nil, FOOTER_FONT_LAYER)
+    moneyText:SetFont(GetPrimaryFont(), FOOTER_TEXT_SIZE)
+    moneyText:SetTextColor(FOOTER_TEXT_COLOR_R, FOOTER_TEXT_COLOR_G, FOOTER_TEXT_COLOR_B)
     moneyText:SetPoint("RIGHT", footer, "RIGHT", FOOTER_MONEY_X_OFFSET, FOOTER_MONEY_Y_OFFSET)
     moneyText:SetJustifyH("RIGHT")
     moneyText:SetText("")
