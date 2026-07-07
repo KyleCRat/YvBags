@@ -63,6 +63,8 @@ local function TrackPendingItemInfo(item, itemInfo, containerItemInfo)
         categoryName = item.categoryName,
         bindType = item.bindType,
         bindingKey = item.bindingKey,
+        isAccountBound = item.isAccountBound,
+        isAccountUntilEquipped = item.isAccountUntilEquipped,
         expansionID = item.expansionID,
         sellValue = item.sellValue,
         itemLevel = item.itemLevel,

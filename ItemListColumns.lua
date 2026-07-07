@@ -3,6 +3,9 @@ local _, NS = ...
 local Columns = {}
 NS.ItemListColumns = Columns
 
+local Binding = NS.Binding
+local Media = NS.Media
+
 local COLUMN_GAP = 6
 local DEFAULT_TEXT_COLOR_R = 0.86
 local DEFAULT_TEXT_COLOR_G = 0.86
@@ -10,23 +13,52 @@ local DEFAULT_TEXT_COLOR_B = 0.86
 local DEFAULT_NAME_COLOR_R = 1
 local DEFAULT_NAME_COLOR_G = 1
 local DEFAULT_NAME_COLOR_B = 1
+local WARBOUND_COLOR_R = 0
+local WARBOUND_COLOR_G = 0.8352941176470589
+local WARBOUND_COLOR_B = 1
+local DEFAULT_BINDING_ICON_COLOR_R = 0.55
+local DEFAULT_BINDING_ICON_COLOR_G = 0.55
+local DEFAULT_BINDING_ICON_COLOR_B = 0.55
+local BINDING_ICON_TEXTURE = Media and Media.GetBindingLockTexture and Media.GetBindingLockTexture() or "Interface\\AddOns\\YvBags\\Media\\Textures\\Vertex-Lock.tga"
+local ITEM_ICON_COLUMN_WIDTH = 30
+local COMPACT_ICON_COLUMN_WIDTH = 28
 
 local professionQualityAtlasCache = {}
+local warboundColor = {
+    r = WARBOUND_COLOR_R,
+    g = WARBOUND_COLOR_G,
+    b = WARBOUND_COLOR_B,
+}
+local defaultBindingIconColor = {
+    r = DEFAULT_BINDING_ICON_COLOR_R,
+    g = DEFAULT_BINDING_ICON_COLOR_G,
+    b = DEFAULT_BINDING_ICON_COLOR_B,
+}
+local defaultBindingIconInfo = {
+    texture = BINDING_ICON_TEXTURE,
+    desaturated = false,
+    color = defaultBindingIconColor,
+}
+local warboundBindingIconInfo = {
+    texture = BINDING_ICON_TEXTURE,
+    desaturated = false,
+    color = warboundColor,
+}
 
 -- Fixed v1 columns. Later column customization can replace this table without
 -- changing row rendering or list controller code.
 local COLUMNS = {
-    { key = "icon", label = "", width = 30 },
-    { key = "name", label = NAME or "Name", width = 220 },
     { key = "count", label = "Qty", width = 40, justify = "RIGHT" },
+    { key = "binding", label = "", width = COMPACT_ICON_COLUMN_WIDTH, justify = "CENTER" },
+    { key = "icon", label = "", width = ITEM_ICON_COLUMN_WIDTH },
+    { key = "professionQuality", label = "", width = COMPACT_ICON_COLUMN_WIDTH, justify = "CENTER" },
+    { key = "name", label = NAME or "Name", width = 220 },
+    { key = "expansion", label = "Exp", width = 48, justify = "RIGHT" },
+    { key = "sellValue", label = SELL_PRICE or "Sell", width = 82, justify = "RIGHT" },
     { key = "itemLevel", label = "Ilvl", width = 44, justify = "RIGHT" },
     { key = "requiredLevel", label = "Req", width = 44, justify = "RIGHT" },
     { key = "type", label = TYPE or "Type", width = 138 },
-    { key = "binding", label = "Binding", width = 96 },
-    { key = "expansion", label = "Exp", width = 48, justify = "RIGHT" },
-    { key = "sellValue", label = SELL_PRICE or "Sell", width = 82, justify = "RIGHT" },
     { key = "location", label = "Bag/Slot", width = 68 },
-    { key = "professionQuality", label = "Q", width = 28, justify = "CENTER" },
 }
 
 -- Column formatting
@@ -48,28 +80,6 @@ local function FormatType(item)
     end
 
     return item.type or item.subtype or "-"
-end
-
-local function FormatBinding(item)
-    if not item.bindingKey or item.bindingKey == "none" then
-        return "-"
-    end
-
-    if item.bindingKey == "pickup" then
-        return "BoP"
-    elseif item.bindingKey == "equip" then
-        return "BoE"
-    elseif item.bindingKey == "use" then
-        return "BoU"
-    elseif item.bindingKey == "bound" then
-        return ITEM_SOULBOUND or "Soulbound"
-    elseif item.bindingKey == "account" then
-        return ITEM_BIND_TO_ACCOUNT or "Warbound"
-    elseif item.bindingKey == "accountUntilEquipped" then
-        return "Warbound Eq"
-    end
-
-    return item.bindingText or item.bindingKey
 end
 
 local function SetNameTextColor(fontString, item)
@@ -124,7 +134,7 @@ function Columns.FormatColumn(item, columnKey)
     elseif columnKey == "type" then
         return FormatType(item)
     elseif columnKey == "binding" then
-        return FormatBinding(item)
+        return ""
     elseif columnKey == "expansion" then
         return EmptyDash(item.expansionID)
     elseif columnKey == "sellValue" then
@@ -165,6 +175,32 @@ function Columns.GetProfessionQualityAtlas(item)
     local atlas = qualityInfo and (qualityInfo.icon or qualityInfo.iconSmall or qualityInfo.iconChat or qualityInfo.iconInventory)
     professionQualityAtlasCache[cacheKey] = atlas or false
     return professionQualityAtlasCache[cacheKey]
+end
+
+function Columns.GetBindingIconInfo(item)
+    if not item or not item.bindingKey then
+        return nil
+    end
+
+    if not Binding.HasBindingIcon(item.bindingKey) then
+        return nil
+    elseif Binding.IsWarboundKey(item.bindingKey) then
+        return warboundBindingIconInfo
+    end
+
+    return defaultBindingIconInfo
+end
+
+function Columns.GetItemIconBorderColor(item)
+    if item and Binding.IsWarboundKey(item.bindingKey) then
+        return warboundColor
+    end
+
+    return nil
+end
+
+function Columns.GetWarboundColor()
+    return warboundColor
 end
 
 function Columns.SetDefaultTextColor(fontString)

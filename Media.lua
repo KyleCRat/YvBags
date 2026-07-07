@@ -9,6 +9,7 @@ local MEDIA_TYPE_FONT = LSM and LSM.MediaType and LSM.MediaType.FONT or "font"
 
 local ICON_BORDER_KEY = "YvBags Icon Border"
 local ICON_BORDER_TEXTURE = "Interface\\AddOns\\YvBags\\Media\\Textures\\Vertex-IconFrame-Border.tga"
+local BINDING_LOCK_TEXTURE = "Interface\\AddOns\\YvBags\\Media\\Textures\\Vertex-Lock.tga"
 local PRIMARY_FONT_KEY = "YvBags PT Sans Narrow"
 local PRIMARY_FONT_PATH = "Interface\\AddOns\\YvBags\\Media\\Fonts\\PTSansNarrow-Bold.ttf"
 
@@ -25,6 +26,10 @@ function Media.GetIconBorderTexture()
     end
 
     return ICON_BORDER_TEXTURE
+end
+
+function Media.GetBindingLockTexture()
+    return BINDING_LOCK_TEXTURE
 end
 
 function Media.GetPrimaryFont()

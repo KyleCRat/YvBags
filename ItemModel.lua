@@ -5,6 +5,8 @@ NS.ItemModel = ItemModel
 
 local Categories = NS.Categories
 local Containers = NS.Containers
+local Binding = NS.Binding
+local BindingKeys = Binding.Keys
 
 local UNKNOWN_ITEM_ICON = 134400
 local CAGED_BATTLE_PET_ITEM_ID = 82800
@@ -28,18 +30,36 @@ local function SetBindTypeInfo(enumKey, fallback, key, label)
     }
 end
 
-SetBindTypeInfo("None", 0, "none", NONE or "None")
-SetBindTypeInfo("OnAcquire", 1, "pickup", ITEM_BIND_ON_PICKUP or "Bind on pickup")
-SetBindTypeInfo("OnEquip", 2, "equip", ITEM_BIND_ON_EQUIP or "Bind on equip")
-SetBindTypeInfo("OnUse", 3, "use", ITEM_BIND_ON_USE or "Bind on use")
-SetBindTypeInfo("Quest", 4, "quest", ITEM_BIND_QUEST or "Quest item")
-SetBindTypeInfo("ToWoWAccount", 7, "account", ITEM_BIND_TO_ACCOUNT or "Warbound")
-SetBindTypeInfo("ToBnetAccount", 8, "account", ITEM_BIND_TO_BNETACCOUNT or "Account bound")
-SetBindTypeInfo("ToBnetAccountUntilEquipped", 9, "accountUntilEquipped", ITEM_BIND_TO_BNETACCOUNT_UNTIL_EQUIPPED or "Account bound until equipped")
+SetBindTypeInfo("None", 0, BindingKeys.None, NONE or "None")
+SetBindTypeInfo("OnAcquire", 1, BindingKeys.Pickup, ITEM_BIND_ON_PICKUP or "Bind on pickup")
+SetBindTypeInfo("OnEquip", 2, BindingKeys.Equip, ITEM_BIND_ON_EQUIP or "Bind on equip")
+SetBindTypeInfo("OnUse", 3, BindingKeys.Use, ITEM_BIND_ON_USE or "Bind on use")
+SetBindTypeInfo("Quest", 4, BindingKeys.Quest, ITEM_BIND_QUEST or "Quest item")
+SetBindTypeInfo("ToWoWAccount", 7, BindingKeys.Account, ITEM_BIND_TO_ACCOUNT or "Warbound")
+SetBindTypeInfo("ToBnetAccount", 8, BindingKeys.Account, ITEM_BIND_TO_BNETACCOUNT or "Account bound")
+SetBindTypeInfo("ToBnetAccountUntilEquipped", 9, BindingKeys.AccountUntilEquipped, ITEM_BIND_TO_BNETACCOUNT_UNTIL_EQUIPPED or "Account bound until equipped")
 
-local function GetBindingInfo(bindType, isBound)
+local function GetAccountUntilEquippedLabel()
+    return ITEM_BIND_TO_ACCOUNT_UNTIL_EQUIPPED or ITEM_BIND_TO_BNETACCOUNT_UNTIL_EQUIPPED or "Warbound until equipped"
+end
+
+local function IsBindType(bindType, key)
+    local info = BIND_TYPE_INFO[bindType]
+    return info and info.key == key
+end
+
+local function GetBindingInfo(bindType, isBound, isAccountBound, isAccountUntilEquipped)
+    if isAccountUntilEquipped or IsBindType(bindType, BindingKeys.AccountUntilEquipped) then
+        return BindingKeys.AccountUntilEquipped, GetAccountUntilEquippedLabel()
+    end
+
+    if isAccountBound or IsBindType(bindType, BindingKeys.Account) then
+        local info = IsBindType(bindType, BindingKeys.Account) and BIND_TYPE_INFO[bindType]
+        return BindingKeys.Account, info and info.label or ITEM_BIND_TO_ACCOUNT or "Warbound"
+    end
+
     if isBound then
-        return "bound", ITEM_SOULBOUND or "Soulbound"
+        return BindingKeys.Bound, "Bound"
     end
 
     local info = BIND_TYPE_INFO[bindType]
@@ -47,7 +67,41 @@ local function GetBindingInfo(bindType, isBound)
         return info.key, info.label
     end
 
-    return "unknown", UNKNOWN or "Unknown"
+    return BindingKeys.Unknown, UNKNOWN or "Unknown"
+end
+
+local function IsBagItemAccountUntilEquipped(bagID, slotIndex, itemInfo)
+    if not C_Item then
+        return false
+    end
+
+    if C_Item.IsBoundToAccountUntilEquip and ItemLocation and ItemLocation.CreateFromBagAndSlot then
+        local itemLocation = ItemLocation:CreateFromBagAndSlot(bagID, slotIndex)
+        if itemLocation and itemLocation.IsValid and itemLocation:IsValid() then
+            local success, isAccountUntilEquipped = pcall(C_Item.IsBoundToAccountUntilEquip, itemLocation)
+            if success and isAccountUntilEquipped then
+                return true
+            end
+        end
+    end
+
+    if C_Item.IsItemBindToAccountUntilEquip and itemInfo then
+        local success, isAccountUntilEquipped = pcall(C_Item.IsItemBindToAccountUntilEquip, itemInfo)
+        if success and isAccountUntilEquipped then
+            return true
+        end
+    end
+
+    return false
+end
+
+local function IsItemInfoAccountBound(itemInfo)
+    if not C_Item or not C_Item.IsItemBindToAccount or not itemInfo then
+        return false
+    end
+
+    local success, isAccountBound = pcall(C_Item.IsItemBindToAccount, itemInfo)
+    return success and isAccountBound
 end
 
 -- Link parsing helpers
@@ -282,9 +336,19 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
     professionQuality, professionQualityType = GetProfessionQuality(itemInfo)
 
     local currentItemLevel = GetCurrentBagItemLevel(container.id, slotIndex)
+    local isAccountUntilEquipped = IsBagItemAccountUntilEquipped(container.id, slotIndex, itemInfo)
+    if not isAccountUntilEquipped and staticItemInfo and staticItemInfo ~= itemInfo then
+        isAccountUntilEquipped = IsBagItemAccountUntilEquipped(container.id, slotIndex, staticItemInfo)
+    end
+
+    local isAccountBound = IsItemInfoAccountBound(itemInfo)
+    if not isAccountBound and staticItemInfo and staticItemInfo ~= itemInfo then
+        isAccountBound = IsItemInfoAccountBound(staticItemInfo)
+    end
+
     local bindingKey
     local bindingText
-    bindingKey, bindingText = GetBindingInfo(bindType, containerItemInfo.isBound)
+    bindingKey, bindingText = GetBindingInfo(bindType, containerItemInfo.isBound, isAccountBound, isAccountUntilEquipped)
     local displayItemLevel = currentItemLevel or actualItemLevel or staticItemLevel
 
     if isKeystone and keystoneLevel then
@@ -331,6 +395,8 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
         bindingKey = bindingKey,
         bindingText = bindingText,
         isBound = containerItemInfo.isBound,
+        isAccountBound = isAccountBound,
+        isAccountUntilEquipped = isAccountUntilEquipped,
         sellValue = sellValue or 0,
         totalSellValue = (sellValue or 0) * (containerItemInfo.stackCount or 1),
         expansionID = expansionID,

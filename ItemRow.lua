@@ -9,6 +9,7 @@ local ROW_HEIGHT = 31
 local ICON_SIZE = 23
 local ICON_FRAME_SIZE = 29
 local PROFESSION_QUALITY_ICON_SIZE = 22
+local BINDING_ICON_SIZE = 22
 local ICON_LEFT_OFFSET = 3
 local ICON_TEX_COORD_LEFT = 0.08
 local ICON_TEX_COORD_RIGHT = 0.92
@@ -40,6 +41,8 @@ local COOLDOWN_SHADE_BOTTOM_LEFT_X_OFFSET = 0
 local COOLDOWN_SHADE_BOTTOM_LEFT_Y_OFFSET = 0
 local PROFESSION_QUALITY_LAYER = "ARTWORK"
 local PROFESSION_QUALITY_SUBLEVEL = 7
+local BINDING_ICON_LAYER = "ARTWORK"
+local BINDING_ICON_SUBLEVEL = 7
 local ROW_HIGHLIGHT_LAYER = "BACKGROUND"
 local ROW_ICON_LAYER = "ARTWORK"
 local ROW_ICON_SUBLEVEL = 5
@@ -61,6 +64,10 @@ local function GetPrimaryFont()
     return NS.Media and NS.Media.GetPrimaryFont and NS.Media.GetPrimaryFont() or STANDARD_TEXT_FONT
 end
 
+local function IsTextColumn(column)
+    return column.key ~= "icon" and column.key ~= "binding" and column.key ~= "professionQuality"
+end
+
 -- Row color helpers
 local function UpdateRowHighlightColor(row, item)
     if not row.highlight then
@@ -80,7 +87,11 @@ local function UpdateIconBorderColor(row, item)
         return
     end
 
-    local color = item and item.quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[item.quality]
+    local color = Columns.GetItemIconBorderColor and Columns.GetItemIconBorderColor(item)
+    if not color then
+        color = item and item.quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[item.quality]
+    end
+
     if color then
         row.iconBorder:SetVertexColor(color.r, color.g, color.b, ICON_BORDER_ALPHA)
     else
@@ -110,24 +121,6 @@ local function LayoutRow(row)
     local columns = Columns.GetColumns()
     local columnGap = Columns.GetColumnGap()
     local xOffset = 0
-    local iconCenterX = ICON_LEFT_OFFSET + (ICON_FRAME_SIZE / 2)
-
-    if row.iconBorder then
-        row.iconBorder:ClearAllPoints()
-        row.iconBorder:SetPoint("CENTER", row, "LEFT", iconCenterX, 0)
-        row.iconBorder:SetSize(ICON_FRAME_SIZE, ICON_FRAME_SIZE)
-    end
-
-    if row.icon then
-        row.icon:ClearAllPoints()
-        row.icon:SetPoint("CENTER", row, "LEFT", iconCenterX, 0)
-        row.icon:SetSize(ICON_SIZE, ICON_SIZE)
-    end
-
-    if row.iconCooldownText and row.icon then
-        row.iconCooldownText:ClearAllPoints()
-        row.iconCooldownText:SetAllPoints(row.icon)
-    end
 
     if row.cooldownShade then
         row.cooldownShade:ClearAllPoints()
@@ -135,22 +128,44 @@ local function LayoutRow(row)
         row.cooldownShade:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", COOLDOWN_SHADE_BOTTOM_LEFT_X_OFFSET, COOLDOWN_SHADE_BOTTOM_LEFT_Y_OFFSET)
     end
 
-    xOffset = xOffset + columns[1].width + columnGap
+    for _, column in ipairs(columns) do
+        local columnCenterX = xOffset + (column.width / 2)
 
-    for index = 2, #columns do
-        local column = columns[index]
-        local text = row.text[column.key]
-        text:ClearAllPoints()
-        text:SetPoint("LEFT", row, "LEFT", xOffset, 0)
-        text:SetSize(column.width, ROW_HEIGHT)
-        text:SetJustifyH(column.justify or "LEFT")
+        if column.key == "icon" then
+            local iconCenterX = xOffset + ICON_LEFT_OFFSET + (ICON_FRAME_SIZE / 2)
+            if row.iconBorder then
+                row.iconBorder:ClearAllPoints()
+                row.iconBorder:SetPoint("CENTER", row, "LEFT", iconCenterX, 0)
+                row.iconBorder:SetSize(ICON_FRAME_SIZE, ICON_FRAME_SIZE)
+            end
+
+            if row.icon then
+                row.icon:ClearAllPoints()
+                row.icon:SetPoint("CENTER", row, "LEFT", iconCenterX, 0)
+                row.icon:SetSize(ICON_SIZE, ICON_SIZE)
+            end
+
+            if row.iconCooldownText and row.icon then
+                row.iconCooldownText:ClearAllPoints()
+                row.iconCooldownText:SetAllPoints(row.icon)
+            end
+        elseif column.key == "binding" and row.bindingIcon then
+            row.bindingIcon:ClearAllPoints()
+            row.bindingIcon:SetPoint("CENTER", row, "LEFT", columnCenterX, 0)
+        elseif column.key == "professionQuality" and row.professionQualityIcon then
+            row.professionQualityIcon:ClearAllPoints()
+            row.professionQualityIcon:SetPoint("CENTER", row, "LEFT", columnCenterX, 0)
+        end
+
+        if IsTextColumn(column) then
+            local text = row.text[column.key]
+            text:ClearAllPoints()
+            text:SetPoint("LEFT", row, "LEFT", xOffset, 0)
+            text:SetSize(column.width, ROW_HEIGHT)
+            text:SetJustifyH(column.justify or "LEFT")
+        end
+
         xOffset = xOffset + column.width + columnGap
-    end
-
-    if row.professionQualityIcon then
-        local column = columns[#columns]
-        row.professionQualityIcon:ClearAllPoints()
-        row.professionQualityIcon:SetPoint("CENTER", row, "LEFT", xOffset - column.width - columnGap + (column.width / 2), 0)
     end
 end
 
@@ -464,23 +479,29 @@ local function InitializeRow(row)
     end)
 
     row.text = {}
-    for index = 2, #columns do
-        local column = columns[index]
-        local text = row:CreateFontString(nil, FONT_STRING_LAYER)
-        text:SetFont(GetPrimaryFont(), ROW_TEXT_SIZE)
-        text:SetJustifyV("MIDDLE")
-        text:SetWordWrap(false)
-        text:SetMaxLines(1)
-        if column.key ~= "name" then
-            Columns.SetDefaultTextColor(text)
+    for _, column in ipairs(columns) do
+        if IsTextColumn(column) then
+            local text = row:CreateFontString(nil, FONT_STRING_LAYER)
+            text:SetFont(GetPrimaryFont(), ROW_TEXT_SIZE)
+            text:SetJustifyV("MIDDLE")
+            text:SetWordWrap(false)
+            text:SetMaxLines(1)
+            if column.key ~= "name" then
+                Columns.SetDefaultTextColor(text)
+            end
+            row.text[column.key] = text
         end
-        row.text[column.key] = text
     end
 
     row.professionQualityIcon = row:CreateTexture(nil, PROFESSION_QUALITY_LAYER)
     row.professionQualityIcon:SetSize(PROFESSION_QUALITY_ICON_SIZE, PROFESSION_QUALITY_ICON_SIZE)
     row.professionQualityIcon:SetDrawLayer(PROFESSION_QUALITY_LAYER, PROFESSION_QUALITY_SUBLEVEL)
     row.professionQualityIcon:Hide()
+
+    row.bindingIcon = row:CreateTexture(nil, BINDING_ICON_LAYER)
+    row.bindingIcon:SetSize(BINDING_ICON_SIZE, BINDING_ICON_SIZE)
+    row.bindingIcon:SetDrawLayer(BINDING_ICON_LAYER, BINDING_ICON_SUBLEVEL)
+    row.bindingIcon:Hide()
 
     row.iconCooldownText = row:CreateFontString(nil, COOLDOWN_TEXT_LAYER, COOLDOWN_TEXT_FONT)
     row.iconCooldownText:SetDrawLayer(COOLDOWN_TEXT_LAYER, COOLDOWN_TEXT_SUBLEVEL)
@@ -571,11 +592,31 @@ function ItemRow.Render(row, item)
         row.professionQualityIcon:Hide()
     end
 
-    for index = 2, #columns do
-        local column = columns[index]
-        local text = row.text[column.key]
-        text:SetText(Columns.FormatColumn(item, column.key))
-        Columns.ApplyTextColor(text, column.key, item)
+    local bindingIconInfo = Columns.GetBindingIconInfo(item)
+    if bindingIconInfo then
+        if bindingIconInfo.atlas then
+            row.bindingIcon:SetAtlas(bindingIconInfo.atlas, false)
+        else
+            row.bindingIcon:SetTexture(bindingIconInfo.texture)
+            row.bindingIcon:SetTexCoord(0, 1, 0, 1)
+        end
+        row.bindingIcon:SetDesaturated(bindingIconInfo.desaturated)
+        if bindingIconInfo.color then
+            row.bindingIcon:SetVertexColor(bindingIconInfo.color.r, bindingIconInfo.color.g, bindingIconInfo.color.b, 1)
+        else
+            row.bindingIcon:SetVertexColor(1, 1, 1, 1)
+        end
+        row.bindingIcon:Show()
+    else
+        row.bindingIcon:Hide()
+    end
+
+    for _, column in ipairs(columns) do
+        if IsTextColumn(column) then
+            local text = row.text[column.key]
+            text:SetText(Columns.FormatColumn(item, column.key))
+            Columns.ApplyTextColor(text, column.key, item)
+        end
     end
 
     UpdateRowCooldown(row, item)
@@ -611,6 +652,14 @@ function ItemRow.Reset(row)
 
     if row.professionQualityIcon then
         row.professionQualityIcon:Hide()
+    end
+
+    if row.bindingIcon then
+        row.bindingIcon:SetTexture(nil)
+        row.bindingIcon:SetTexCoord(0, 1, 0, 1)
+        row.bindingIcon:SetDesaturated(false)
+        row.bindingIcon:SetVertexColor(1, 1, 1, 1)
+        row.bindingIcon:Hide()
     end
 
     if row.text then
