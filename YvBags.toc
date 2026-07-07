@@ -11,6 +11,9 @@ Libs\LibSimpleDB-1.0\embed.xml
 
 Defaults.lua
 Core.lua
+Categories.lua
+Containers.lua
+ItemModel.lua
 Data.lua
 MainFrame.lua
 Commands.lua
