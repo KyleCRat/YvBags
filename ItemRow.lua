@@ -68,6 +68,10 @@ local function IsTextColumn(column)
     return column.key ~= "icon" and column.key ~= "binding" and column.key ~= "professionQuality"
 end
 
+local function GetRightClipPadding(row)
+    return row.rightClipPadding or 0
+end
+
 -- Row color helpers
 local function UpdateRowHighlightColor(row, item)
     if not row.highlight then
@@ -121,6 +125,13 @@ local function LayoutRow(row)
     local columns = Columns.GetColumns()
     local columnGap = Columns.GetColumnGap()
     local xOffset = 0
+    local contentFrame = row.contentClip or row
+
+    if row.contentClip then
+        row.contentClip:ClearAllPoints()
+        row.contentClip:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
+        row.contentClip:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -GetRightClipPadding(row), 0)
+    end
 
     if row.cooldownShade then
         row.cooldownShade:ClearAllPoints()
@@ -135,13 +146,13 @@ local function LayoutRow(row)
             local iconCenterX = xOffset + ICON_LEFT_OFFSET + (ICON_FRAME_SIZE / 2)
             if row.iconBorder then
                 row.iconBorder:ClearAllPoints()
-                row.iconBorder:SetPoint("CENTER", row, "LEFT", iconCenterX, 0)
+                row.iconBorder:SetPoint("CENTER", contentFrame, "LEFT", iconCenterX, 0)
                 row.iconBorder:SetSize(ICON_FRAME_SIZE, ICON_FRAME_SIZE)
             end
 
             if row.icon then
                 row.icon:ClearAllPoints()
-                row.icon:SetPoint("CENTER", row, "LEFT", iconCenterX, 0)
+                row.icon:SetPoint("CENTER", contentFrame, "LEFT", iconCenterX, 0)
                 row.icon:SetSize(ICON_SIZE, ICON_SIZE)
             end
 
@@ -151,16 +162,16 @@ local function LayoutRow(row)
             end
         elseif column.key == "binding" and row.bindingIcon then
             row.bindingIcon:ClearAllPoints()
-            row.bindingIcon:SetPoint("CENTER", row, "LEFT", columnCenterX, 0)
+            row.bindingIcon:SetPoint("CENTER", contentFrame, "LEFT", columnCenterX, 0)
         elseif column.key == "professionQuality" and row.professionQualityIcon then
             row.professionQualityIcon:ClearAllPoints()
-            row.professionQualityIcon:SetPoint("CENTER", row, "LEFT", columnCenterX, 0)
+            row.professionQualityIcon:SetPoint("CENTER", contentFrame, "LEFT", columnCenterX, 0)
         end
 
         if IsTextColumn(column) then
             local text = row.text[column.key]
             text:ClearAllPoints()
-            text:SetPoint("LEFT", row, "LEFT", xOffset, 0)
+            text:SetPoint("LEFT", contentFrame, "LEFT", xOffset, 0)
             text:SetSize(column.width, ROW_HEIGHT)
             text:SetJustifyH(column.justify or "LEFT")
         end
@@ -443,12 +454,19 @@ local function InitializeRow(row)
     row.highlight:SetColorTexture(DEFAULT_HIGHLIGHT_COLOR_R, DEFAULT_HIGHLIGHT_COLOR_G, DEFAULT_HIGHLIGHT_COLOR_B, DEFAULT_HIGHLIGHT_ALPHA)
     row.highlight:Hide()
 
-    row.icon = row:CreateTexture(nil, ROW_ICON_LAYER)
+    row.contentClip = CreateFrame("Frame", nil, row)
+    row.contentClip:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
+    row.contentClip:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -GetRightClipPadding(row), 0)
+    if row.contentClip.SetClipsChildren then
+        row.contentClip:SetClipsChildren(true)
+    end
+
+    row.icon = row.contentClip:CreateTexture(nil, ROW_ICON_LAYER)
     row.icon:SetDrawLayer(ROW_ICON_LAYER, ROW_ICON_SUBLEVEL)
     row.icon:SetTexCoord(ICON_TEX_COORD_LEFT, ICON_TEX_COORD_RIGHT, ICON_TEX_COORD_TOP, ICON_TEX_COORD_BOTTOM)
     row.icon:Hide()
 
-    row.iconBorder = row:CreateTexture(nil, ICON_BORDER_LAYER)
+    row.iconBorder = row.contentClip:CreateTexture(nil, ICON_BORDER_LAYER)
     row.iconBorder:SetDrawLayer(ICON_BORDER_LAYER, ICON_BORDER_SUBLEVEL)
     row.iconBorder:SetTexture(NS.Media and NS.Media.GetIconBorderTexture and NS.Media.GetIconBorderTexture() or nil)
     row.iconBorder:Hide()
@@ -481,7 +499,7 @@ local function InitializeRow(row)
     row.text = {}
     for _, column in ipairs(columns) do
         if IsTextColumn(column) then
-            local text = row:CreateFontString(nil, FONT_STRING_LAYER)
+            local text = row.contentClip:CreateFontString(nil, FONT_STRING_LAYER)
             text:SetFont(GetPrimaryFont(), ROW_TEXT_SIZE)
             text:SetJustifyV("MIDDLE")
             text:SetWordWrap(false)
@@ -493,17 +511,17 @@ local function InitializeRow(row)
         end
     end
 
-    row.professionQualityIcon = row:CreateTexture(nil, PROFESSION_QUALITY_LAYER)
+    row.professionQualityIcon = row.contentClip:CreateTexture(nil, PROFESSION_QUALITY_LAYER)
     row.professionQualityIcon:SetSize(PROFESSION_QUALITY_ICON_SIZE, PROFESSION_QUALITY_ICON_SIZE)
     row.professionQualityIcon:SetDrawLayer(PROFESSION_QUALITY_LAYER, PROFESSION_QUALITY_SUBLEVEL)
     row.professionQualityIcon:Hide()
 
-    row.bindingIcon = row:CreateTexture(nil, BINDING_ICON_LAYER)
+    row.bindingIcon = row.contentClip:CreateTexture(nil, BINDING_ICON_LAYER)
     row.bindingIcon:SetSize(BINDING_ICON_SIZE, BINDING_ICON_SIZE)
     row.bindingIcon:SetDrawLayer(BINDING_ICON_LAYER, BINDING_ICON_SUBLEVEL)
     row.bindingIcon:Hide()
 
-    row.iconCooldownText = row:CreateFontString(nil, COOLDOWN_TEXT_LAYER, COOLDOWN_TEXT_FONT)
+    row.iconCooldownText = row.contentClip:CreateFontString(nil, COOLDOWN_TEXT_LAYER, COOLDOWN_TEXT_FONT)
     row.iconCooldownText:SetDrawLayer(COOLDOWN_TEXT_LAYER, COOLDOWN_TEXT_SUBLEVEL)
     row.iconCooldownText:SetJustifyH("CENTER")
     row.iconCooldownText:SetJustifyV("MIDDLE")

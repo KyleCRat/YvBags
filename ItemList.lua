@@ -8,6 +8,7 @@ local ItemRow = NS.ItemRow
 
 local HEADER_HEIGHT = 24
 local SCROLL_BAR_WIDTH = 14
+local SCROLL_BAR_CONTENT_PADDING = 22
 local HEADER_TEXT_SIZE = 16
 local EMPTY_TEXT_SIZE = 16
 local HEADER_TEXT_COLOR_R = 1
@@ -28,7 +29,7 @@ local SCROLL_BOX_LEFT_OFFSET = 0
 local SCROLL_BOX_RIGHT_OFFSET = 0
 local SCROLL_BOX_TOP_GAP = -2
 local SCROLL_BOX_BOTTOM_OFFSET = 0
-local SCROLL_BAR_X_OFFSET = 4
+local SCROLL_BAR_RIGHT_OFFSET = -8
 local SCROLL_BAR_TOP_OFFSET = -2
 local SCROLL_BAR_BOTTOM_OFFSET = 2
 local EMPTY_TEXT_X_OFFSET = 0
@@ -49,12 +50,19 @@ local function CreateHeader(parent)
         header:SetClipsChildren(true)
     end
 
+    local content = CreateFrame(LIST_FRAME_TYPE, nil, header)
+    content:SetPoint("TOPLEFT", header, "TOPLEFT", 0, 0)
+    content:SetPoint("BOTTOMRIGHT", header, "BOTTOMRIGHT", -SCROLL_BAR_CONTENT_PADDING, 0)
+    if content.SetClipsChildren then
+        content:SetClipsChildren(true)
+    end
+
     local xOffset = 0
     for _, column in ipairs(columns) do
-        local text = header:CreateFontString(nil, FONT_STRING_LAYER)
+        local text = content:CreateFontString(nil, FONT_STRING_LAYER)
         text:SetFont(GetPrimaryFont(), HEADER_TEXT_SIZE)
         text:SetTextColor(HEADER_TEXT_COLOR_R, HEADER_TEXT_COLOR_G, HEADER_TEXT_COLOR_B)
-        text:SetPoint("LEFT", header, "LEFT", xOffset, 0)
+        text:SetPoint("LEFT", content, "LEFT", xOffset, 0)
         text:SetSize(column.width, HEADER_HEIGHT)
         text:SetJustifyH(column.justify or "LEFT")
         text:SetJustifyV("MIDDLE")
@@ -67,7 +75,7 @@ local function CreateHeader(parent)
 end
 
 function ItemList.GetPreferredWidth()
-    return Columns.GetContentWidth() + SCROLL_BAR_WIDTH
+    return Columns.GetContentWidth() + SCROLL_BAR_CONTENT_PADDING
 end
 
 function ItemList.Create(parent)
@@ -82,25 +90,28 @@ function ItemList.Create(parent)
 
     local header = CreateHeader(frame)
     header:SetPoint("TOPLEFT", frame, "TOPLEFT", HEADER_LEFT_OFFSET, HEADER_TOP_OFFSET)
-    header:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -SCROLL_BAR_WIDTH, HEADER_RIGHT_OFFSET)
+    header:SetPoint("TOPRIGHT", frame, "TOPRIGHT", HEADER_RIGHT_OFFSET)
     list.header = header
 
     local scrollBox = CreateFrame(LIST_FRAME_TYPE, nil, frame, SCROLL_BOX_TEMPLATE)
     scrollBox:SetPoint("TOPLEFT", header, "BOTTOMLEFT", SCROLL_BOX_LEFT_OFFSET, SCROLL_BOX_TOP_GAP)
-    scrollBox:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -SCROLL_BAR_WIDTH + SCROLL_BOX_RIGHT_OFFSET, SCROLL_BOX_BOTTOM_OFFSET)
+    scrollBox:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", SCROLL_BOX_RIGHT_OFFSET, SCROLL_BOX_BOTTOM_OFFSET)
     if scrollBox.SetClipsChildren then
         scrollBox:SetClipsChildren(true)
     end
     list.scrollBox = scrollBox
 
     local scrollBar = CreateFrame(SCROLL_BAR_FRAME_TYPE, nil, frame, SCROLL_BAR_TEMPLATE)
-    scrollBar:SetPoint("TOPLEFT", scrollBox, "TOPRIGHT", SCROLL_BAR_X_OFFSET, SCROLL_BAR_TOP_OFFSET)
-    scrollBar:SetPoint("BOTTOMLEFT", scrollBox, "BOTTOMRIGHT", SCROLL_BAR_X_OFFSET, SCROLL_BAR_BOTTOM_OFFSET)
+    scrollBar:SetPoint("TOPRIGHT", scrollBox, "TOPRIGHT", SCROLL_BAR_RIGHT_OFFSET, SCROLL_BAR_TOP_OFFSET)
+    scrollBar:SetPoint("BOTTOMRIGHT", scrollBox, "BOTTOMRIGHT", SCROLL_BAR_RIGHT_OFFSET, SCROLL_BAR_BOTTOM_OFFSET)
     list.scrollBar = scrollBar
 
     local view = CreateScrollBoxListLinearView()
     view:SetElementExtent(ItemRow.GetRowHeight())
-    view:SetElementInitializer("Frame", ItemRow.Render)
+    view:SetElementInitializer("Frame", function(row, item)
+        row.rightClipPadding = SCROLL_BAR_CONTENT_PADDING
+        ItemRow.Render(row, item)
+    end)
     view:SetElementResetter(ItemRow.Reset)
     ScrollUtil.InitScrollBoxListWithScrollBar(scrollBox, scrollBar, view)
     list.view = view
