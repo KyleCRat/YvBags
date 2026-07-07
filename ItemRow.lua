@@ -23,7 +23,7 @@ local DEFAULT_HIGHLIGHT_COLOR_B = 1
 local DEFAULT_ICON_BORDER_COLOR_R = 0.55
 local DEFAULT_ICON_BORDER_COLOR_G = 0.55
 local DEFAULT_ICON_BORDER_COLOR_B = 0.55
-local ICON_BORDER_ALPHA = 0.85
+local ICON_BORDER_ALPHA = 1
 local RARITY_HIGHLIGHT_ALPHA = 0.16
 local DEFAULT_HIGHLIGHT_ALPHA = 0.08
 local COOLDOWN_SHADE_COLOR_R = 0
@@ -43,8 +43,6 @@ local PROFESSION_QUALITY_SUBLEVEL = 7
 local ROW_HIGHLIGHT_LAYER = "BACKGROUND"
 local ROW_ICON_LAYER = "ARTWORK"
 local ROW_ICON_SUBLEVEL = 5
-local ICON_FRAME_LAYER = "ARTWORK"
-local ICON_FRAME_SUBLEVEL = 6
 local ICON_BORDER_LAYER = "ARTWORK"
 local ICON_BORDER_SUBLEVEL = 7
 local ITEM_BUTTON_FRAME_TYPE = "Button"
@@ -55,8 +53,6 @@ local COOLDOWN_UPDATE_INTERVAL = 0.05
 local COOLDOWN_CACHE_TTL = 0.2
 local FALLBACK_ITEM_ICON = 134400
 local ITEM_BUTTON_GLOBAL_NAME_PREFIX = "YvBagsItemListButton"
-local ACTION_BUTTON_ICON_FRAME_ATLAS = "UI-HUD-ActionBar-IconFrame"
-local ACTION_BUTTON_ICON_BORDER_ATLAS = "UI-HUD-ActionBar-IconFrame-Border"
 
 local buttonCount = 0
 local cooldownCache = {}
@@ -111,12 +107,6 @@ local function LayoutRow(row)
     local columnGap = Columns.GetColumnGap()
     local xOffset = 0
     local iconCenterX = ICON_LEFT_OFFSET + (ICON_FRAME_SIZE / 2)
-
-    if row.iconFrame then
-        row.iconFrame:ClearAllPoints()
-        row.iconFrame:SetPoint("CENTER", row, "LEFT", iconCenterX, 0)
-        row.iconFrame:SetSize(ICON_FRAME_SIZE, ICON_FRAME_SIZE)
-    end
 
     if row.iconBorder then
         row.iconBorder:ClearAllPoints()
@@ -439,14 +429,9 @@ local function InitializeRow(row)
     row.icon:SetTexCoord(ICON_TEX_COORD_LEFT, ICON_TEX_COORD_RIGHT, ICON_TEX_COORD_TOP, ICON_TEX_COORD_BOTTOM)
     row.icon:Hide()
 
-    row.iconFrame = row:CreateTexture(nil, ICON_FRAME_LAYER)
-    row.iconFrame:SetDrawLayer(ICON_FRAME_LAYER, ICON_FRAME_SUBLEVEL)
-    row.iconFrame:SetAtlas(ACTION_BUTTON_ICON_FRAME_ATLAS, false)
-    row.iconFrame:Hide()
-
     row.iconBorder = row:CreateTexture(nil, ICON_BORDER_LAYER)
     row.iconBorder:SetDrawLayer(ICON_BORDER_LAYER, ICON_BORDER_SUBLEVEL)
-    row.iconBorder:SetAtlas(ACTION_BUTTON_ICON_BORDER_ATLAS, false)
+    row.iconBorder:SetTexture(NS.Media and NS.Media.GetIconBorderTexture and NS.Media.GetIconBorderTexture() or nil)
     row.iconBorder:Hide()
 
     row.cooldownShade = row:CreateTexture(nil, COOLDOWN_SHADE_LAYER)
@@ -573,10 +558,6 @@ function ItemRow.Render(row, item)
         row.icon:Show()
     end
 
-    if row.iconFrame then
-        row.iconFrame:Show()
-    end
-
     local professionQualityAtlas = Columns.GetProfessionQualityAtlas(item)
     if professionQualityAtlas then
         row.professionQualityIcon:SetAtlas(professionQualityAtlas, false)
@@ -617,10 +598,6 @@ function ItemRow.Reset(row)
 
     if row.iconBorder then
         row.iconBorder:Hide()
-    end
-
-    if row.iconFrame then
-        row.iconFrame:Hide()
     end
 
     if row.itemButton then

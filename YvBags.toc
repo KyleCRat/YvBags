@@ -7,10 +7,13 @@
 ## SavedVariablesPerCharacter: YvBagsCharacterDB
 
 Libs\LibStub\LibStub.lua
+Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+Libs\LibSharedMedia-3.0\lib.xml
 Libs\LibSimpleDB-1.0\embed.xml
 
 Defaults.lua
 Core.lua
+Media.lua
 Categories.lua
 Containers.lua
 ItemModel.lua
