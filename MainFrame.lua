@@ -34,10 +34,9 @@ local PORTRAIT_TEX_COORD_TOP = 0
 local PORTRAIT_TEX_COORD_BOTTOM = 1
 local FRAME_TYPE = "Frame"
 local BUTTON_TYPE = "Button"
-local SAVED_FRAME_POINT = "TOPLEFT"
-local SAVED_FRAME_RELATIVE_POINT = "BOTTOMLEFT"
 local DEFAULT_FRAME_POINT = "CENTER"
 local DEFAULT_FRAME_RELATIVE_POINT = "CENTER"
+local DEBUG_FRAME_POSITION = true
 
 -- Base WoW frame theme
 local function ApplyBaseFrameTheme(frame)
@@ -60,16 +59,58 @@ local function ClearClientPosition(frame)
     end
 end
 
-local function AnchorFrameToCurrentTopLeft(frame)
-    local left = frame:GetLeft()
-    local top = frame:GetTop()
-    if not left or not top then
-        return nil, nil
+local function FormatDebugNumber(value)
+    if type(value) == "number" then
+        return ("%.3f"):format(value)
     end
 
-    frame:ClearAllPoints()
-    frame:SetPoint(SAVED_FRAME_POINT, UIParent, SAVED_FRAME_RELATIVE_POINT, left, top)
-    return left, top
+    return tostring(value)
+end
+
+local function GetDebugRegionName(region)
+    if not region then
+        return "nil"
+    end
+
+    if region.GetName then
+        return region:GetName() or tostring(region)
+    end
+
+    return tostring(region)
+end
+
+local function PrintFramePositionDebug(frame, reason)
+    if not DEBUG_FRAME_POSITION or not NS.charDB or not NS.Print then
+        return
+    end
+
+    local point, relativeTo, relativePoint, x, y = frame:GetPoint(1)
+    NS:Print(("Frame position [%s] frame point=%s relativeTo=%s relativePoint=%s x=%s y=%s width=%s height=%s left=%s top=%s right=%s bottom=%s scale=%s effectiveScale=%s"):format(
+        tostring(reason),
+        tostring(point),
+        GetDebugRegionName(relativeTo),
+        tostring(relativePoint),
+        FormatDebugNumber(x),
+        FormatDebugNumber(y),
+        FormatDebugNumber(frame:GetWidth()),
+        FormatDebugNumber(frame:GetHeight()),
+        FormatDebugNumber(frame:GetLeft()),
+        FormatDebugNumber(frame:GetTop()),
+        FormatDebugNumber(frame:GetRight()),
+        FormatDebugNumber(frame:GetBottom()),
+        FormatDebugNumber(frame:GetScale()),
+        FormatDebugNumber(frame:GetEffectiveScale())
+    ))
+    NS:Print(("Frame DB [%s] point=%s relativePoint=%s x=%s y=%s width=%s height=%s scale=%s"):format(
+        tostring(reason),
+        tostring(NS.charDB:Get("frame", "point")),
+        tostring(NS.charDB:Get("frame", "relativePoint")),
+        FormatDebugNumber(NS.charDB:Get("frame", "x")),
+        FormatDebugNumber(NS.charDB:Get("frame", "y")),
+        FormatDebugNumber(NS.charDB:Get("frame", "width")),
+        FormatDebugNumber(NS.charDB:Get("frame", "height")),
+        FormatDebugNumber(NS.charDB:Get("frame", "scale"))
+    ))
 end
 
 local function SaveFrameGeometry(frame)
@@ -77,15 +118,9 @@ local function SaveFrameGeometry(frame)
         return
     end
 
-    local x, y = AnchorFrameToCurrentTopLeft(frame)
-    local point = SAVED_FRAME_POINT
-    local relativePoint = SAVED_FRAME_RELATIVE_POINT
-
-    if not x or not y then
-        point, _, relativePoint, x, y = frame:GetPoint(1)
-        point = point or DEFAULT_FRAME_POINT
-        relativePoint = relativePoint or DEFAULT_FRAME_RELATIVE_POINT
-    end
+    local point, _, relativePoint, x, y = frame:GetPoint(1)
+    point = point or DEFAULT_FRAME_POINT
+    relativePoint = relativePoint or DEFAULT_FRAME_RELATIVE_POINT
 
     NS.charDB:Set("frame", "point", point)
     NS.charDB:Set("frame", "relativePoint", relativePoint)
@@ -106,7 +141,6 @@ local function RestoreFramePosition(frame)
         NS.charDB:Get("frame", "x") or 0,
         NS.charDB:Get("frame", "y") or 0
     )
-    AnchorFrameToCurrentTopLeft(frame)
 end
 
 local function GetFrameHorizontalChromeWidth()
@@ -211,6 +245,7 @@ local function CreateResizeButton(frame)
     resizeButton:Init(frame, MIN_FRAME_WIDTH, MIN_FRAME_HEIGHT, maxWidth, nil)
     resizeButton:SetOnResizeStoppedCallback(function(target)
         SaveFrameGeometry(target)
+        PrintFramePositionDebug(target, "resize-stop")
     end)
     frame.resizeButton = resizeButton
 end
@@ -288,6 +323,7 @@ function NS:CreateMainFrame()
     dragRegion:SetScript("OnDragStop", function()
         frame:StopMovingOrSizing()
         SaveFrameGeometry(frame)
+        PrintFramePositionDebug(frame, "move-stop")
     end)
 
     CreateContentFrame(frame)
@@ -296,8 +332,8 @@ function NS:CreateMainFrame()
     RegisterFrameCallbacks(frame)
 
     frame:SetScript("OnShow", function(self)
-        AnchorFrameToCurrentTopLeft(self)
         ClearClientPosition(self)
+        PrintFramePositionDebug(self, "show")
 
         if NS.Inventory and not NS.Inventory.initialScanComplete then
             NS.Inventory:ScanNow("frame-show")
@@ -308,6 +344,7 @@ function NS:CreateMainFrame()
 
     NS.frame = frame
     RefreshFrame(frame)
+    PrintFramePositionDebug(frame, "addon-load")
     return frame
 end
 
