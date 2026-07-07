@@ -1,10 +1,8 @@
 local ADDON_NAME, NS = ...
 
 local FRAME_NAME = "YvBagsFrame"
-local MIN_FRAME_WIDTH = 1060
+local MIN_FRAME_WIDTH = 420
 local MIN_FRAME_HEIGHT = 360
-local MAX_FRAME_WIDTH = 1600
-local MAX_FRAME_HEIGHT = 1100
 local MAIN_FRAME_TEMPLATE = "ButtonFrameTemplate"
 local MAIN_FRAME_STRATA = "HIGH"
 local MAIN_FRAME_PORTRAIT = "Interface\\Icons\\INV_Misc_Bag_08"
@@ -111,11 +109,19 @@ local function RestoreFramePosition(frame)
     AnchorFrameToCurrentTopLeft(frame)
 end
 
-local function RestoreFrameSize(frame)
-    local minWidth = NS.ItemList and NS.ItemList.GetMinimumWidth and NS.ItemList.GetMinimumWidth() or MIN_FRAME_WIDTH
-    minWidth = math.max(MIN_FRAME_WIDTH, minWidth)
+local function GetFrameHorizontalChromeWidth()
+    return (FRAME_INSET_LEFT - FRAME_INSET_RIGHT) + (CONTENT_INSET_LEFT - CONTENT_INSET_RIGHT)
+end
 
-    local width = math.max(NS.charDB:Get("frame", "width") or minWidth, minWidth)
+local function GetMaxFrameWidth()
+    local listWidth = NS.ItemList and NS.ItemList.GetPreferredWidth and NS.ItemList.GetPreferredWidth() or MIN_FRAME_WIDTH
+    return math.max(MIN_FRAME_WIDTH, listWidth + GetFrameHorizontalChromeWidth())
+end
+
+local function RestoreFrameSize(frame)
+    local maxWidth = GetMaxFrameWidth()
+    local savedWidth = NS.charDB:Get("frame", "width")
+    local width = math.min(math.max(savedWidth or maxWidth, MIN_FRAME_WIDTH), maxWidth)
     local height = math.max(NS.charDB:Get("frame", "height") or MIN_FRAME_HEIGHT, MIN_FRAME_HEIGHT)
     frame:SetSize(width, height)
 end
@@ -193,18 +199,16 @@ end
 local function CreateResizeButton(frame)
     frame:SetResizable(true)
 
+    local maxWidth = GetMaxFrameWidth()
     if frame.SetResizeBounds then
-        frame:SetResizeBounds(MIN_FRAME_WIDTH, MIN_FRAME_HEIGHT, MAX_FRAME_WIDTH, MAX_FRAME_HEIGHT)
+        frame:SetResizeBounds(MIN_FRAME_WIDTH, MIN_FRAME_HEIGHT, maxWidth, nil)
     elseif frame.SetMinResize then
         frame:SetMinResize(MIN_FRAME_WIDTH, MIN_FRAME_HEIGHT)
-        if frame.SetMaxResize then
-            frame:SetMaxResize(MAX_FRAME_WIDTH, MAX_FRAME_HEIGHT)
-        end
     end
 
     local resizeButton = CreateFrame(BUTTON_TYPE, nil, frame, RESIZE_BUTTON_TEMPLATE)
     resizeButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", RESIZE_BUTTON_RIGHT_OFFSET, RESIZE_BUTTON_BOTTOM_OFFSET)
-    resizeButton:Init(frame, MIN_FRAME_WIDTH, MIN_FRAME_HEIGHT, MAX_FRAME_WIDTH, MAX_FRAME_HEIGHT)
+    resizeButton:Init(frame, MIN_FRAME_WIDTH, MIN_FRAME_HEIGHT, maxWidth, nil)
     resizeButton:SetOnResizeStoppedCallback(function(target)
         SaveFrameGeometry(target)
     end)

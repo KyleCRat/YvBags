@@ -423,6 +423,9 @@ local function InitializeRow(row)
     local columns = Columns.GetColumns()
 
     row:SetHeight(ROW_HEIGHT)
+    if row.SetClipsChildren then
+        row:SetClipsChildren(true)
+    end
     row:EnableMouse(false)
     row:SetID(0)
 

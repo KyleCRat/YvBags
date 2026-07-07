@@ -8,7 +8,6 @@ local ItemRow = NS.ItemRow
 
 local HEADER_HEIGHT = 24
 local SCROLL_BAR_WIDTH = 14
-local MINIMUM_WIDTH_PADDING = 28
 local HEADER_TEXT_FONT = "GameFontNormalSmall"
 local EMPTY_TEXT_FONT = "GameFontDisable"
 local FONT_STRING_LAYER = "OVERLAY"
@@ -36,6 +35,9 @@ local function CreateHeader(parent)
     local columnGap = Columns.GetColumnGap()
     local header = CreateFrame(LIST_FRAME_TYPE, nil, parent)
     header:SetHeight(HEADER_HEIGHT)
+    if header.SetClipsChildren then
+        header:SetClipsChildren(true)
+    end
 
     local xOffset = 0
     for _, column in ipairs(columns) do
@@ -52,9 +54,8 @@ local function CreateHeader(parent)
     return header
 end
 
--- Public list API
-function ItemList.GetMinimumWidth()
-    return Columns.GetContentWidth() + SCROLL_BAR_WIDTH + MINIMUM_WIDTH_PADDING
+function ItemList.GetPreferredWidth()
+    return Columns.GetContentWidth() + SCROLL_BAR_WIDTH
 end
 
 function ItemList.Create(parent)
@@ -62,6 +63,9 @@ function ItemList.Create(parent)
 
     local frame = CreateFrame(LIST_FRAME_TYPE, nil, parent)
     frame:SetAllPoints(parent)
+    if frame.SetClipsChildren then
+        frame:SetClipsChildren(true)
+    end
     list.frame = frame
 
     local header = CreateHeader(frame)
@@ -72,6 +76,9 @@ function ItemList.Create(parent)
     local scrollBox = CreateFrame(LIST_FRAME_TYPE, nil, frame, SCROLL_BOX_TEMPLATE)
     scrollBox:SetPoint("TOPLEFT", header, "BOTTOMLEFT", SCROLL_BOX_LEFT_OFFSET, SCROLL_BOX_TOP_GAP)
     scrollBox:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -SCROLL_BAR_WIDTH + SCROLL_BOX_RIGHT_OFFSET, SCROLL_BOX_BOTTOM_OFFSET)
+    if scrollBox.SetClipsChildren then
+        scrollBox:SetClipsChildren(true)
+    end
     list.scrollBox = scrollBox
 
     local scrollBar = CreateFrame(SCROLL_BAR_FRAME_TYPE, nil, frame, SCROLL_BAR_TEMPLATE)
