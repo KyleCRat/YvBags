@@ -27,6 +27,8 @@ local FOOTER_STATS_X_OFFSET = 0
 local FOOTER_STATS_Y_OFFSET = 0
 local FOOTER_MONEY_X_OFFSET = 0
 local FOOTER_MONEY_Y_OFFSET = 0
+local FOOTER_MONEY_HOVER_MIN_WIDTH = 96
+local FOOTER_MONEY_HOVER_PADDING = 8
 local RESIZE_BUTTON_TEMPLATE = "PanelResizeButtonTemplate"
 local RESIZE_BUTTON_RIGHT_OFFSET = -6
 local RESIZE_BUTTON_BOTTOM_OFFSET = 6
@@ -174,12 +176,56 @@ local function UpdateMoney(frame)
         local color = display and display.color
 
         frame.moneyText:SetText(display and display.text or "0")
+        if frame.moneyHoverFrame then
+            frame.moneyHoverFrame.copper = copper
+            frame.moneyHoverFrame:SetWidth(math.max(FOOTER_MONEY_HOVER_MIN_WIDTH, frame.moneyText:GetStringWidth() + FOOTER_MONEY_HOVER_PADDING))
+        end
+
         if color then
             frame.moneyText:SetTextColor(color.r, color.g, color.b)
         else
             frame.moneyText:SetTextColor(FOOTER_TEXT_COLOR_R, FOOTER_TEXT_COLOR_G, FOOTER_TEXT_COLOR_B)
         end
     end
+end
+
+local function GetMoneyTooltipAnchor(frame)
+    local center = frame:GetCenter()
+    local screenCenter = UIParent and UIParent:GetWidth() and UIParent:GetWidth() / 2
+
+    if center and screenCenter and center > screenCenter then
+        return "ANCHOR_LEFT"
+    end
+
+    return "ANCHOR_RIGHT"
+end
+
+local function ShowMoneyTooltip(frame)
+    local copper = frame.copper or (GetMoney and GetMoney() or 0)
+
+    if GameTooltip_ClearMoney then
+        GameTooltip_ClearMoney(GameTooltip)
+    end
+
+    GameTooltip:SetOwner(frame, GetMoneyTooltipAnchor(frame))
+    GameTooltip:ClearLines()
+    GameTooltip:SetText(MONEY or "Money", 1, 1, 1)
+
+    if SetTooltipMoney then
+        SetTooltipMoney(GameTooltip, copper, "STATIC")
+    elseif NS.Money and NS.Money.FormatExact then
+        GameTooltip:AddLine(NS.Money.FormatExact(copper, true), 1, 1, 1)
+    end
+
+    GameTooltip:Show()
+end
+
+local function HideMoneyTooltip()
+    if GameTooltip_ClearMoney then
+        GameTooltip_ClearMoney(GameTooltip)
+    end
+
+    GameTooltip:Hide()
 end
 
 local function UpdateInventoryStats(frame)
@@ -230,10 +276,18 @@ local function CreateFooter(frame)
     statsText:SetText("")
     frame.statsText = statsText
 
-    local moneyText = footer:CreateFontString(nil, FOOTER_FONT_LAYER)
+    local moneyHoverFrame = CreateFrame(FRAME_TYPE, nil, footer)
+    moneyHoverFrame:SetPoint("RIGHT", footer, "RIGHT", FOOTER_MONEY_X_OFFSET, FOOTER_MONEY_Y_OFFSET)
+    moneyHoverFrame:SetSize(FOOTER_MONEY_HOVER_MIN_WIDTH, FOOTER_HEIGHT)
+    moneyHoverFrame:EnableMouse(true)
+    moneyHoverFrame:SetScript("OnEnter", ShowMoneyTooltip)
+    moneyHoverFrame:SetScript("OnLeave", HideMoneyTooltip)
+    frame.moneyHoverFrame = moneyHoverFrame
+
+    local moneyText = moneyHoverFrame:CreateFontString(nil, FOOTER_FONT_LAYER)
     moneyText:SetFont(GetPrimaryFont(), FOOTER_TEXT_SIZE)
     moneyText:SetTextColor(FOOTER_TEXT_COLOR_R, FOOTER_TEXT_COLOR_G, FOOTER_TEXT_COLOR_B)
-    moneyText:SetPoint("RIGHT", footer, "RIGHT", FOOTER_MONEY_X_OFFSET, FOOTER_MONEY_Y_OFFSET)
+    moneyText:SetPoint("RIGHT", moneyHoverFrame, "RIGHT", 0, 0)
     moneyText:SetJustifyH("RIGHT")
     moneyText:SetText("")
     frame.moneyText = moneyText

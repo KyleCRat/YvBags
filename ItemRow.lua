@@ -5,7 +5,7 @@ NS.ItemRow = ItemRow
 
 local Columns = NS.ItemListColumns
 
-local ROW_HEIGHT = 29
+local ROW_HEIGHT = 31
 local ICON_SIZE = 23
 local ICON_FRAME_SIZE = 29
 local PROFESSION_QUALITY_ICON_SIZE = 22

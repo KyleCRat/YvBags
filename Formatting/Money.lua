@@ -4,6 +4,7 @@ local Money = {}
 NS.Money = Money
 
 local MONEY_DISPLAY_FORMAT = "%s |T%s:0|t"
+local MONEY_EXACT_SEPARATOR = " "
 local MONEY_GOLD_KEY = "gold"
 local MONEY_SILVER_KEY = "silver"
 local MONEY_COPPER_KEY = "copper"
@@ -37,6 +38,24 @@ local function FormatLargeMoneyAmount(amount)
     return tostring(amount)
 end
 
+local function FormatExactMoneyAmount(amount)
+    if BreakUpLargeNumbers then
+        return BreakUpLargeNumbers(amount)
+    end
+
+    return tostring(amount)
+end
+
+local function GetMoneyParts(copper)
+    local copperPerGold = COPPER_PER_GOLD or 10000
+    local copperPerSilver = COPPER_PER_SILVER or 100
+    local gold = math.floor(copper / copperPerGold)
+    local silver = math.floor((copper - (gold * copperPerGold)) / copperPerSilver)
+    local copperOnly = copper - (gold * copperPerGold) - (silver * copperPerSilver)
+
+    return gold, silver, copperOnly
+end
+
 function Money.GetDisplay(copper, includeZero)
     if not copper or copper < 0 or (copper == 0 and not includeZero) then
         return nil
@@ -47,11 +66,7 @@ function Money.GetDisplay(copper, includeZero)
         return moneyDisplayCache[cacheKey]
     end
 
-    local copperPerGold = COPPER_PER_GOLD or 10000
-    local copperPerSilver = COPPER_PER_SILVER or 100
-    local gold = math.floor(copper / copperPerGold)
-    local silver = math.floor((copper - (gold * copperPerGold)) / copperPerSilver)
-    local copperOnly = copper - (gold * copperPerGold) - (silver * copperPerSilver)
+    local gold, silver, copperOnly = GetMoneyParts(copper)
     local key
     local amount
 
@@ -80,6 +95,27 @@ end
 function Money.Format(copper, includeZero)
     local display = Money.GetDisplay(copper, includeZero)
     return display and display.text or "-"
+end
+
+function Money.FormatExact(copper, includeZero)
+    if not copper or copper < 0 or (copper == 0 and not includeZero) then
+        return nil
+    end
+
+    local gold, silver, copperOnly = GetMoneyParts(copper)
+    local values = {}
+
+    if gold > 0 or includeZero then
+        values[#values + 1] = MONEY_DISPLAY_FORMAT:format(FormatExactMoneyAmount(gold), MONEY_DENOMINATIONS[MONEY_GOLD_KEY].icon)
+    end
+
+    if gold > 0 or silver > 0 or includeZero then
+        values[#values + 1] = MONEY_DISPLAY_FORMAT:format(FormatExactMoneyAmount(silver), MONEY_DENOMINATIONS[MONEY_SILVER_KEY].icon)
+    end
+
+    values[#values + 1] = MONEY_DISPLAY_FORMAT:format(FormatExactMoneyAmount(copperOnly), MONEY_DENOMINATIONS[MONEY_COPPER_KEY].icon)
+
+    return table.concat(values, MONEY_EXACT_SEPARATOR)
 end
 
 function Money.ApplyColor(fontString, copper, includeZero, fallbackColor)
