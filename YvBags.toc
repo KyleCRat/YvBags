@@ -16,6 +16,7 @@ Containers.lua
 ItemModel.lua
 Data.lua
 ItemListColumns.lua
+ItemTooltip.lua
 ItemRow.lua
 ItemList.lua
 MainFrame.lua

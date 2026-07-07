@@ -364,7 +364,7 @@ local function SuppressNativeItemButtonVisuals(button)
     -- The container template provides item behavior; row-owned textures provide
     -- every visible pixel.
     for _, region in pairs(button) do
-        if region ~= button.parent and region ~= button:GetParent() and type(region) == "table" and region.Hide then
+        if region ~= button.row and region ~= button:GetParent() and type(region) == "table" and region.Hide then
             ClearNativeTexture(region)
         end
     end
@@ -453,19 +453,22 @@ local function InitializeRow(row)
 
     buttonCount = buttonCount + 1
     row.itemButton = CreateFrame(ITEM_BUTTON_FRAME_TYPE, ITEM_BUTTON_GLOBAL_NAME_PREFIX .. buttonCount, row, ITEM_BUTTON_TEMPLATE)
-    row.itemButton.parent = row
+    row.itemButton.row = row
+    if NS.ItemTooltip then
+        NS.ItemTooltip.RegisterRowButton(row.itemButton)
+    end
     ConfigureNativeItemButton(row.itemButton, row)
     row.itemButton:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     row.itemButton:RegisterForDrag("LeftButton")
     row.itemButton:Show()
     SuppressNativeItemButtonVisuals(row.itemButton)
     row.itemButton:HookScript("OnEnter", function(button)
-        local parent = button.parent
-        parent.highlight:Show()
+        local buttonRow = button.row
+        buttonRow.highlight:Show()
     end)
     row.itemButton:HookScript("OnLeave", function(button)
-        local parent = button.parent
-        parent.highlight:Hide()
+        local buttonRow = button.row
+        buttonRow.highlight:Hide()
     end)
 
     row.text = {}
