@@ -612,6 +612,8 @@ function ItemRow.Render(row, item)
 
     local bindingIconInfo = Columns.GetBindingIconInfo(item)
     if bindingIconInfo then
+        local bindingIconSize = bindingIconInfo.size or BINDING_ICON_SIZE
+        row.bindingIcon:SetSize(bindingIconSize, bindingIconSize)
         if bindingIconInfo.atlas then
             row.bindingIcon:SetAtlas(bindingIconInfo.atlas, false)
         else
@@ -673,6 +675,7 @@ function ItemRow.Reset(row)
     end
 
     if row.bindingIcon then
+        row.bindingIcon:SetSize(BINDING_ICON_SIZE, BINDING_ICON_SIZE)
         row.bindingIcon:SetTexture(nil)
         row.bindingIcon:SetTexCoord(0, 1, 0, 1)
         row.bindingIcon:SetDesaturated(false)

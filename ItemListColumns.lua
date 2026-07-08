@@ -19,7 +19,7 @@ local WARBOUND_COLOR_B = 1
 local DEFAULT_BINDING_ICON_COLOR_R = 0.55
 local DEFAULT_BINDING_ICON_COLOR_G = 0.55
 local DEFAULT_BINDING_ICON_COLOR_B = 0.55
-local BINDING_ICON_TEXTURE = Media and Media.GetBindingLockTexture and Media.GetBindingLockTexture() or "Interface\\AddOns\\YvBags\\Media\\Textures\\Vertex-Lock.tga"
+local WARBOUND_BINDING_ICON_SIZE = 32
 local ITEM_ICON_COLUMN_WIDTH = 30
 local COMPACT_ICON_COLUMN_WIDTH = 28
 
@@ -35,14 +35,15 @@ local defaultBindingIconColor = {
     b = DEFAULT_BINDING_ICON_COLOR_B,
 }
 local defaultBindingIconInfo = {
-    texture = BINDING_ICON_TEXTURE,
+    texture = Media.GetSoulboundBindingIconTexture(),
     desaturated = false,
     color = defaultBindingIconColor,
 }
 local warboundBindingIconInfo = {
-    texture = BINDING_ICON_TEXTURE,
+    atlas = Media.GetWarboundBindingIconAtlas(),
     desaturated = false,
     color = warboundColor,
+    size = WARBOUND_BINDING_ICON_SIZE,
 }
 
 -- Fixed v1 columns. Later column customization can replace this table without
