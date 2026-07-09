@@ -16,7 +16,6 @@ local ICON_TEX_COORD_RIGHT = 0.92
 local ICON_TEX_COORD_TOP = 0.08
 local ICON_TEX_COORD_BOTTOM = 0.92
 local ROW_TEXT_SIZE = 16
-local COOLDOWN_TEXT_FONT = "NumberFontNormalSmall"
 local FONT_STRING_LAYER = "OVERLAY"
 local DEFAULT_HIGHLIGHT_COLOR_R = 1
 local DEFAULT_HIGHLIGHT_COLOR_G = 1
@@ -33,8 +32,6 @@ local COOLDOWN_SHADE_COLOR_B = 0
 local ROW_COOLDOWN_ALPHA = 0.38
 local COOLDOWN_SHADE_LAYER = "OVERLAY"
 local COOLDOWN_SHADE_SUBLEVEL = 1
-local COOLDOWN_TEXT_LAYER = "OVERLAY"
-local COOLDOWN_TEXT_SUBLEVEL = 7
 local COOLDOWN_SHADE_TOP_LEFT_X_OFFSET = 0
 local COOLDOWN_SHADE_TOP_LEFT_Y_OFFSET = 0
 local COOLDOWN_SHADE_BOTTOM_LEFT_X_OFFSET = 0
@@ -156,10 +153,6 @@ local function LayoutRow(row)
                 row.icon:SetSize(ICON_SIZE, ICON_SIZE)
             end
 
-            if row.iconCooldownText and row.icon then
-                row.iconCooldownText:ClearAllPoints()
-                row.iconCooldownText:SetAllPoints(row.icon)
-            end
         elseif column.key == "binding" and row.bindingIcon then
             row.bindingIcon:ClearAllPoints()
             row.bindingIcon:SetPoint("CENTER", contentFrame, "LEFT", columnCenterX, 0)
@@ -193,20 +186,46 @@ local function IsSafeNumber(value)
     return type(value) == "number"
 end
 
+local function ShouldShowCooldownsInName()
+    return not NS.db or NS.db:Get("display", "showCooldownsInName") ~= false
+end
+
 local function FormatCooldownText(remaining)
     if not IsSafeNumber(remaining) then
         return ""
     end
 
-    if remaining >= 3600 then
-        return ("%dh"):format(math.ceil(remaining / 3600))
-    elseif remaining >= 60 then
-        return ("%dm"):format(math.ceil(remaining / 60))
-    elseif remaining >= 10 then
-        return tostring(math.ceil(remaining))
+    local seconds = math.ceil(remaining)
+    if seconds < 0 then
+        seconds = 0
     end
 
-    return ("%.1f"):format(remaining)
+    if seconds >= 3600 then
+        return ("%dh"):format(math.ceil(seconds / 3600))
+    elseif seconds >= 60 then
+        return ("%dm"):format(math.ceil(seconds / 60))
+    end
+
+    return ("%ds"):format(seconds)
+end
+
+local function SetNameText(row, cooldownText)
+    local nameText = row.text and row.text.name
+    if not nameText then
+        return
+    end
+
+    if not row.item then
+        nameText:SetText("")
+        return
+    end
+
+    local itemName = Columns.FormatColumn(row.item, "name")
+    if cooldownText and cooldownText ~= "" then
+        nameText:SetText(("(%s) %s"):format(cooldownText, itemName))
+    else
+        nameText:SetText(itemName)
+    end
 end
 
 local function ClearRowCooldown(row)
@@ -222,10 +241,7 @@ local function ClearRowCooldown(row)
         row.cooldownShade:SetWidth(1)
     end
 
-    if row.iconCooldownText then
-        row.iconCooldownText:SetText("")
-        row.iconCooldownText:Hide()
-    end
+    SetNameText(row)
 end
 
 local function RefreshRowCooldown(row, updateText)
@@ -261,13 +277,13 @@ local function RefreshRowCooldown(row, updateText)
         row.cooldownShade:Show()
     end
 
-    if updateText and row.iconCooldownText then
+    if updateText then
         if row.cooldownIsGCD then
-            row.iconCooldownText:SetText("")
-            row.iconCooldownText:Hide()
+            SetNameText(row)
+        elseif ShouldShowCooldownsInName() then
+            SetNameText(row, FormatCooldownText(cooldownRemaining / modRate))
         else
-            row.iconCooldownText:SetText(FormatCooldownText(cooldownRemaining / modRate))
-            row.iconCooldownText:Show()
+            SetNameText(row)
         end
     end
 end
@@ -522,12 +538,6 @@ local function InitializeRow(row)
     row.bindingIcon:SetDrawLayer(BINDING_ICON_LAYER, BINDING_ICON_SUBLEVEL)
     row.bindingIcon:Hide()
 
-    row.iconCooldownText = row.contentClip:CreateFontString(nil, COOLDOWN_TEXT_LAYER, COOLDOWN_TEXT_FONT)
-    row.iconCooldownText:SetDrawLayer(COOLDOWN_TEXT_LAYER, COOLDOWN_TEXT_SUBLEVEL)
-    row.iconCooldownText:SetJustifyH("CENTER")
-    row.iconCooldownText:SetJustifyV("MIDDLE")
-    row.iconCooldownText:Hide()
-
     LayoutRow(row)
     row.rowInitialized = true
 end
@@ -635,7 +645,11 @@ function ItemRow.Render(row, item)
     for _, column in ipairs(columns) do
         if IsTextColumn(column) then
             local text = row.text[column.key]
-            text:SetText(Columns.FormatColumn(item, column.key))
+            if column.key == "name" then
+                SetNameText(row)
+            else
+                text:SetText(Columns.FormatColumn(item, column.key))
+            end
             Columns.ApplyTextColor(text, column.key, item)
         end
     end

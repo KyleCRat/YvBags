@@ -13,6 +13,9 @@ NS.defaults = {
             sortAscending = true,
             groupKey = "category",
         },
+        display = {
+            showCooldownsInName = true,
+        },
     },
     character = {
         frame = {
