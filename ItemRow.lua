@@ -52,7 +52,7 @@ local ITEM_BUTTON_FRAME_TYPE = "Button"
 local ITEM_BUTTON_TEMPLATE = "ContainerFrameItemButtonTemplate"
 local ITEM_BUTTON_FRAME_LEVEL_OFFSET = 10
 local GCD_MAX_DURATION = 2
-local COOLDOWN_UPDATE_INTERVAL = 0.05
+local COOLDOWN_TEXT_UPDATE_INTERVAL = 0.1
 local COOLDOWN_CACHE_TTL = 0.2
 local FALLBACK_ITEM_ICON = 134400
 local ITEM_BUTTON_GLOBAL_NAME_PREFIX = "YvBagsItemListButton"
@@ -214,7 +214,7 @@ local function ClearRowCooldown(row)
     row.cooldownDuration = nil
     row.cooldownModRate = nil
     row.cooldownIsGCD = nil
-    row.cooldownElapsed = nil
+    row.cooldownTextElapsed = nil
     row:SetScript("OnUpdate", nil)
 
     if row.cooldownShade then
@@ -228,7 +228,7 @@ local function ClearRowCooldown(row)
     end
 end
 
-local function RefreshRowCooldown(row)
+local function RefreshRowCooldown(row, updateText)
     local startTime = row.cooldownStart
     local duration = row.cooldownDuration
     local modRate = row.cooldownModRate or 1
@@ -261,7 +261,7 @@ local function RefreshRowCooldown(row)
         row.cooldownShade:Show()
     end
 
-    if row.iconCooldownText then
+    if updateText and row.iconCooldownText then
         if row.cooldownIsGCD then
             row.iconCooldownText:SetText("")
             row.iconCooldownText:Hide()
@@ -273,13 +273,14 @@ local function RefreshRowCooldown(row)
 end
 
 local function OnRowCooldownUpdate(row, elapsed)
-    row.cooldownElapsed = (row.cooldownElapsed or 0) + elapsed
-    if row.cooldownElapsed < COOLDOWN_UPDATE_INTERVAL then
-        return
+    row.cooldownTextElapsed = (row.cooldownTextElapsed or 0) + elapsed
+    local updateText = row.cooldownTextElapsed >= COOLDOWN_TEXT_UPDATE_INTERVAL
+
+    if updateText then
+        row.cooldownTextElapsed = 0
     end
 
-    row.cooldownElapsed = 0
-    RefreshRowCooldown(row)
+    RefreshRowCooldown(row, updateText)
 end
 
 local function GetItemCooldown(item)
@@ -353,8 +354,8 @@ local function UpdateRowCooldown(row, item)
     row.cooldownDuration = duration
     row.cooldownModRate = modRate
     row.cooldownIsGCD = isGCD
-    row.cooldownElapsed = COOLDOWN_UPDATE_INTERVAL
-    RefreshRowCooldown(row)
+    row.cooldownTextElapsed = 0
+    RefreshRowCooldown(row, true)
     row:SetScript("OnUpdate", OnRowCooldownUpdate)
 end
 
