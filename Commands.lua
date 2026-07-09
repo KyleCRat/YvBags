@@ -109,6 +109,102 @@ local function PrintPendingItems()
     end
 end
 
+local function JoinKeys(keys)
+    return table.concat(keys or {}, ", ")
+end
+
+local function GetItemList()
+    if not NS:IsInitialized() then
+        return nil
+    end
+
+    if not NS.frame and InCombatLockdown and InCombatLockdown() then
+        NS:Print("Open YvBags once before changing list settings in combat.")
+        return nil
+    end
+
+    local frame = NS.frame or (NS.CreateMainFrame and NS:CreateMainFrame())
+    if not frame or not frame.itemList then
+        NS:Print("Item list is not loaded.")
+        return nil
+    end
+
+    return frame.itemList
+end
+
+local function PrintSortUsage()
+    local ListModel = NS.ItemListModel
+    NS:Print(("Usage: /ybags sort <%s> [asc|desc]"):format(JoinKeys(ListModel.GetSortKeyList())))
+end
+
+local function PrintGroupUsage()
+    local ListModel = NS.ItemListModel
+    NS:Print(("Usage: /ybags group <%s>"):format(JoinKeys(ListModel.GetGroupKeyList())))
+end
+
+local function SetSortCommand(arguments)
+    local ListModel = NS.ItemListModel
+    arguments = strtrim(arguments or "")
+
+    if arguments == "" then
+        PrintSortUsage()
+        return
+    end
+
+    local sortKey, direction = arguments:match("^(%S+)%s*(.-)$")
+    if not sortKey or not ListModel.IsValidSortKey(sortKey) then
+        NS:Print(("Unknown sort key: %s"):format(sortKey or ""))
+        PrintSortUsage()
+        return
+    end
+
+    direction = strtrim(direction or "")
+    local sortAscending
+    if direction == "" then
+        sortAscending = nil
+    elseif direction == "asc" or direction == "ascending" then
+        sortAscending = true
+    elseif direction == "desc" or direction == "descending" then
+        sortAscending = false
+    else
+        NS:Print(("Unknown sort direction: %s"):format(direction))
+        PrintSortUsage()
+        return
+    end
+
+    local list = GetItemList()
+    if not list then
+        return
+    end
+
+    list:SetSort(sortKey, sortAscending)
+    NS:Print(("Sorting by %s (%s)."):format(list.sortKey, list.sortAscending and "ascending" or "descending"))
+end
+
+local function SetGroupCommand(arguments)
+    local ListModel = NS.ItemListModel
+    arguments = strtrim(arguments or "")
+
+    if arguments == "" then
+        PrintGroupUsage()
+        return
+    end
+
+    if not ListModel.IsValidGroupKey(arguments) then
+        NS:Print(("Unknown group key: %s"):format(arguments))
+        PrintGroupUsage()
+        return
+    end
+
+    local list = GetItemList()
+    if not list then
+        return
+    end
+
+    list:SetGroup(arguments)
+    NS:Print(("Grouping by %s."):format(list.groupKey))
+end
+
 local COMMANDS = {
     {
         triggers = { "", "toggle" },
@@ -181,6 +277,18 @@ local COMMANDS = {
             end
         end,
     },
+    {
+        triggers = { "sort" },
+        name = "Sort",
+        description = "Set or toggle list sorting",
+        func = PrintSortUsage,
+    },
+    {
+        triggers = { "group" },
+        name = "Group",
+        description = "Set list grouping",
+        func = PrintGroupUsage,
+    },
 }
 
 local function PrintHelp()
@@ -194,6 +302,15 @@ SLASH_YVBAGS2 = "/yvbags"
 
 SlashCmdList.YVBAGS = function(message)
     local msg = strtrim((message or ""):lower())
+    local command, arguments = msg:match("^(%S+)%s*(.-)$")
+
+    if command == "sort" then
+        SetSortCommand(arguments)
+        return
+    elseif command == "group" then
+        SetGroupCommand(arguments)
+        return
+    end
 
     for _, command in ipairs(COMMANDS) do
         for _, trigger in ipairs(command.triggers) do

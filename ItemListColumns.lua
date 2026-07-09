@@ -49,17 +49,17 @@ local warboundBindingIconInfo = {
 -- Fixed v1 columns. Later column customization can replace this table without
 -- changing row rendering or list controller code.
 local COLUMNS = {
-    { key = "count", label = "Qty", width = 40, justify = "RIGHT" },
-    { key = "binding", label = "", width = COMPACT_ICON_COLUMN_WIDTH, justify = "CENTER" },
-    { key = "icon", label = "", width = ITEM_ICON_COLUMN_WIDTH },
-    { key = "professionQuality", label = "", width = COMPACT_ICON_COLUMN_WIDTH, justify = "CENTER" },
-    { key = "name", label = NAME or "Name", width = 220 },
-    { key = "expansion", label = "Exp", width = 48, justify = "RIGHT" },
-    { key = "sellValue", label = SELL_PRICE or "Sell", width = 82, justify = "RIGHT" },
-    { key = "itemLevel", label = "Ilvl", width = 44, justify = "RIGHT" },
-    { key = "requiredLevel", label = "Req", width = 44, justify = "RIGHT" },
-    { key = "type", label = TYPE or "Type", width = 138 },
-    { key = "location", label = "Bag/Slot", width = 68 },
+    { key = "count", label = "Qty", width = 40, justify = "RIGHT", sortKey = "quantity", defaultAscending = false },
+    { key = "binding", label = "", width = COMPACT_ICON_COLUMN_WIDTH, justify = "CENTER", sortKey = "binding" },
+    { key = "icon", label = "", width = ITEM_ICON_COLUMN_WIDTH, sortKey = "quality", defaultAscending = false },
+    { key = "professionQuality", label = "", width = COMPACT_ICON_COLUMN_WIDTH, justify = "CENTER", sortKey = "professionQuality", defaultAscending = false },
+    { key = "name", label = NAME or "Name", width = 220, sortKey = "name" },
+    { key = "expansion", label = "Exp", width = 48, justify = "RIGHT", sortKey = "expansion", defaultAscending = false },
+    { key = "sellValue", label = SELL_PRICE or "Sell", width = 82, justify = "RIGHT", sortKey = "sellValue", defaultAscending = false },
+    { key = "itemLevel", label = "Ilvl", width = 44, justify = "RIGHT", sortKey = "itemLevel", defaultAscending = false },
+    { key = "requiredLevel", label = "Req", width = 44, justify = "RIGHT", sortKey = "requiredLevel", defaultAscending = false },
+    { key = "type", label = TYPE or "Type", width = 138, sortKey = "type" },
+    { key = "location", label = "Bag/Slot", width = 68, sortKey = "location" },
 }
 
 -- Column formatting
@@ -104,6 +104,16 @@ end
 
 function Columns.GetColumns()
     return COLUMNS
+end
+
+function Columns.GetColumnBySortKey(sortKey)
+    for _, column in ipairs(COLUMNS) do
+        if column.sortKey == sortKey then
+            return column
+        end
+    end
+
+    return nil
 end
 
 function Columns.GetColumnGap()

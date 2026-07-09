@@ -31,6 +31,9 @@ local FOOTER_MONEY_X_OFFSET = 0
 local FOOTER_MONEY_Y_OFFSET = 0
 local FOOTER_MONEY_HOVER_MIN_WIDTH = 96
 local FOOTER_MONEY_HOVER_PADDING = 8
+local SEARCH_BOX_LEFT_OFFSET = 86
+local SEARCH_BOX_TOP_OFFSET = -40
+local SEARCH_BOX_FRAME_LEVEL_OFFSET = 8
 local RESIZE_BUTTON_TEMPLATE = "PanelResizeButtonTemplate"
 local RESIZE_BUTTON_RIGHT_OFFSET = -6
 local RESIZE_BUTTON_BOTTOM_OFFSET = 6
@@ -263,6 +266,18 @@ local function CreateContentFrame(frame)
     end
 end
 
+local function CreateSearchBox(frame)
+    if not frame.itemList or not frame.itemList.CreateSearchBox then
+        return
+    end
+
+    local searchBox = frame.itemList:CreateSearchBox(frame)
+    searchBox:ClearAllPoints()
+    searchBox:SetPoint("TOPLEFT", frame, "TOPLEFT", SEARCH_BOX_LEFT_OFFSET, SEARCH_BOX_TOP_OFFSET)
+    searchBox:SetFrameLevel(frame:GetFrameLevel() + SEARCH_BOX_FRAME_LEVEL_OFFSET)
+    frame.searchBox = searchBox
+end
+
 local function CreateFooter(frame)
     local footer = CreateFrame(FRAME_TYPE, nil, frame)
     footer:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", FOOTER_LEFT_OFFSET, FOOTER_BOTTOM_OFFSET)
@@ -392,6 +407,7 @@ function NS:CreateMainFrame()
     end)
 
     CreateContentFrame(frame)
+    CreateSearchBox(frame)
     CreateFooter(frame)
     CreateResizeButton(frame)
     RegisterFrameCallbacks(frame)

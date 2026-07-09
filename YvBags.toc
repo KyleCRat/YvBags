@@ -22,6 +22,8 @@ ItemModel.lua
 Data.lua
 ItemListColumns.lua
 ItemTooltip.lua
+ItemListModel.lua
+ItemGroupRow.lua
 ItemRow.lua
 ItemList.lua
 MainFrame.lua
