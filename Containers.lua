@@ -152,31 +152,38 @@ function Containers.CreateEmptySlot(container, slotIndex)
     }
 end
 
+function Containers.CreateContainer(containerID)
+    local numSlots = Containers.GetContainerNumSlots(containerID)
+    if containerID ~= BACKPACK_ID and numSlots <= 0 then
+        return nil
+    end
+
+    local freeSlots, freeSlotCount, bagFamily = Containers.GetContainerFreeSlotData(containerID)
+    return {
+        id = containerID,
+        kind = Containers.GetContainerKind(containerID),
+        name = Containers.GetContainerName(containerID),
+        icon = Containers.GetContainerIcon(containerID),
+        inventoryID = Containers.GetContainerInventoryID(containerID),
+        numSlots = numSlots,
+        freeSlots = freeSlots,
+        freeSlotCount = freeSlotCount or 0,
+        bagFamily = bagFamily,
+        usedSlots = 0,
+        emptySlotCount = 0,
+        emptySlots = {},
+    }
+end
+
 function Containers.DiscoverPlayerContainers()
     local containers = {}
     local containerByID = {}
 
     local function AddContainer(containerID)
-        local numSlots = Containers.GetContainerNumSlots(containerID)
-        if containerID ~= BACKPACK_ID and numSlots <= 0 then
+        local container = Containers.CreateContainer(containerID)
+        if not container then
             return
         end
-
-        local freeSlots, freeSlotCount, bagFamily = Containers.GetContainerFreeSlotData(containerID)
-        local container = {
-            id = containerID,
-            kind = Containers.GetContainerKind(containerID),
-            name = Containers.GetContainerName(containerID),
-            icon = Containers.GetContainerIcon(containerID),
-            inventoryID = Containers.GetContainerInventoryID(containerID),
-            numSlots = numSlots,
-            freeSlots = freeSlots,
-            freeSlotCount = freeSlotCount or 0,
-            bagFamily = bagFamily,
-            usedSlots = 0,
-            emptySlotCount = 0,
-            emptySlots = {},
-        }
 
         containers[#containers + 1] = container
         containerByID[containerID] = container

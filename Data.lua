@@ -90,11 +90,137 @@ local function TrackPendingItemInfo(item, itemInfo, containerItemInfo)
     }
 end
 
+local function RebuildPendingItemIDIndex()
+    wipe(Inventory.pendingItemIDs)
+
+    for _, item in ipairs(Inventory.pendingItems) do
+        if item.itemID then
+            Inventory.pendingItemIDs[item.itemID] = true
+        end
+    end
+end
+
+local function RemovePendingItemsForContainer(containerID)
+    local removed = false
+
+    for index = #Inventory.pendingItems, 1, -1 do
+        if Inventory.pendingItems[index].bagID == containerID then
+            table.remove(Inventory.pendingItems, index)
+            removed = true
+        end
+    end
+
+    if removed then
+        RebuildPendingItemIDIndex()
+    end
+end
+
 -- Scanner update notifications
 local function NotifyUpdateCallbacks()
     for _, callback in ipairs(Inventory.updateCallbacks) do
         callback(Inventory)
     end
+end
+
+-- Container scan helpers
+local function ResetContainerUsage(container)
+    container.usedSlots = 0
+    container.emptySlotCount = 0
+    container.emptySlots = container.emptySlots or {}
+    wipe(container.emptySlots)
+end
+
+local function RemoveContainerEntries(inventory, containerID)
+    for index = #inventory.items, 1, -1 do
+        local item = inventory.items[index]
+        if item.bagID == containerID then
+            inventory.itemsByLocation[item.locationKey] = nil
+            table.remove(inventory.items, index)
+        end
+    end
+
+    for index = #inventory.emptySlots, 1, -1 do
+        if inventory.emptySlots[index].bagID == containerID then
+            table.remove(inventory.emptySlots, index)
+        end
+    end
+
+    RemovePendingItemsForContainer(containerID)
+end
+
+local function ScanContainerSlots(inventory, container)
+    ResetContainerUsage(container)
+
+    for slotIndex = 1, container.numSlots do
+        local containerItemInfo = C_Container.GetContainerItemInfo(container.id, slotIndex)
+        if containerItemInfo then
+            local item, itemInfo = ItemModel.Normalize(container, slotIndex, containerItemInfo)
+            inventory.items[#inventory.items + 1] = item
+            inventory.itemsByLocation[item.locationKey] = item
+            container.usedSlots = container.usedSlots + 1
+
+            if item.isPendingItemInfo then
+                TrackPendingItemInfo(item, itemInfo, containerItemInfo)
+            end
+        else
+            local emptySlot = Containers.CreateEmptySlot(container, slotIndex)
+            inventory.emptySlots[#inventory.emptySlots + 1] = emptySlot
+            container.emptySlots[#container.emptySlots + 1] = emptySlot
+            container.emptySlotCount = container.emptySlotCount + 1
+        end
+    end
+end
+
+local function ReplaceContainer(inventory, container)
+    inventory.containerByID[container.id] = container
+
+    for index, existingContainer in ipairs(inventory.containers) do
+        if existingContainer.id == container.id then
+            inventory.containers[index] = container
+            return true
+        end
+    end
+
+    return false
+end
+
+local function CompareLocation(left, right)
+    local leftBagID = left.bagID or 0
+    local rightBagID = right.bagID or 0
+    if leftBagID ~= rightBagID then
+        return leftBagID < rightBagID
+    end
+
+    return (left.slotIndex or 0) < (right.slotIndex or 0)
+end
+
+local function SortInventoryEntries(inventory)
+    table.sort(inventory.items, CompareLocation)
+    table.sort(inventory.emptySlots, CompareLocation)
+    table.sort(inventory.pendingItems, CompareLocation)
+end
+
+local function RebuildStats(inventory, reason)
+    wipe(inventory.stats)
+
+    inventory.stats.containerCount = #inventory.containers
+    inventory.stats.totalSlots = 0
+    inventory.stats.freeSlots = 0
+    inventory.stats.usedSlots = 0
+    inventory.stats.emptySlots = 0
+    inventory.stats.itemCount = 0
+    inventory.stats.pendingItemInfoCount = #inventory.pendingItems
+    inventory.stats.lastScanReason = reason or "manual"
+    inventory.stats.lastScanTime = GetTime and GetTime() or 0
+
+    for _, container in ipairs(inventory.containers) do
+        inventory.stats.totalSlots = inventory.stats.totalSlots + (container.numSlots or 0)
+        inventory.stats.freeSlots = inventory.stats.freeSlots + (container.freeSlotCount or 0)
+        inventory.stats.usedSlots = inventory.stats.usedSlots + (container.usedSlots or 0)
+        inventory.stats.emptySlots = inventory.stats.emptySlots + (container.emptySlotCount or 0)
+    end
+
+    inventory.stats.itemCount = inventory.stats.usedSlots
 end
 
 -- Event handlers
@@ -108,7 +234,7 @@ end
 
 local function OnBagUpdate(_, bagID)
     if Containers.IsPlayerContainerID(bagID) then
-        Inventory:ScheduleScan("BAG_UPDATE")
+        Inventory:RefreshContainerNow(bagID, "BAG_UPDATE")
     end
 end
 
@@ -147,6 +273,9 @@ end
 
 -- Bag scan lifecycle
 function Inventory:ScanNow(reason)
+    self.scanScheduled = false
+    self.pendingScanReason = nil
+
     wipe(self.items)
     wipe(self.itemsByLocation)
     wipe(self.emptySlots)
@@ -156,45 +285,35 @@ function Inventory:ScanNow(reason)
 
     self:DiscoverContainers()
 
-    self.stats.containerCount = #self.containers
-    self.stats.totalSlots = 0
-    self.stats.freeSlots = 0
-    self.stats.usedSlots = 0
-    self.stats.emptySlots = 0
-    self.stats.itemCount = 0
-    self.stats.pendingItemInfoCount = 0
-    self.stats.lastScanReason = reason or "manual"
-    self.stats.lastScanTime = GetTime and GetTime() or 0
-
     for _, container in ipairs(self.containers) do
-        self.stats.totalSlots = self.stats.totalSlots + container.numSlots
-        self.stats.freeSlots = self.stats.freeSlots + container.freeSlotCount
-
-        for slotIndex = 1, container.numSlots do
-            local containerItemInfo = C_Container.GetContainerItemInfo(container.id, slotIndex)
-            if containerItemInfo then
-                local item, itemInfo = ItemModel.Normalize(container, slotIndex, containerItemInfo)
-                self.items[#self.items + 1] = item
-                self.itemsByLocation[item.locationKey] = item
-                container.usedSlots = container.usedSlots + 1
-                self.stats.usedSlots = self.stats.usedSlots + 1
-                self.stats.itemCount = self.stats.itemCount + 1
-
-                if item.isPendingItemInfo then
-                    TrackPendingItemInfo(item, itemInfo, containerItemInfo)
-                end
-            else
-                local emptySlot = Containers.CreateEmptySlot(container, slotIndex)
-                self.emptySlots[#self.emptySlots + 1] = emptySlot
-                container.emptySlots[#container.emptySlots + 1] = emptySlot
-                container.emptySlotCount = container.emptySlotCount + 1
-                self.stats.emptySlots = self.stats.emptySlots + 1
-            end
-        end
+        ScanContainerSlots(self, container)
     end
 
-    self.stats.pendingItemInfoCount = #self.pendingItems
+    SortInventoryEntries(self)
+    RebuildStats(self, reason)
     self.initialScanComplete = true
+
+    NotifyUpdateCallbacks()
+end
+
+function Inventory:RefreshContainerNow(containerID, reason)
+    if not self.initialScanComplete then
+        self:ScanNow(reason or "container-refresh")
+        return
+    end
+
+    local existingContainer = self.containerByID[containerID]
+    local nextContainer = Containers.CreateContainer(containerID)
+    if not existingContainer or not nextContainer or existingContainer.numSlots ~= nextContainer.numSlots then
+        self:ScanNow(reason or "container-layout-changed")
+        return
+    end
+
+    RemoveContainerEntries(self, containerID)
+    ReplaceContainer(self, nextContainer)
+    ScanContainerSlots(self, nextContainer)
+    SortInventoryEntries(self)
+    RebuildStats(self, reason or "container-refresh")
 
     NotifyUpdateCallbacks()
 end
