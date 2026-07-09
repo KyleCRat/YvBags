@@ -11,10 +11,14 @@ local CURSOR_OFFSET_X = 12
 local CURSOR_OFFSET_Y = -12
 local ROW_SIDE_OFFSET_X = 0
 local ROW_SIDE_OFFSET_Y = 0
+local TOOLTIP_SHOW_DELAY = 0.05
 local SIDE_LEFT = "LEFT"
 local SIDE_RIGHT = "RIGHT"
 
 local hooked = false
+local schedulerFrame
+local pendingButton
+local pendingElapsed = 0
 
 local function GetScreenSize()
     local width = GetScreenWidth and GetScreenWidth() or nil
@@ -154,6 +158,141 @@ local function IsRegisteredRowButton(button)
     return row and row.itemButton == button and button.usesCustomTooltipAnchor
 end
 
+local function CancelPendingTooltip(button)
+    if pendingButton == button then
+        pendingButton = nil
+        pendingElapsed = 0
+        if schedulerFrame then
+            schedulerFrame:Hide()
+        end
+    end
+end
+
+local function ClearCursorState()
+    if ResetCursor and not (SpellIsTargeting and SpellIsTargeting()) then
+        ResetCursor()
+    end
+
+    if ClearCursorHoveredItem then
+        ClearCursorHoveredItem()
+    end
+end
+
+local function UpdateCursorState(button)
+    if not button or not button.GetBagID or not button.GetID then
+        return
+    end
+
+    if not (SpellIsTargeting and SpellIsTargeting()) then
+        if IsModifiedClick and IsModifiedClick("DRESSUP") and button.HasItem and button:HasItem() then
+            if ShowInspectCursor then
+                ShowInspectCursor()
+            end
+        elseif MerchantFrame and MerchantFrame.IsShown and MerchantFrame:IsShown() and MerchantFrame.selectedTab == 1 then
+            if C_Container and C_Container.ShowContainerSellCursor then
+                C_Container.ShowContainerSellCursor(button:GetBagID(), button:GetID())
+            end
+        elseif button.IsReadable and button:IsReadable() then
+            if ShowInspectCursor then
+                ShowInspectCursor()
+            end
+        elseif ResetCursor then
+            ResetCursor()
+        end
+    end
+
+    if ItemLocation and SetCursorHoveredItem then
+        local itemLocation = ItemLocation:CreateFromBagAndSlot(button:GetBagID(), button:GetID())
+        if itemLocation and itemLocation:IsValid() then
+            SetCursorHoveredItem(itemLocation)
+        end
+    end
+end
+
+local function HideTooltip(button)
+    CancelPendingTooltip(button)
+
+    if button and button.tooltipShown and button.OnLeave then
+        button:OnLeave()
+    else
+        if GameTooltip_Hide then
+            GameTooltip_Hide()
+        elseif GameTooltip then
+            GameTooltip:Hide()
+        end
+
+        ClearCursorState()
+    end
+
+    if button then
+        button.tooltipShown = false
+    end
+end
+
+local function ShouldShowTooltip(button)
+    return IsRegisteredRowButton(button) and button.IsMouseOver and button:IsMouseOver() and button.HasItem and button:HasItem()
+end
+
+local function ShowTooltip(button)
+    pendingButton = nil
+    pendingElapsed = 0
+    if schedulerFrame then
+        schedulerFrame:Hide()
+    end
+
+    if not ShouldShowTooltip(button) then
+        return
+    end
+
+    if ContainerFrameItemButton_OnEnter then
+        ContainerFrameItemButton_OnEnter(button)
+    elseif button.OnEnter then
+        button:OnEnter()
+    end
+
+    button.tooltipShown = true
+end
+
+local function EnsureSchedulerFrame()
+    if schedulerFrame then
+        return schedulerFrame
+    end
+
+    schedulerFrame = CreateFrame("Frame")
+    schedulerFrame:Hide()
+    schedulerFrame:SetScript("OnUpdate", function(_, elapsed)
+        if not pendingButton then
+            schedulerFrame:Hide()
+            return
+        end
+
+        pendingElapsed = pendingElapsed + elapsed
+        if pendingElapsed < TOOLTIP_SHOW_DELAY then
+            return
+        end
+
+        ShowTooltip(pendingButton)
+    end)
+
+    return schedulerFrame
+end
+
+local function ScheduleTooltip(button)
+    pendingButton = button
+    pendingElapsed = 0
+    EnsureSchedulerFrame():Show()
+end
+
+local function OnRowButtonEnter(button)
+    button.tooltipShown = false
+    UpdateCursorState(button)
+    ScheduleTooltip(button)
+end
+
+local function OnRowButtonLeave(button)
+    HideTooltip(button)
+end
+
 function ItemTooltip.Initialize()
     if hooked or not hooksecurefunc or not ContainerFrameItemButton_CalculateItemTooltipAnchors then
         return
@@ -174,5 +313,7 @@ function ItemTooltip.RegisterRowButton(button)
     end
 
     button.usesCustomTooltipAnchor = true
+    button:SetScript("OnEnter", OnRowButtonEnter)
+    button:SetScript("OnLeave", OnRowButtonLeave)
     ItemTooltip.Initialize()
 end
