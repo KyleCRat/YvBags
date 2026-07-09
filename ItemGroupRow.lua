@@ -3,7 +3,9 @@ local _, NS = ...
 local GroupRow = {}
 NS.ItemGroupRow = GroupRow
 
-local ROW_HEIGHT = 31
+local CONTENT_HEIGHT = 31
+local BOTTOM_MARGIN = 2
+local ROW_HEIGHT = CONTENT_HEIGHT + BOTTOM_MARGIN
 local TEXT_SIZE = 18
 local TOGGLE_ICON_SIZE = 29
 local TOGGLE_ICON_LEFT_OFFSET = 4
@@ -62,6 +64,18 @@ local function UpdateContentFrameLevel(row)
     end
 end
 
+local function AnchorContentClip(row)
+    row.contentClip:ClearAllPoints()
+    row.contentClip:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
+    row.contentClip:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -GetRightClipPadding(row), BOTTOM_MARGIN)
+end
+
+local function AnchorDivider(row)
+    row.divider:ClearAllPoints()
+    row.divider:SetPoint("BOTTOMLEFT", row.contentClip, "BOTTOMLEFT", DIVIDER_LEFT_OFFSET, DIVIDER_BOTTOM_OFFSET)
+    row.divider:SetPoint("BOTTOMRIGHT", row.contentClip, "BOTTOMRIGHT", DIVIDER_RIGHT_OFFSET, DIVIDER_BOTTOM_OFFSET)
+end
+
 local function SetTextureCoords(texture, coords)
     texture:SetTexCoord(coords[1], coords[2], coords[3], coords[4])
 end
@@ -87,22 +101,20 @@ local function InitializeRow(row)
     row.highlight:SetColorTexture(HIGHLIGHT_COLOR_R, HIGHLIGHT_COLOR_G, HIGHLIGHT_COLOR_B, HIGHLIGHT_ALPHA)
     row.highlight:Hide()
 
+    row.contentClip = CreateFrame("Frame", nil, row)
+    UpdateContentFrameLevel(row)
+    AnchorContentClip(row)
+    if row.contentClip.SetClipsChildren then
+        row.contentClip:SetClipsChildren(true)
+    end
+
     row.divider = row:CreateTexture(nil, BORDER_LAYER)
     row.divider:SetDrawLayer(BORDER_LAYER, BORDER_SUBLEVEL)
     row.divider:SetTexture(DIVIDER_TEXTURE)
     row.divider:SetBlendMode("ADD")
     row.divider:SetHeight(DIVIDER_HEIGHT)
-    row.divider:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", DIVIDER_LEFT_OFFSET, DIVIDER_BOTTOM_OFFSET)
-    row.divider:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -GetRightClipPadding(row) + DIVIDER_RIGHT_OFFSET, DIVIDER_BOTTOM_OFFSET)
+    AnchorDivider(row)
     row.divider:SetVertexColor(DIVIDER_COLOR_R, DIVIDER_COLOR_G, DIVIDER_COLOR_B, DIVIDER_ALPHA)
-
-    row.contentClip = CreateFrame("Frame", nil, row)
-    UpdateContentFrameLevel(row)
-    row.contentClip:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
-    row.contentClip:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -GetRightClipPadding(row), 0)
-    if row.contentClip.SetClipsChildren then
-        row.contentClip:SetClipsChildren(true)
-    end
 
     row.toggleIcon = row.contentClip:CreateTexture(nil, TOGGLE_LAYER)
     row.toggleIcon:SetDrawLayer(TOGGLE_LAYER, TOGGLE_SUBLEVEL)
@@ -161,15 +173,11 @@ function GroupRow.Render(row, groupData, owner)
 
     if row.contentClip then
         UpdateContentFrameLevel(row)
-        row.contentClip:ClearAllPoints()
-        row.contentClip:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
-        row.contentClip:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -GetRightClipPadding(row), 0)
+        AnchorContentClip(row)
     end
 
-    if row.divider then
-        row.divider:ClearAllPoints()
-        row.divider:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", DIVIDER_LEFT_OFFSET, DIVIDER_BOTTOM_OFFSET)
-        row.divider:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -GetRightClipPadding(row) + DIVIDER_RIGHT_OFFSET, DIVIDER_BOTTOM_OFFSET)
+    if row.divider and row.contentClip then
+        AnchorDivider(row)
     end
 
     UpdateToggleIcon(row, false)

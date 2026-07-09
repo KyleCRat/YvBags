@@ -181,7 +181,13 @@ function ItemList.Create(parent)
     list.scrollBar = scrollBar
 
     local view = CreateScrollBoxListLinearView()
-    view:SetElementExtent(ItemRow.GetRowHeight())
+    view:SetElementExtentCalculator(function(dataIndex, elementData)
+        if elementData.rowType == ListModel.GetRowTypeGroup() then
+            return GroupRow.GetRowHeight()
+        end
+
+        return ItemRow.GetRowHeight()
+    end)
     view:SetElementFactory(function(factory, elementData)
         if elementData.rowType == ListModel.GetRowTypeGroup() then
             factory(BUTTON_FRAME_TYPE, function(row, rowData)
