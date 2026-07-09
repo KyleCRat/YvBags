@@ -36,10 +36,8 @@ local HEADER_PRESSED_COLOR_R = ACCENT_COLOR_R
 local HEADER_PRESSED_COLOR_G = ACCENT_COLOR_G
 local HEADER_PRESSED_COLOR_B = ACCENT_COLOR_B
 local HEADER_PRESSED_ALPHA = 0.16
-local HEADER_SORT_ICON_ATLAS = "auctionhouse-ui-sortarrow"
-local HEADER_SORT_ICON_SIZE = 11
+local HEADER_SORT_ICON_SIZE = 13
 local HEADER_SORT_ICON_GAP = 3
-local HEADER_SORT_ICON_RIGHT_PADDING = 2
 local HEADER_SEPARATOR_HANDLE_WIDTH = 6
 local HEADER_SEPARATOR_TOP_OFFSET = 1
 local HEADER_SEPARATOR_BOTTOM_OFFSET = 1
@@ -93,8 +91,7 @@ local function AnchorHeaderSortIcon(button)
     end
 
     local textWidth = button.text:GetStringWidth() or 0
-    local maxOffset = math.max(0, (button:GetWidth() / 2) - HEADER_SORT_ICON_SIZE - HEADER_SORT_ICON_RIGHT_PADDING)
-    local xOffset = math.min(maxOffset, (textWidth / 2) + HEADER_SORT_ICON_GAP)
+    local xOffset = (textWidth / 2) + HEADER_SORT_ICON_GAP
     button.sortIcon:SetPoint("LEFT", button, "CENTER", xOffset, 0)
 end
 
@@ -290,7 +287,7 @@ local function CreateHeader(parent, list)
 
     local content = CreateFrame(LIST_FRAME_TYPE, nil, header)
     content:SetPoint("TOPLEFT", header, "TOPLEFT", 0, 0)
-    content:SetPoint("BOTTOMRIGHT", header, "BOTTOMRIGHT", -SCROLL_BAR_CONTENT_PADDING, 0)
+    content:SetPoint("BOTTOMRIGHT", header, "BOTTOMRIGHT", 0, 0)
     if content.SetClipsChildren then
         content:SetClipsChildren(true)
     end
@@ -309,9 +306,14 @@ local function CreateHeader(parent, list)
 
     local xOffset = 0
     for index, column in ipairs(columns) do
+        local buttonWidth = column.width
+        if index == #columns then
+            buttonWidth = buttonWidth + SCROLL_BAR_CONTENT_PADDING
+        end
+
         local button = CreateFrame(BUTTON_FRAME_TYPE, nil, content)
         button:SetPoint("LEFT", content, "LEFT", xOffset, 0)
-        button:SetSize(column.width, HEADER_HEIGHT)
+        button:SetSize(buttonWidth, HEADER_HEIGHT)
         button.column = column
         button:SetEnabled(column.sortKey ~= nil)
 
@@ -339,8 +341,9 @@ local function CreateHeader(parent, list)
         button.text = text
 
         local sortIcon = button:CreateTexture(nil, FONT_STRING_LAYER)
-        sortIcon:SetAtlas(HEADER_SORT_ICON_ATLAS, false)
+        sortIcon:SetTexture(Media.GetSortArrowTexture())
         sortIcon:SetSize(HEADER_SORT_ICON_SIZE, HEADER_SORT_ICON_SIZE)
+        sortIcon:SetVertexColor(ACCENT_COLOR_R, ACCENT_COLOR_G, ACCENT_COLOR_B)
         sortIcon:Hide()
         button.sortIcon = sortIcon
 
