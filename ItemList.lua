@@ -7,6 +7,7 @@ local Columns = NS.ItemListColumns
 local ItemRow = NS.ItemRow
 local GroupRow = NS.ItemGroupRow
 local ListModel = NS.ItemListModel
+local Media = NS.Media
 
 local HEADER_HEIGHT = 24
 local SCROLL_BAR_WIDTH = 14
@@ -18,6 +19,36 @@ local EMPTY_TEXT_SIZE = 16
 local HEADER_TEXT_COLOR_R = 1
 local HEADER_TEXT_COLOR_G = 0.82
 local HEADER_TEXT_COLOR_B = 0
+local HEADER_DIVIDER_HEIGHT = 14
+local HEADER_DIVIDER_COLOR_R = 1
+local HEADER_DIVIDER_COLOR_G = 0.82
+local HEADER_DIVIDER_COLOR_B = 0.34
+local HEADER_DIVIDER_ALPHA = 0.68
+local HEADER_BOTTOM_DIVIDER_LEFT_OFFSET = 2
+local HEADER_BOTTOM_DIVIDER_RIGHT_OFFSET = -2
+local HEADER_BOTTOM_DIVIDER_BOTTOM_OFFSET = -6
+local HEADER_HOVER_COLOR_R = 1
+local HEADER_HOVER_COLOR_G = 0.82
+local HEADER_HOVER_COLOR_B = 0
+local HEADER_HOVER_ALPHA = 0.08
+local HEADER_PRESSED_COLOR_R = 1
+local HEADER_PRESSED_COLOR_G = 0.82
+local HEADER_PRESSED_COLOR_B = 0
+local HEADER_PRESSED_ALPHA = 0.16
+local HEADER_SORT_ICON_ATLAS = "auctionhouse-ui-sortarrow"
+local HEADER_SORT_ICON_SIZE = 11
+local HEADER_SORT_ICON_GAP = 3
+local HEADER_SORT_ICON_RIGHT_PADDING = 2
+local HEADER_SEPARATOR_HANDLE_WIDTH = 6
+local HEADER_SEPARATOR_TOP_OFFSET = 1
+local HEADER_SEPARATOR_BOTTOM_OFFSET = 1
+local HEADER_SEPARATOR_TEXTURE_LENGTH = HEADER_HEIGHT - HEADER_SEPARATOR_TOP_OFFSET - HEADER_SEPARATOR_BOTTOM_OFFSET
+local HEADER_SEPARATOR_TEXTURE_THICKNESS = 6
+local HEADER_SEPARATOR_HOVER_ALPHA = 0.16
+local HEADER_SEPARATOR_PRESSED_ALPHA = 0.28
+local HEADER_SEPARATOR_LINE_HOVER_ALPHA = 0.86
+local HEADER_SEPARATOR_LINE_PRESSED_ALPHA = 1
+local HEADER_SEPARATOR_FRAME_LEVEL_OFFSET = 3
 local EMPTY_TEXT_COLOR_R = 0.5
 local EMPTY_TEXT_COLOR_G = 0.5
 local EMPTY_TEXT_COLOR_B = 0.5
@@ -47,19 +78,119 @@ local function GetPrimaryFont()
     return NS.Media and NS.Media.GetPrimaryFont and NS.Media.GetPrimaryFont() or STANDARD_TEXT_FONT
 end
 
-local function GetHeaderText(column, list)
-    local label = column.label or ""
+local function GetHeaderText(column)
+    return column.label or ""
+end
 
-    if column.sortKey and column.sortKey == list.sortKey then
-        local indicator = list.sortAscending and "^" or "v"
-        if label == "" then
-            return indicator
-        end
+local function AnchorHeaderSortIcon(button)
+    button.sortIcon:ClearAllPoints()
 
-        return label .. " " .. indicator
+    local label = GetHeaderText(button.column)
+    if label == "" then
+        button.sortIcon:SetPoint("CENTER", button, "CENTER", 0, 0)
+        return
     end
 
-    return label
+    local textWidth = button.text:GetStringWidth() or 0
+    local maxOffset = math.max(0, (button:GetWidth() / 2) - HEADER_SORT_ICON_SIZE - HEADER_SORT_ICON_RIGHT_PADDING)
+    local xOffset = math.min(maxOffset, (textWidth / 2) + HEADER_SORT_ICON_GAP)
+    button.sortIcon:SetPoint("LEFT", button, "CENTER", xOffset, 0)
+end
+
+local function UpdateHeaderButtonVisualState(button)
+    if button.pressedTexture and button.isPressed then
+        button.pressedTexture:Show()
+    elseif button.pressedTexture then
+        button.pressedTexture:Hide()
+    end
+
+    if button.hoverTexture then
+        if button.isHovered and not button.isPressed then
+            button.hoverTexture:Show()
+        else
+            button.hoverTexture:Hide()
+        end
+    end
+end
+
+local function HeaderButton_OnEnter(button)
+    if button:IsEnabled() then
+        button.isHovered = true
+        UpdateHeaderButtonVisualState(button)
+    end
+end
+
+local function HeaderButton_OnLeave(button)
+    button.isHovered = false
+    button.isPressed = false
+    UpdateHeaderButtonVisualState(button)
+end
+
+local function HeaderButton_OnMouseDown(button, mouseButton)
+    if mouseButton == "LeftButton" and button:IsEnabled() then
+        button.isPressed = true
+        UpdateHeaderButtonVisualState(button)
+    end
+end
+
+local function HeaderButton_OnMouseUp(button)
+    button.isPressed = false
+    button.isHovered = button:IsMouseOver()
+    UpdateHeaderButtonVisualState(button)
+end
+
+local function SetHeaderSeparatorLineAlpha(separator, alpha)
+    if separator.line then
+        separator.line:SetVertexColor(HEADER_DIVIDER_COLOR_R, HEADER_DIVIDER_COLOR_G, HEADER_DIVIDER_COLOR_B, alpha)
+    end
+end
+
+local function UpdateHeaderSeparatorVisualState(separator)
+    if separator.pressedTexture and separator.isPressed then
+        separator.pressedTexture:Show()
+    elseif separator.pressedTexture then
+        separator.pressedTexture:Hide()
+    end
+
+    if separator.hoverTexture then
+        if separator.isHovered and not separator.isPressed then
+            separator.hoverTexture:Show()
+        else
+            separator.hoverTexture:Hide()
+        end
+    end
+
+    if separator.isPressed then
+        SetHeaderSeparatorLineAlpha(separator, HEADER_SEPARATOR_LINE_PRESSED_ALPHA)
+    elseif separator.isHovered then
+        SetHeaderSeparatorLineAlpha(separator, HEADER_SEPARATOR_LINE_HOVER_ALPHA)
+    else
+        SetHeaderSeparatorLineAlpha(separator, HEADER_DIVIDER_ALPHA)
+    end
+end
+
+local function HeaderSeparator_OnEnter(separator)
+    separator.isHovered = true
+    UpdateHeaderSeparatorVisualState(separator)
+end
+
+local function HeaderSeparator_OnLeave(separator)
+    separator.isHovered = false
+    separator.isPressed = false
+    UpdateHeaderSeparatorVisualState(separator)
+end
+
+local function HeaderSeparator_OnMouseDown(separator, mouseButton)
+    if mouseButton == "LeftButton" then
+        separator.isPressed = true
+        UpdateHeaderSeparatorVisualState(separator)
+    end
+end
+
+local function HeaderSeparator_OnMouseUp(separator)
+    separator.isPressed = false
+    separator.isHovered = separator:IsMouseOver()
+    UpdateHeaderSeparatorVisualState(separator)
 end
 
 local function UpdateHeaderSortState(header, list)
@@ -68,7 +199,20 @@ local function UpdateHeaderSortState(header, list)
     end
 
     for _, button in ipairs(header.buttons) do
-        button.text:SetText(GetHeaderText(button.column, list))
+        button.text:SetText(GetHeaderText(button.column))
+
+        local sorted = button.column.sortKey and button.column.sortKey == list.sortKey
+        if sorted then
+            button.sortIcon:Show()
+            if list.sortAscending then
+                button.sortIcon:SetTexCoord(0, 1, 1, 0)
+            else
+                button.sortIcon:SetTexCoord(0, 1, 0, 1)
+            end
+            AnchorHeaderSortIcon(button)
+        else
+            button.sortIcon:Hide()
+        end
     end
 end
 
@@ -92,6 +236,47 @@ local function CreateSearchBox(parent, list)
     return searchBox
 end
 
+local function CreateHeaderSeparator(parent, xOffset)
+    local separator = CreateFrame(BUTTON_FRAME_TYPE, nil, parent)
+    separator:SetPoint("LEFT", parent, "LEFT", xOffset - (HEADER_SEPARATOR_HANDLE_WIDTH / 2), 0)
+    separator:SetSize(HEADER_SEPARATOR_HANDLE_WIDTH, HEADER_HEIGHT)
+    separator:RegisterForClicks("LeftButtonUp")
+    if separator.SetFrameLevel and parent.GetFrameLevel then
+        separator:SetFrameLevel(parent:GetFrameLevel() + HEADER_SEPARATOR_FRAME_LEVEL_OFFSET)
+    end
+
+    local hoverTexture = separator:CreateTexture(nil, "BACKGROUND")
+    hoverTexture:SetAllPoints(separator)
+    hoverTexture:SetColorTexture(HEADER_HOVER_COLOR_R, HEADER_HOVER_COLOR_G, HEADER_HOVER_COLOR_B, HEADER_SEPARATOR_HOVER_ALPHA)
+    hoverTexture:Hide()
+    separator.hoverTexture = hoverTexture
+
+    local pressedTexture = separator:CreateTexture(nil, "BACKGROUND")
+    pressedTexture:SetAllPoints(separator)
+    pressedTexture:SetColorTexture(HEADER_PRESSED_COLOR_R, HEADER_PRESSED_COLOR_G, HEADER_PRESSED_COLOR_B, HEADER_SEPARATOR_PRESSED_ALPHA)
+    pressedTexture:Hide()
+    separator.pressedTexture = pressedTexture
+
+    local line = separator:CreateTexture(nil, "BORDER")
+    line:SetTexture(Media.GetDividerTexture())
+    line:SetBlendMode("ADD")
+    line:SetPoint("CENTER", separator, "CENTER", 0, 0)
+    -- UI-TooltipDivider is horizontal. Before rotation, width becomes visual length and height becomes visual thickness.
+    line:SetSize(HEADER_SEPARATOR_TEXTURE_LENGTH, HEADER_SEPARATOR_TEXTURE_THICKNESS)
+    if line.SetRotation then
+        line:SetRotation(math.pi / 2)
+    end
+    separator.line = line
+
+    separator:SetScript("OnEnter", HeaderSeparator_OnEnter)
+    separator:SetScript("OnLeave", HeaderSeparator_OnLeave)
+    separator:SetScript("OnMouseDown", HeaderSeparator_OnMouseDown)
+    separator:SetScript("OnMouseUp", HeaderSeparator_OnMouseUp)
+    UpdateHeaderSeparatorVisualState(separator)
+
+    return separator
+end
+
 -- Header rendering
 local function CreateHeader(parent, list)
     local columns = Columns.GetColumns()
@@ -109,24 +294,59 @@ local function CreateHeader(parent, list)
         content:SetClipsChildren(true)
     end
 
+    local bottomDivider = header:CreateTexture(nil, "BORDER")
+    bottomDivider:SetTexture(Media.GetDividerTexture())
+    bottomDivider:SetBlendMode("ADD")
+    bottomDivider:SetPoint("BOTTOMLEFT", header, "BOTTOMLEFT", HEADER_BOTTOM_DIVIDER_LEFT_OFFSET, HEADER_BOTTOM_DIVIDER_BOTTOM_OFFSET)
+    bottomDivider:SetPoint("BOTTOMRIGHT", header, "BOTTOMRIGHT", HEADER_BOTTOM_DIVIDER_RIGHT_OFFSET, HEADER_BOTTOM_DIVIDER_BOTTOM_OFFSET)
+    bottomDivider:SetHeight(HEADER_DIVIDER_HEIGHT)
+    bottomDivider:SetVertexColor(HEADER_DIVIDER_COLOR_R, HEADER_DIVIDER_COLOR_G, HEADER_DIVIDER_COLOR_B, HEADER_DIVIDER_ALPHA)
+    header.bottomDivider = bottomDivider
+
     header.buttons = {}
+    header.separators = {}
 
     local xOffset = 0
-    for _, column in ipairs(columns) do
+    for index, column in ipairs(columns) do
         local button = CreateFrame(BUTTON_FRAME_TYPE, nil, content)
         button:SetPoint("LEFT", content, "LEFT", xOffset, 0)
         button:SetSize(column.width, HEADER_HEIGHT)
         button.column = column
         button:SetEnabled(column.sortKey ~= nil)
 
+        local hoverTexture = button:CreateTexture(nil, "BACKGROUND")
+        hoverTexture:SetDrawLayer("BACKGROUND", -7)
+        hoverTexture:SetAllPoints(button)
+        hoverTexture:SetColorTexture(HEADER_HOVER_COLOR_R, HEADER_HOVER_COLOR_G, HEADER_HOVER_COLOR_B, HEADER_HOVER_ALPHA)
+        hoverTexture:Hide()
+        button.hoverTexture = hoverTexture
+
+        local pressedTexture = button:CreateTexture(nil, "BACKGROUND")
+        pressedTexture:SetDrawLayer("BACKGROUND", -6)
+        pressedTexture:SetAllPoints(button)
+        pressedTexture:SetColorTexture(HEADER_PRESSED_COLOR_R, HEADER_PRESSED_COLOR_G, HEADER_PRESSED_COLOR_B, HEADER_PRESSED_ALPHA)
+        pressedTexture:Hide()
+        button.pressedTexture = pressedTexture
+
         local text = button:CreateFontString(nil, FONT_STRING_LAYER)
         text:SetFont(GetPrimaryFont(), HEADER_TEXT_SIZE)
         text:SetTextColor(HEADER_TEXT_COLOR_R, HEADER_TEXT_COLOR_G, HEADER_TEXT_COLOR_B)
         text:SetAllPoints(button)
-        text:SetJustifyH(column.justify or "LEFT")
+        text:SetJustifyH("CENTER")
         text:SetJustifyV("MIDDLE")
-        text:SetText(GetHeaderText(column, list))
+        text:SetText(GetHeaderText(column))
         button.text = text
+
+        local sortIcon = button:CreateTexture(nil, FONT_STRING_LAYER)
+        sortIcon:SetAtlas(HEADER_SORT_ICON_ATLAS, false)
+        sortIcon:SetSize(HEADER_SORT_ICON_SIZE, HEADER_SORT_ICON_SIZE)
+        sortIcon:Hide()
+        button.sortIcon = sortIcon
+
+        button:SetScript("OnEnter", HeaderButton_OnEnter)
+        button:SetScript("OnLeave", HeaderButton_OnLeave)
+        button:SetScript("OnMouseDown", HeaderButton_OnMouseDown)
+        button:SetScript("OnMouseUp", HeaderButton_OnMouseUp)
 
         if column.sortKey then
             button:SetScript("OnClick", function(self)
@@ -136,8 +356,17 @@ local function CreateHeader(parent, list)
 
         header.buttons[#header.buttons + 1] = button
 
+        if index < #columns then
+            local separator = CreateHeaderSeparator(content, xOffset + column.width + (columnGap / 2))
+            separator.leftColumn = column
+            separator.rightColumn = columns[index + 1]
+            header.separators[#header.separators + 1] = separator
+        end
+
         xOffset = xOffset + column.width + columnGap
     end
+
+    UpdateHeaderSortState(header, list)
 
     return header
 end

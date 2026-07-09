@@ -22,6 +22,7 @@ local DEFAULT_BINDING_ICON_COLOR_B = 0.55
 local WARBOUND_BINDING_ICON_SIZE = 32
 local ITEM_ICON_COLUMN_WIDTH = 30
 local COMPACT_ICON_COLUMN_WIDTH = 28
+local HEADER_GOLD_ICON_SIZE = 16
 
 local professionQualityAtlasCache = {}
 local warboundColor = {
@@ -45,18 +46,19 @@ local warboundBindingIconInfo = {
     color = warboundColor,
     size = WARBOUND_BINDING_ICON_SIZE,
 }
+local goldHeaderLabel = NS.Money and NS.Money.GetGoldIconMarkup and NS.Money.GetGoldIconMarkup(HEADER_GOLD_ICON_SIZE) or "Gold"
 
 -- Fixed v1 columns. Later column customization can replace this table without
 -- changing row rendering or list controller code.
 local COLUMNS = {
-    { key = "count", label = "Qty", width = 40, justify = "RIGHT", sortKey = "quantity", defaultAscending = false },
+    { key = "count", label = "#", width = 40, justify = "RIGHT", sortKey = "quantity", defaultAscending = false },
     { key = "binding", label = "", width = COMPACT_ICON_COLUMN_WIDTH, justify = "CENTER", sortKey = "binding" },
     { key = "icon", label = "", width = ITEM_ICON_COLUMN_WIDTH, sortKey = "quality", defaultAscending = false },
     { key = "professionQuality", label = "", width = COMPACT_ICON_COLUMN_WIDTH, justify = "CENTER", sortKey = "professionQuality", defaultAscending = false },
     { key = "name", label = NAME or "Name", width = 220, sortKey = "name" },
     { key = "expansion", label = "Exp", width = 48, justify = "RIGHT", sortKey = "expansion", defaultAscending = false },
-    { key = "sellValue", label = SELL_PRICE or "Sell", width = 82, justify = "RIGHT", sortKey = "sellValue", defaultAscending = false },
-    { key = "itemLevel", label = "Ilvl", width = 44, justify = "RIGHT", sortKey = "itemLevel", defaultAscending = false },
+    { key = "sellValue", label = goldHeaderLabel, width = 82, justify = "RIGHT", sortKey = "sellValue", defaultAscending = false },
+    { key = "itemLevel", label = "ilvl", width = 44, justify = "RIGHT", sortKey = "itemLevel", defaultAscending = false },
     { key = "requiredLevel", label = "Req", width = 44, justify = "RIGHT", sortKey = "requiredLevel", defaultAscending = false },
     { key = "type", label = TYPE or "Type", width = 138, sortKey = "type" },
     { key = "location", label = "Bag/Slot", width = 68, sortKey = "location" },

@@ -3,6 +3,8 @@ local _, NS = ...
 local GroupRow = {}
 NS.ItemGroupRow = GroupRow
 
+local Media = NS.Media
+
 local CONTENT_HEIGHT = 31
 local BOTTOM_MARGIN = 2
 local ROW_HEIGHT = CONTENT_HEIGHT + BOTTOM_MARGIN
@@ -24,7 +26,6 @@ local HIGHLIGHT_COLOR_R = 1
 local HIGHLIGHT_COLOR_G = 0.82
 local HIGHLIGHT_COLOR_B = 0
 local HIGHLIGHT_ALPHA = 0.14
-local DIVIDER_TEXTURE = "Interface\\Common\\UI-TooltipDivider"
 local DIVIDER_HEIGHT = 12
 local DIVIDER_LEFT_OFFSET = 2
 local DIVIDER_RIGHT_OFFSET = -2
@@ -110,7 +111,7 @@ local function InitializeRow(row)
 
     row.divider = row:CreateTexture(nil, BORDER_LAYER)
     row.divider:SetDrawLayer(BORDER_LAYER, BORDER_SUBLEVEL)
-    row.divider:SetTexture(DIVIDER_TEXTURE)
+    row.divider:SetTexture(Media.GetDividerTexture())
     row.divider:SetBlendMode("ADD")
     row.divider:SetHeight(DIVIDER_HEIGHT)
     AnchorDivider(row)

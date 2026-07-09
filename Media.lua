@@ -11,6 +11,7 @@ local ICON_BORDER_KEY = "YvBags Icon Border"
 local ICON_BORDER_TEXTURE = "Interface\\AddOns\\YvBags\\Media\\Textures\\Vertex-IconFrame-Border.tga"
 local SOULBOUND_BINDING_ICON_TEXTURE = "Interface\\AddOns\\YvBags\\Media\\Textures\\Vertex-Lock.tga"
 local WARBOUND_BINDING_ICON_ATLAS = "GM-icon-assist-hover"
+local DIVIDER_TEXTURE = "Interface\\Common\\UI-TooltipDivider"
 local PRIMARY_FONT_KEY = "YvBags PT Sans Narrow"
 local PRIMARY_FONT_PATH = "Interface\\AddOns\\YvBags\\Media\\Fonts\\PTSansNarrow-Bold.ttf"
 
@@ -35,6 +36,10 @@ end
 
 function Media.GetWarboundBindingIconAtlas()
     return WARBOUND_BINDING_ICON_ATLAS
+end
+
+function Media.GetDividerTexture()
+    return DIVIDER_TEXTURE
 end
 
 function Media.GetPrimaryFont()

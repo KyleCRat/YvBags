@@ -56,6 +56,11 @@ local function GetMoneyParts(copper)
     return gold, silver, copperOnly
 end
 
+function Money.GetGoldIconMarkup(size)
+    local iconSize = size or 0
+    return ("|T%s:%d|t"):format(MONEY_DENOMINATIONS[MONEY_GOLD_KEY].icon, iconSize)
+end
+
 function Money.GetDisplay(copper, includeZero)
     if not copper or copper < 0 or (copper == 0 and not includeZero) then
         return nil

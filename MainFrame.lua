@@ -9,7 +9,7 @@ local MAIN_FRAME_PORTRAIT = "Interface\\Icons\\INV_Misc_Bag_08"
 
 local CONTENT_INSET_LEFT = 3
 local CONTENT_INSET_RIGHT = -3
-local CONTENT_INSET_TOP = -4
+local CONTENT_INSET_TOP = -3
 local CONTENT_INSET_BOTTOM = 3
 
 local FRAME_INSET_LEFT = 4
