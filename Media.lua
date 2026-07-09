@@ -12,6 +12,9 @@ local ICON_BORDER_TEXTURE = "Interface\\AddOns\\YvBags\\Media\\Textures\\Vertex-
 local SOULBOUND_BINDING_ICON_TEXTURE = "Interface\\AddOns\\YvBags\\Media\\Textures\\Vertex-Lock.tga"
 local WARBOUND_BINDING_ICON_ATLAS = "GM-icon-assist-hover"
 local DIVIDER_TEXTURE = "Interface\\Common\\UI-TooltipDivider"
+local ACCENT_COLOR_R = 0.15
+local ACCENT_COLOR_G = 0.88
+local ACCENT_COLOR_B = 1
 local PRIMARY_FONT_KEY = "YvBags PT Sans Narrow"
 local PRIMARY_FONT_PATH = "Interface\\AddOns\\YvBags\\Media\\Fonts\\PTSansNarrow-Bold.ttf"
 
@@ -40,6 +43,10 @@ end
 
 function Media.GetDividerTexture()
     return DIVIDER_TEXTURE
+end
+
+function Media.GetAccentColor()
+    return ACCENT_COLOR_R, ACCENT_COLOR_G, ACCENT_COLOR_B
 end
 
 function Media.GetPrimaryFont()
