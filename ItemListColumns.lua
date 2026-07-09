@@ -5,6 +5,7 @@ NS.ItemListColumns = Columns
 
 local Binding = NS.Binding
 local Media = NS.Media
+local ACCENT_COLOR_R, ACCENT_COLOR_G, ACCENT_COLOR_B = Media.GetAccentColor()
 
 local COLUMN_GAP = 6
 local DEFAULT_TEXT_COLOR_R = 0.86
@@ -23,6 +24,9 @@ local WARBOUND_BINDING_ICON_SIZE = 32
 local ITEM_ICON_COLUMN_WIDTH = 30
 local COMPACT_ICON_COLUMN_WIDTH = 28
 local HEADER_GOLD_ICON_SIZE = 16
+local BINDING_HEADER_ICON_SIZE = 16
+local PROFESSION_QUALITY_HEADER_ATLAS = "Professions-ChatIcon-Quality-12-Tier2"
+local PROFESSION_QUALITY_HEADER_ICON_SIZE = 16
 
 local professionQualityAtlasCache = {}
 local warboundColor = {
@@ -34,6 +38,11 @@ local defaultBindingIconColor = {
     r = DEFAULT_BINDING_ICON_COLOR_R,
     g = DEFAULT_BINDING_ICON_COLOR_G,
     b = DEFAULT_BINDING_ICON_COLOR_B,
+}
+local accentIconColor = {
+    r = ACCENT_COLOR_R,
+    g = ACCENT_COLOR_G,
+    b = ACCENT_COLOR_B,
 }
 local defaultBindingIconInfo = {
     texture = Media.GetSoulboundBindingIconTexture(),
@@ -52,9 +61,9 @@ local goldHeaderLabel = NS.Money and NS.Money.GetGoldIconMarkup and NS.Money.Get
 -- changing row rendering or list controller code.
 local COLUMNS = {
     { key = "count", label = "#", width = 40, justify = "RIGHT", sortKey = "quantity", defaultAscending = false },
-    { key = "binding", label = "", width = COMPACT_ICON_COLUMN_WIDTH, justify = "CENTER", sortKey = "binding" },
+    { key = "binding", label = "", headerTexture = Media.GetSoulboundBindingIconTexture(), headerIconSize = BINDING_HEADER_ICON_SIZE, headerIconColor = accentIconColor, width = COMPACT_ICON_COLUMN_WIDTH, justify = "CENTER", sortKey = "binding" },
     { key = "icon", label = "", width = ITEM_ICON_COLUMN_WIDTH, sortKey = "quality", defaultAscending = false },
-    { key = "professionQuality", label = "", width = COMPACT_ICON_COLUMN_WIDTH, justify = "CENTER", sortKey = "professionQuality", defaultAscending = false },
+    { key = "professionQuality", label = "", headerAtlas = PROFESSION_QUALITY_HEADER_ATLAS, headerIconSize = PROFESSION_QUALITY_HEADER_ICON_SIZE, width = COMPACT_ICON_COLUMN_WIDTH, justify = "CENTER", sortKey = "professionQuality", defaultAscending = false },
     { key = "name", label = NAME or "Name", width = 220, sortKey = "name" },
     { key = "expansion", label = "Exp", width = 48, justify = "RIGHT", sortKey = "expansion", defaultAscending = false },
     { key = "sellValue", label = goldHeaderLabel, width = 82, justify = "RIGHT", sortKey = "sellValue", defaultAscending = false },

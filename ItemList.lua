@@ -81,8 +81,46 @@ local function GetHeaderText(column)
     return column.label or ""
 end
 
+local function GetHeaderIconSize(column)
+    return column.headerIconSize or HEADER_TEXT_SIZE
+end
+
+local function HasHeaderIcon(column)
+    return column.headerAtlas or column.headerTexture
+end
+
+local function ApplyHeaderIcon(button)
+    local icon = button.headerIcon
+    local column = button.column
+    if not icon or not HasHeaderIcon(column) then
+        return
+    end
+
+    if column.headerAtlas then
+        icon:SetAtlas(column.headerAtlas, false)
+    else
+        icon:SetTexture(column.headerTexture)
+    end
+
+    local color = column.headerIconColor
+    if color then
+        icon:SetVertexColor(color.r, color.g, color.b, color.a or 1)
+    else
+        icon:SetVertexColor(1, 1, 1, 1)
+    end
+
+    icon:SetSize(GetHeaderIconSize(column), GetHeaderIconSize(column))
+    icon:Show()
+end
+
 local function AnchorHeaderSortIcon(button)
     button.sortIcon:ClearAllPoints()
+
+    if button.headerIcon and button.headerIcon:IsShown() then
+        local xOffset = (button.headerIcon:GetWidth() / 2) + HEADER_SORT_ICON_GAP
+        button.sortIcon:SetPoint("LEFT", button, "CENTER", xOffset, 0)
+        return
+    end
 
     local label = GetHeaderText(button.column)
     if label == "" then
@@ -198,6 +236,13 @@ local function UpdateHeaderSortState(header, list)
 
     for _, button in ipairs(header.buttons) do
         button.text:SetText(GetHeaderText(button.column))
+        if button.headerIcon then
+            if HasHeaderIcon(button.column) then
+                ApplyHeaderIcon(button)
+            else
+                button.headerIcon:Hide()
+            end
+        end
 
         local sorted = button.column.sortKey and button.column.sortKey == list.sortKey
         if sorted then
@@ -339,6 +384,13 @@ local function CreateHeader(parent, list)
         text:SetJustifyV("MIDDLE")
         text:SetText(GetHeaderText(column))
         button.text = text
+
+        if HasHeaderIcon(column) then
+            local headerIcon = button:CreateTexture(nil, FONT_STRING_LAYER)
+            headerIcon:SetPoint("CENTER", button, "CENTER", 0, 0)
+            button.headerIcon = headerIcon
+            ApplyHeaderIcon(button)
+        end
 
         local sortIcon = button:CreateTexture(nil, FONT_STRING_LAYER)
         sortIcon:SetTexture(Media.GetSortArrowTexture())
