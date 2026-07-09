@@ -1,0 +1,5 @@
+# Affinity Photo lock files
+*.afphoto.lock
+*.afphoto.lock~
+*.afphoto~lock~
+.~lock*.afphoto#
