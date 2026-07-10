@@ -9,64 +9,91 @@ local MEDIA_TYPE_FONT = LSM and LSM.MediaType and LSM.MediaType.FONT or "font"
 local ADDON_NAME = NS.ADDON_NAME
 local ADDON_MEDIA_PATH = NS.ADDON_MEDIA_PATH
 
-local ICON_BORDER_KEY = ADDON_NAME .. " Icon Border"
-local ICON_BORDER_TEXTURE = ADDON_MEDIA_PATH .. "Textures\\Vertex-IconFrame-Border.tga"
-local SORT_ARROW_TEXTURE = ADDON_MEDIA_PATH .. "Textures\\Vertex-Arrow.tga"
-local CIRCLE_TEXTURE = ADDON_MEDIA_PATH .. "Textures\\Vertex-Circle.tga"
-local SOULBOUND_BINDING_ICON_TEXTURE = ADDON_MEDIA_PATH .. "Textures\\Vertex-Lock.tga"
-local WARBOUND_BINDING_ICON_ATLAS = "GM-icon-assist-hover"
-local DIVIDER_TEXTURE = "Interface\\Common\\UI-TooltipDivider"
-local ACCENT_COLOR_R = 0.15
-local ACCENT_COLOR_G = 0.88
-local ACCENT_COLOR_B = 1
-local PRIMARY_FONT_KEY = ADDON_NAME .. " PT Sans Narrow"
-local PRIMARY_FONT_PATH = ADDON_MEDIA_PATH .. "Fonts\\PTSansNarrow-Bold.ttf"
+local Borders = {
+    icon = {
+        type = MEDIA_TYPE_BORDER,
+        key = ADDON_NAME .. " Icon Border",
+        path = ADDON_MEDIA_PATH .. "Textures\\Vertex-IconFrame-Border.tga",
+    },
+}
+
+local Fonts = {
+    primary = {
+        type = MEDIA_TYPE_FONT,
+        key = "PT Sans Narrow",
+        path = ADDON_MEDIA_PATH .. "Fonts\\PTSansNarrow-Bold.ttf",
+    },
+}
+
+local Textures = {
+    sortArrow = ADDON_MEDIA_PATH .. "Textures\\Vertex-Arrow.tga",
+    circle = ADDON_MEDIA_PATH .. "Textures\\Vertex-Circle.tga",
+    soulboundBindingIcon = ADDON_MEDIA_PATH .. "Textures\\Vertex-Lock.tga",
+    divider = "Interface\\Common\\UI-TooltipDivider",
+}
+
+local Atlases = {
+    warboundBindingIcon = "GM-icon-assist-hover",
+}
+
+local Colors = {
+    accent = { r = 0.15, g = 0.88, b = 1 },
+}
+
+local function RegisterMediaGroup(mediaGroup)
+    if not LSM then
+        return
+    end
+
+    for _, media in pairs(mediaGroup) do
+        LSM:Register(media.type, media.key, media.path)
+    end
+end
 
 function Media.Register()
-    if LSM then
-        LSM:Register(MEDIA_TYPE_BORDER, ICON_BORDER_KEY, ICON_BORDER_TEXTURE)
-        LSM:Register(MEDIA_TYPE_FONT, PRIMARY_FONT_KEY, PRIMARY_FONT_PATH)
-    end
+    RegisterMediaGroup(Borders)
+    RegisterMediaGroup(Fonts)
 end
 
 function Media.GetIconBorderTexture()
     if LSM then
-        return LSM:Fetch(MEDIA_TYPE_BORDER, ICON_BORDER_KEY, true) or ICON_BORDER_TEXTURE
+        return LSM:Fetch(Borders.icon.type, Borders.icon.key, true) or Borders.icon.path
     end
 
-    return ICON_BORDER_TEXTURE
+    return Borders.icon.path
 end
 
 function Media.GetSortArrowTexture()
-    return SORT_ARROW_TEXTURE
+    return Textures.sortArrow
 end
 
 function Media.GetCircleTexture()
-    return CIRCLE_TEXTURE
+    return Textures.circle
 end
 
 function Media.GetSoulboundBindingIconTexture()
-    return SOULBOUND_BINDING_ICON_TEXTURE
+    return Textures.soulboundBindingIcon
 end
 
 function Media.GetWarboundBindingIconAtlas()
-    return WARBOUND_BINDING_ICON_ATLAS
+    return Atlases.warboundBindingIcon
 end
 
 function Media.GetDividerTexture()
-    return DIVIDER_TEXTURE
+    return Textures.divider
 end
 
 function Media.GetAccentColor()
-    return ACCENT_COLOR_R, ACCENT_COLOR_G, ACCENT_COLOR_B
+    local color = Colors.accent
+    return color.r, color.g, color.b
 end
 
 function Media.GetPrimaryFont()
     if LSM then
-        return LSM:Fetch(MEDIA_TYPE_FONT, PRIMARY_FONT_KEY, true) or PRIMARY_FONT_PATH
+        return LSM:Fetch(Fonts.primary.type, Fonts.primary.key, true) or Fonts.primary.path
     end
 
-    return PRIMARY_FONT_PATH
+    return Fonts.primary.path
 end
 
 Media.Register()
