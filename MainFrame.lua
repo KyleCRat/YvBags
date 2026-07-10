@@ -1,6 +1,6 @@
 local ADDON_NAME, NS = ...
 
-local FRAME_NAME = "YvBagsFrame"
+local FRAME_NAME = NS.FRAME_NAME
 local MIN_FRAME_WIDTH = 420
 local MIN_FRAME_HEIGHT = 360
 local MAIN_FRAME_TEMPLATE = "ButtonFrameTemplate"

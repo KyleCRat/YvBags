@@ -4,6 +4,7 @@ local BagManagement = {}
 NS.BagManagement = BagManagement
 
 local Containers = NS.Containers
+local ADDON_NAME = NS.ADDON_NAME
 
 local BACKPACK_ID = BACKPACK_CONTAINER or 0
 local BACKPACK_ICON = "Interface\\Icons\\INV_Misc_Bag_08"
@@ -16,7 +17,7 @@ local ERROR_CURSOR_BUSY = "Clear your cursor before emptying a bag."
 local ERROR_EMPTY_FAILED = "Could not empty the bag. There is not enough compatible space."
 local ERROR_NO_CURSOR_ITEM = "No item is on the cursor."
 local ERROR_NO_COMPATIBLE_SLOT = "No compatible bag slot is available."
-local ERROR_EMPTY_IN_PROGRESS = "YvBags is already emptying a bag."
+local ERROR_EMPTY_IN_PROGRESS = ADDON_NAME .. " is already emptying a bag."
 
 local emptyBagOperation
 

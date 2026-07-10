@@ -1,5 +1,7 @@
 local _, NS = ...
 
+local ADDON_NAME = NS.ADDON_NAME
+
 local function HasInventoryModule()
     if not NS.Inventory then
         NS:Print("Inventory module is not loaded.")
@@ -126,7 +128,7 @@ local function GetItemList()
     end
 
     if not NS.frame and InCombatLockdown and InCombatLockdown() then
-        NS:Print("Open YvBags once before changing list settings in combat.")
+        NS:Print(("Open %s once before changing list settings in combat."):format(ADDON_NAME))
         return nil
     end
 
@@ -267,7 +269,7 @@ local COMMANDS = {
     {
         triggers = { "", "toggle" },
         name = "Toggle",
-        description = "Toggle the YvBags frame",
+        description = ("Toggle the %s frame"):format(ADDON_NAME),
         func = function()
             if NS:IsInitialized() then
                 NS:ToggleFrame()
@@ -277,7 +279,7 @@ local COMMANDS = {
     {
         triggers = { "show", "open" },
         name = "Open",
-        description = "Open the YvBags frame",
+        description = ("Open the %s frame"):format(ADDON_NAME),
         func = function()
             if NS:IsInitialized() then
                 NS:ShowFrame()
@@ -287,7 +289,7 @@ local COMMANDS = {
     {
         triggers = { "hide", "close" },
         name = "Close",
-        description = "Close the YvBags frame",
+        description = ("Close the %s frame"):format(ADDON_NAME),
         func = function()
             if NS:IsInitialized() then
                 NS:HideFrame()

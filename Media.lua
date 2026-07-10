@@ -6,19 +6,21 @@ NS.Media = Media
 local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
 local MEDIA_TYPE_BORDER = LSM and LSM.MediaType and LSM.MediaType.BORDER or "border"
 local MEDIA_TYPE_FONT = LSM and LSM.MediaType and LSM.MediaType.FONT or "font"
+local ADDON_NAME = NS.ADDON_NAME
+local ADDON_MEDIA_PATH = NS.ADDON_MEDIA_PATH
 
-local ICON_BORDER_KEY = "YvBags Icon Border"
-local ICON_BORDER_TEXTURE = "Interface\\AddOns\\YvBags\\Media\\Textures\\Vertex-IconFrame-Border.tga"
-local SORT_ARROW_TEXTURE = "Interface\\AddOns\\YvBags\\Media\\Textures\\Vertex-Arrow.tga"
-local CIRCLE_TEXTURE = "Interface\\AddOns\\YvBags\\Media\\Textures\\Vertex-Circle.tga"
-local SOULBOUND_BINDING_ICON_TEXTURE = "Interface\\AddOns\\YvBags\\Media\\Textures\\Vertex-Lock.tga"
+local ICON_BORDER_KEY = ADDON_NAME .. " Icon Border"
+local ICON_BORDER_TEXTURE = ADDON_MEDIA_PATH .. "Textures\\Vertex-IconFrame-Border.tga"
+local SORT_ARROW_TEXTURE = ADDON_MEDIA_PATH .. "Textures\\Vertex-Arrow.tga"
+local CIRCLE_TEXTURE = ADDON_MEDIA_PATH .. "Textures\\Vertex-Circle.tga"
+local SOULBOUND_BINDING_ICON_TEXTURE = ADDON_MEDIA_PATH .. "Textures\\Vertex-Lock.tga"
 local WARBOUND_BINDING_ICON_ATLAS = "GM-icon-assist-hover"
 local DIVIDER_TEXTURE = "Interface\\Common\\UI-TooltipDivider"
 local ACCENT_COLOR_R = 0.15
 local ACCENT_COLOR_G = 0.88
 local ACCENT_COLOR_B = 1
-local PRIMARY_FONT_KEY = "YvBags PT Sans Narrow"
-local PRIMARY_FONT_PATH = "Interface\\AddOns\\YvBags\\Media\\Fonts\\PTSansNarrow-Bold.ttf"
+local PRIMARY_FONT_KEY = ADDON_NAME .. " PT Sans Narrow"
+local PRIMARY_FONT_PATH = ADDON_MEDIA_PATH .. "Fonts\\PTSansNarrow-Bold.ttf"
 
 function Media.Register()
     if LSM then

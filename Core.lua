@@ -72,11 +72,11 @@ function NS:IsInitialized()
 end
 
 function NS:InitializeDatabases()
-    YvBagsDB = YvBagsDB or {}
-    YvBagsCharacterDB = YvBagsCharacterDB or {}
+    _G[NS.ACCOUNT_DB_NAME] = _G[NS.ACCOUNT_DB_NAME] or {}
+    _G[NS.CHARACTER_DB_NAME] = _G[NS.CHARACTER_DB_NAME] or {}
 
-    NS.db = LibSimpleDB:New(YvBagsDB, NS.defaults.global)
-    NS.charDB = LibSimpleDB:New(YvBagsCharacterDB, NS.defaults.character)
+    NS.db = LibSimpleDB:New(_G[NS.ACCOUNT_DB_NAME], NS.defaults.global)
+    NS.charDB = LibSimpleDB:New(_G[NS.CHARACTER_DB_NAME], NS.defaults.character)
 end
 
 function NS:Initialize()
