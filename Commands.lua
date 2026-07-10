@@ -67,8 +67,7 @@ local function PrintPendingItems()
     NS:Print(("Pending item info: %d item(s)."):format(#pendingItems))
 
     for _, item in ipairs(pendingItems) do
-        NS:Print(("%s itemID=%s name=%s"):format(
-            item.bagSlotText or item.locationKey or "?",
+        NS:Print(("itemID=%s name=%s"):format(
             tostring(item.itemID or "?"),
             item.link or item.name or item.containerItemName or "Unknown"
         ))
@@ -111,6 +110,14 @@ end
 
 local function JoinKeys(keys)
     return table.concat(keys or {}, ", ")
+end
+
+local function GetSortLabel(sortKey)
+    if NS.ItemListColumns and NS.ItemListColumns.GetSortLabel then
+        return NS.ItemListColumns.GetSortLabel(sortKey)
+    end
+
+    return sortKey or ""
 end
 
 local function GetItemList()
@@ -189,7 +196,11 @@ local function SetSortCommand(arguments)
     end
 
     list:SetSort(sortKey, sortAscending)
-    NS:Print(("Sorting by %s (%s)."):format(list.sortKey, list.sortAscending and "ascending" or "descending"))
+    if list.sortKey == ListModel.GetManualSortKey() then
+        NS:Print(("Primary sorting: %s."):format(GetSortLabel(list.sortKey)))
+    else
+        NS:Print(("Primary sorting by %s (%s)."):format(GetSortLabel(list.sortKey), list.sortAscending and "ascending" or "descending"))
+    end
 end
 
 local function SetSecondarySortCommand(arguments)
@@ -224,7 +235,7 @@ local function SetSecondarySortCommand(arguments)
     if list.secondarySortKey == ListModel.GetNoSecondarySortKey() then
         NS:Print("Secondary sorting disabled.")
     else
-        NS:Print(("Secondary sorting by %s (%s)."):format(list.secondarySortKey, list.secondarySortAscending and "ascending" or "descending"))
+        NS:Print(("Secondary sorting by %s (%s)."):format(GetSortLabel(list.secondarySortKey), list.secondarySortAscending and "ascending" or "descending"))
     end
 end
 

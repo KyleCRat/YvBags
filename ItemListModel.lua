@@ -8,11 +8,13 @@ local Categories = NS.Categories
 local ROW_TYPE_ITEM = "item"
 local ROW_TYPE_GROUP = "group"
 local NO_GROUP_KEY = "none"
+local MANUAL_SORT_KEY = "manual"
 local NO_SECONDARY_SORT_KEY = "none"
 local DEFAULT_SORT_KEY = "name"
 local DEFAULT_GROUP_KEY = "category"
 
 local SORT_KEY_LIST = {
+    MANUAL_SORT_KEY,
     "name",
     "quality",
     "itemLevel",
@@ -20,7 +22,6 @@ local SORT_KEY_LIST = {
     "quantity",
     "type",
     "sellValue",
-    "location",
     "expansion",
     "professionQuality",
     "binding",
@@ -36,7 +37,6 @@ local SECONDARY_SORT_KEY_LIST = {
     "quantity",
     "type",
     "sellValue",
-    "location",
     "expansion",
     "professionQuality",
     "binding",
@@ -47,7 +47,6 @@ local GROUP_KEY_LIST = {
     NO_GROUP_KEY,
     "category",
     "type",
-    "inventorySlot",
     "quality",
     "binding",
     "expansion",
@@ -57,13 +56,13 @@ local GROUP_KEY_LABELS = {
     none = "No Grouping",
     category = "Category",
     type = "Item Type",
-    inventorySlot = "Inventory Slot",
     quality = "Rarity",
     binding = "Binding",
     expansion = "Expansion",
 }
 
 local VALID_SORT_KEYS = {
+    manual = true,
     name = true,
     quality = true,
     itemLevel = true,
@@ -71,7 +70,6 @@ local VALID_SORT_KEYS = {
     quantity = true,
     type = true,
     sellValue = true,
-    location = true,
     expansion = true,
     professionQuality = true,
     binding = true,
@@ -87,7 +85,6 @@ local VALID_SECONDARY_SORT_KEYS = {
     quantity = true,
     type = true,
     sellValue = true,
-    location = true,
     expansion = true,
     professionQuality = true,
     binding = true,
@@ -98,13 +95,34 @@ local VALID_GROUP_KEYS = {
     none = true,
     category = true,
     type = true,
-    inventorySlot = true,
     quality = true,
     binding = true,
     expansion = true,
 }
 
-local SORT_KEY_ALIASES = {
+local PRIMARY_SORT_KEY_ALIASES = {
+    none = MANUAL_SORT_KEY,
+    off = MANUAL_SORT_KEY,
+    disabled = MANUAL_SORT_KEY,
+    manual = MANUAL_SORT_KEY,
+    count = "quantity",
+    qty = "quantity",
+    ilvl = "itemLevel",
+    itemlevel = "itemLevel",
+    req = "requiredLevel",
+    required = "requiredLevel",
+    requiredlevel = "requiredLevel",
+    sell = "sellValue",
+    sellprice = "sellValue",
+    sellvalue = "sellValue",
+    exp = "expansion",
+    rarity = "quality",
+    prof = "professionQuality",
+    profession = "professionQuality",
+    professionquality = "professionQuality",
+}
+
+local SECONDARY_SORT_KEY_ALIASES = {
     none = NO_SECONDARY_SORT_KEY,
     off = NO_SECONDARY_SORT_KEY,
     disabled = NO_SECONDARY_SORT_KEY,
@@ -118,9 +136,6 @@ local SORT_KEY_ALIASES = {
     sell = "sellValue",
     sellprice = "sellValue",
     sellvalue = "sellValue",
-    bag = "location",
-    slot = "location",
-    bagslot = "location",
     exp = "expansion",
     rarity = "quality",
     prof = "professionQuality",
@@ -135,9 +150,6 @@ local GROUP_KEY_ALIASES = {
     categories = "category",
     type = "type",
     itemtype = "type",
-    slot = "inventorySlot",
-    inventory = "inventorySlot",
-    inventoryslot = "inventorySlot",
     quality = "quality",
     binding = "binding",
     bind = "binding",
@@ -184,14 +196,6 @@ local function GetExpansionName(expansionID)
     end
 
     return "Expansion " .. tostring(expansionID)
-end
-
-local function GetInventorySlotName(equipLoc)
-    if not equipLoc or equipLoc == "" then
-        return "Other"
-    end
-
-    return _G[equipLoc] or equipLoc
 end
 
 local function GetTypeText(item)
@@ -241,18 +245,6 @@ local function CompareLocation(left, right)
 end
 
 local function CompareSort(left, right, sortKey, sortAscending)
-    if sortKey == "location" then
-        if left.bagID ~= right.bagID or left.slotIndex ~= right.slotIndex then
-            if sortAscending then
-                return CompareLocation(left, right)
-            end
-
-            return CompareLocation(right, left)
-        end
-
-        return nil
-    end
-
     local leftValue = GetSortValue(left, sortKey)
     local rightValue = GetSortValue(right, sortKey)
 
@@ -269,15 +261,17 @@ end
 
 local function SortItems(items, sortKey, sortAscending, secondarySortKey, secondarySortAscending)
     table.sort(items, function(left, right)
-        local primaryResult = CompareSort(left, right, sortKey, sortAscending)
-        if primaryResult ~= nil then
-            return primaryResult
-        end
+        if sortKey ~= MANUAL_SORT_KEY then
+            local primaryResult = CompareSort(left, right, sortKey, sortAscending)
+            if primaryResult ~= nil then
+                return primaryResult
+            end
 
-        if secondarySortKey and secondarySortKey ~= NO_SECONDARY_SORT_KEY and secondarySortKey ~= sortKey then
-            local secondaryResult = CompareSort(left, right, secondarySortKey, secondarySortAscending)
-            if secondaryResult ~= nil then
-                return secondaryResult
+            if secondarySortKey and secondarySortKey ~= NO_SECONDARY_SORT_KEY and secondarySortKey ~= sortKey then
+                local secondaryResult = CompareSort(left, right, secondarySortKey, secondarySortAscending)
+                if secondaryResult ~= nil then
+                    return secondaryResult
+                end
             end
         end
 
@@ -296,7 +290,6 @@ local function ItemMatchesSearch(item, searchText)
         item.subtype,
         item.categoryName,
         item.bindingText,
-        item.bagSlotText,
         item.itemID,
     }
 
@@ -315,9 +308,6 @@ local function GetGroupInfo(item, groupKey)
     elseif groupKey == "type" then
         local typeKey = item.type or item.subtype or "other"
         return typeKey, typeKey
-    elseif groupKey == "inventorySlot" then
-        local slotKey = item.equipLoc or "other"
-        return slotKey, GetInventorySlotName(item.equipLoc)
     elseif groupKey == "quality" then
         local qualityKey = tostring(item.quality or "unknown")
         return qualityKey, GetQualityName(item.quality)
@@ -367,6 +357,10 @@ function ListModel.GetNoSecondarySortKey()
     return NO_SECONDARY_SORT_KEY
 end
 
+function ListModel.GetManualSortKey()
+    return MANUAL_SORT_KEY
+end
+
 function ListModel.GetGroupKeyList()
     return GROUP_KEY_LIST
 end
@@ -377,11 +371,11 @@ function ListModel.GetGroupLabel(groupKey)
 end
 
 function ListModel.NormalizeSortKey(sortKey)
-    return NormalizeKey(sortKey, SORT_KEY_ALIASES, VALID_SORT_KEYS, DEFAULT_SORT_KEY)
+    return NormalizeKey(sortKey, PRIMARY_SORT_KEY_ALIASES, VALID_SORT_KEYS, DEFAULT_SORT_KEY)
 end
 
 function ListModel.NormalizeSecondarySortKey(sortKey)
-    return NormalizeKey(sortKey, SORT_KEY_ALIASES, VALID_SECONDARY_SORT_KEYS, NO_SECONDARY_SORT_KEY)
+    return NormalizeKey(sortKey, SECONDARY_SORT_KEY_ALIASES, VALID_SECONDARY_SORT_KEYS, NO_SECONDARY_SORT_KEY)
 end
 
 function ListModel.NormalizeGroupKey(groupKey)
@@ -389,11 +383,11 @@ function ListModel.NormalizeGroupKey(groupKey)
 end
 
 function ListModel.IsValidSortKey(sortKey)
-    return NormalizeKey(sortKey, SORT_KEY_ALIASES, VALID_SORT_KEYS) ~= nil
+    return NormalizeKey(sortKey, PRIMARY_SORT_KEY_ALIASES, VALID_SORT_KEYS) ~= nil
 end
 
 function ListModel.IsValidSecondarySortKey(sortKey)
-    return NormalizeKey(sortKey, SORT_KEY_ALIASES, VALID_SECONDARY_SORT_KEYS) ~= nil
+    return NormalizeKey(sortKey, SECONDARY_SORT_KEY_ALIASES, VALID_SECONDARY_SORT_KEYS) ~= nil
 end
 
 function ListModel.IsValidGroupKey(groupKey)
@@ -407,7 +401,7 @@ end
 function ListModel.IsSecondarySortEnabled(secondarySortKey, primarySortKey)
     secondarySortKey = ListModel.NormalizeSecondarySortKey(secondarySortKey)
     primarySortKey = ListModel.NormalizeSortKey(primarySortKey)
-    return secondarySortKey ~= NO_SECONDARY_SORT_KEY and secondarySortKey ~= primarySortKey
+    return primarySortKey ~= MANUAL_SORT_KEY and secondarySortKey ~= NO_SECONDARY_SORT_KEY and secondarySortKey ~= primarySortKey
 end
 
 function ListModel.BuildRows(items, state)

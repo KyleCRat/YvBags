@@ -32,8 +32,13 @@ local RARE_QUALITY = Enum and Enum.ItemQuality and Enum.ItemQuality.Rare or 3
 local RARE_COLOR_R = 0
 local RARE_COLOR_G = 0.4392156862745098
 local RARE_COLOR_B = 0.8666666666666667
+local SORT_LABELS = {
+    category = "Category",
+    manual = "Manual",
+}
 
 local professionQualityAtlasCache = {}
+local enabledColumns
 
 local function GetQualityColor(quality, fallbackR, fallbackG, fallbackB)
     local color = ColorManager and ColorManager.GetColorDataForItemQuality and ColorManager.GetColorDataForItemQuality(quality)
@@ -179,12 +184,12 @@ local COLUMNS = {
         sortLabel = "type",
         tooltipTitle = TYPE or "Type",
     },
+    -- Disabled for v1; retained for future optional column visibility.
     {
         key = "location",
+        enabled = false,
         label = "Bag/Slot",
         width = 68,
-        sortKey = "location",
-        sortLabel = "bag and slot",
         tooltipTitle = "Bag/Slot",
     },
 }
@@ -210,6 +215,25 @@ local function FormatType(item)
     return item.type or item.subtype or "-"
 end
 
+local function IsColumnEnabled(column)
+    return column.enabled ~= false
+end
+
+local function GetEnabledColumns()
+    if enabledColumns then
+        return enabledColumns
+    end
+
+    enabledColumns = {}
+    for _, column in ipairs(COLUMNS) do
+        if IsColumnEnabled(column) then
+            enabledColumns[#enabledColumns + 1] = column
+        end
+    end
+
+    return enabledColumns
+end
+
 local function SetNameTextColor(fontString, item)
     local color = item and item.quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[item.quality]
     if color then
@@ -230,11 +254,11 @@ local function SetSellValueTextColor(fontString, item)
 end
 
 function Columns.GetColumns()
-    return COLUMNS
+    return GetEnabledColumns()
 end
 
 function Columns.GetColumnBySortKey(sortKey)
-    for _, column in ipairs(COLUMNS) do
+    for _, column in ipairs(GetEnabledColumns()) do
         if column.sortKey == sortKey then
             return column
         end
@@ -244,6 +268,10 @@ function Columns.GetColumnBySortKey(sortKey)
 end
 
 function Columns.GetSortLabel(sortKey)
+    if SORT_LABELS[sortKey] then
+        return SORT_LABELS[sortKey]
+    end
+
     local column = Columns.GetColumnBySortKey(sortKey)
     if column then
         return column.tooltipTitle or column.sortLabel or column.label or sortKey
@@ -258,10 +286,11 @@ end
 
 function Columns.GetContentWidth()
     local width = 0
+    local columns = GetEnabledColumns()
 
-    for index, column in ipairs(COLUMNS) do
+    for index, column in ipairs(columns) do
         width = width + column.width
-        if index < #COLUMNS then
+        if index < #columns then
             width = width + COLUMN_GAP
         end
     end
