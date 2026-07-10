@@ -11,6 +11,8 @@ NS.defaults = {
         list = {
             sortKey = "name",
             sortAscending = true,
+            secondarySortKey = "none",
+            secondarySortAscending = true,
             groupKey = "category",
         },
         display = {

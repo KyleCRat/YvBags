@@ -137,9 +137,27 @@ local function PrintSortUsage()
     NS:Print(("Usage: /ybags sort <%s> [asc|desc]"):format(JoinKeys(ListModel.GetSortKeyList())))
 end
 
+local function PrintSecondarySortUsage()
+    local ListModel = NS.ItemListModel
+    NS:Print(("Usage: /ybags sort2 <%s> [asc|desc]"):format(JoinKeys(ListModel.GetSecondarySortKeyList())))
+end
+
 local function PrintGroupUsage()
     local ListModel = NS.ItemListModel
     NS:Print(("Usage: /ybags group <%s>"):format(JoinKeys(ListModel.GetGroupKeyList())))
+end
+
+local function ParseSortDirection(direction)
+    direction = strtrim(direction or "")
+    if direction == "" then
+        return true, nil
+    elseif direction == "asc" or direction == "ascending" then
+        return true, true
+    elseif direction == "desc" or direction == "descending" then
+        return true, false
+    end
+
+    return false, direction
 end
 
 local function SetSortCommand(arguments)
@@ -158,16 +176,9 @@ local function SetSortCommand(arguments)
         return
     end
 
-    direction = strtrim(direction or "")
-    local sortAscending
-    if direction == "" then
-        sortAscending = nil
-    elseif direction == "asc" or direction == "ascending" then
-        sortAscending = true
-    elseif direction == "desc" or direction == "descending" then
-        sortAscending = false
-    else
-        NS:Print(("Unknown sort direction: %s"):format(direction))
+    local validDirection, sortAscending = ParseSortDirection(direction)
+    if not validDirection then
+        NS:Print(("Unknown sort direction: %s"):format(sortAscending))
         PrintSortUsage()
         return
     end
@@ -179,6 +190,42 @@ local function SetSortCommand(arguments)
 
     list:SetSort(sortKey, sortAscending)
     NS:Print(("Sorting by %s (%s)."):format(list.sortKey, list.sortAscending and "ascending" or "descending"))
+end
+
+local function SetSecondarySortCommand(arguments)
+    local ListModel = NS.ItemListModel
+    arguments = strtrim(arguments or "")
+
+    if arguments == "" then
+        PrintSecondarySortUsage()
+        return
+    end
+
+    local sortKey, direction = arguments:match("^(%S+)%s*(.-)$")
+    if not sortKey or not ListModel.IsValidSecondarySortKey(sortKey) then
+        NS:Print(("Unknown secondary sort key: %s"):format(sortKey or ""))
+        PrintSecondarySortUsage()
+        return
+    end
+
+    local validDirection, sortAscending = ParseSortDirection(direction)
+    if not validDirection then
+        NS:Print(("Unknown sort direction: %s"):format(sortAscending))
+        PrintSecondarySortUsage()
+        return
+    end
+
+    local list = GetItemList()
+    if not list then
+        return
+    end
+
+    list:SetSecondarySort(sortKey, sortAscending)
+    if list.secondarySortKey == ListModel.GetNoSecondarySortKey() then
+        NS:Print("Secondary sorting disabled.")
+    else
+        NS:Print(("Secondary sorting by %s (%s)."):format(list.secondarySortKey, list.secondarySortAscending and "ascending" or "descending"))
+    end
 end
 
 local function SetGroupCommand(arguments)
@@ -284,6 +331,12 @@ local COMMANDS = {
         func = PrintSortUsage,
     },
     {
+        triggers = { "sort2", "secondarysort" },
+        name = "Secondary Sort",
+        description = "Set secondary list sorting",
+        func = PrintSecondarySortUsage,
+    },
+    {
         triggers = { "group" },
         name = "Group",
         description = "Set list grouping",
@@ -306,6 +359,9 @@ SlashCmdList.YVBAGS = function(message)
 
     if command == "sort" then
         SetSortCommand(arguments)
+        return
+    elseif command == "sort2" or command == "secondarysort" then
+        SetSecondarySortCommand(arguments)
         return
     elseif command == "group" then
         SetGroupCommand(arguments)

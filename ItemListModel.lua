@@ -8,10 +8,27 @@ local Categories = NS.Categories
 local ROW_TYPE_ITEM = "item"
 local ROW_TYPE_GROUP = "group"
 local NO_GROUP_KEY = "none"
+local NO_SECONDARY_SORT_KEY = "none"
 local DEFAULT_SORT_KEY = "name"
 local DEFAULT_GROUP_KEY = "category"
 
 local SORT_KEY_LIST = {
+    "name",
+    "quality",
+    "itemLevel",
+    "requiredLevel",
+    "quantity",
+    "type",
+    "sellValue",
+    "location",
+    "expansion",
+    "professionQuality",
+    "binding",
+    "category",
+}
+
+local SECONDARY_SORT_KEY_LIST = {
+    NO_SECONDARY_SORT_KEY,
     "name",
     "quality",
     "itemLevel",
@@ -61,6 +78,22 @@ local VALID_SORT_KEYS = {
     category = true,
 }
 
+local VALID_SECONDARY_SORT_KEYS = {
+    none = true,
+    name = true,
+    quality = true,
+    itemLevel = true,
+    requiredLevel = true,
+    quantity = true,
+    type = true,
+    sellValue = true,
+    location = true,
+    expansion = true,
+    professionQuality = true,
+    binding = true,
+    category = true,
+}
+
 local VALID_GROUP_KEYS = {
     none = true,
     category = true,
@@ -72,6 +105,9 @@ local VALID_GROUP_KEYS = {
 }
 
 local SORT_KEY_ALIASES = {
+    none = NO_SECONDARY_SORT_KEY,
+    off = NO_SECONDARY_SORT_KEY,
+    disabled = NO_SECONDARY_SORT_KEY,
     count = "quantity",
     qty = "quantity",
     ilvl = "itemLevel",
@@ -204,26 +240,44 @@ local function CompareLocation(left, right)
     return NumberValue(left.slotIndex, 0) < NumberValue(right.slotIndex, 0)
 end
 
-local function SortItems(items, sortKey, sortAscending)
-    table.sort(items, function(left, right)
-        if sortKey == "location" then
-            if left.bagID ~= right.bagID or left.slotIndex ~= right.slotIndex then
-                if sortAscending then
-                    return CompareLocation(left, right)
-                end
-
-                return CompareLocation(right, left)
+local function CompareSort(left, right, sortKey, sortAscending)
+    if sortKey == "location" then
+        if left.bagID ~= right.bagID or left.slotIndex ~= right.slotIndex then
+            if sortAscending then
+                return CompareLocation(left, right)
             end
-        else
-            local leftValue = GetSortValue(left, sortKey)
-            local rightValue = GetSortValue(right, sortKey)
 
-            if leftValue ~= rightValue then
-                if sortAscending then
-                    return leftValue < rightValue
-                end
+            return CompareLocation(right, left)
+        end
 
-                return leftValue > rightValue
+        return nil
+    end
+
+    local leftValue = GetSortValue(left, sortKey)
+    local rightValue = GetSortValue(right, sortKey)
+
+    if leftValue ~= rightValue then
+        if sortAscending then
+            return leftValue < rightValue
+        end
+
+        return leftValue > rightValue
+    end
+
+    return nil
+end
+
+local function SortItems(items, sortKey, sortAscending, secondarySortKey, secondarySortAscending)
+    table.sort(items, function(left, right)
+        local primaryResult = CompareSort(left, right, sortKey, sortAscending)
+        if primaryResult ~= nil then
+            return primaryResult
+        end
+
+        if secondarySortKey and secondarySortKey ~= NO_SECONDARY_SORT_KEY and secondarySortKey ~= sortKey then
+            local secondaryResult = CompareSort(left, right, secondarySortKey, secondarySortAscending)
+            if secondaryResult ~= nil then
+                return secondaryResult
             end
         end
 
@@ -305,6 +359,14 @@ function ListModel.GetSortKeyList()
     return SORT_KEY_LIST
 end
 
+function ListModel.GetSecondarySortKeyList()
+    return SECONDARY_SORT_KEY_LIST
+end
+
+function ListModel.GetNoSecondarySortKey()
+    return NO_SECONDARY_SORT_KEY
+end
+
 function ListModel.GetGroupKeyList()
     return GROUP_KEY_LIST
 end
@@ -318,12 +380,20 @@ function ListModel.NormalizeSortKey(sortKey)
     return NormalizeKey(sortKey, SORT_KEY_ALIASES, VALID_SORT_KEYS, DEFAULT_SORT_KEY)
 end
 
+function ListModel.NormalizeSecondarySortKey(sortKey)
+    return NormalizeKey(sortKey, SORT_KEY_ALIASES, VALID_SECONDARY_SORT_KEYS, NO_SECONDARY_SORT_KEY)
+end
+
 function ListModel.NormalizeGroupKey(groupKey)
     return NormalizeKey(groupKey, GROUP_KEY_ALIASES, VALID_GROUP_KEYS, DEFAULT_GROUP_KEY)
 end
 
 function ListModel.IsValidSortKey(sortKey)
     return NormalizeKey(sortKey, SORT_KEY_ALIASES, VALID_SORT_KEYS) ~= nil
+end
+
+function ListModel.IsValidSecondarySortKey(sortKey)
+    return NormalizeKey(sortKey, SORT_KEY_ALIASES, VALID_SECONDARY_SORT_KEYS) ~= nil
 end
 
 function ListModel.IsValidGroupKey(groupKey)
@@ -334,10 +404,21 @@ function ListModel.IsGrouped(groupKey)
     return groupKey and groupKey ~= NO_GROUP_KEY
 end
 
+function ListModel.IsSecondarySortEnabled(secondarySortKey, primarySortKey)
+    secondarySortKey = ListModel.NormalizeSecondarySortKey(secondarySortKey)
+    primarySortKey = ListModel.NormalizeSortKey(primarySortKey)
+    return secondarySortKey ~= NO_SECONDARY_SORT_KEY and secondarySortKey ~= primarySortKey
+end
+
 function ListModel.BuildRows(items, state)
     local searchText = Lower(state and state.searchText)
     local sortKey = ListModel.NormalizeSortKey(state and state.sortKey)
     local sortAscending = not (state and state.sortAscending == false)
+    local secondarySortKey = ListModel.NormalizeSecondarySortKey(state and state.secondarySortKey)
+    local secondarySortAscending = not (state and state.secondarySortAscending == false)
+    if not ListModel.IsSecondarySortEnabled(secondarySortKey, sortKey) then
+        secondarySortKey = NO_SECONDARY_SORT_KEY
+    end
     local groupKey = ListModel.NormalizeGroupKey(state and state.groupKey)
     local collapsedGroups = state and state.collapsedGroups or {}
     local filteredItems = {}
@@ -350,7 +431,7 @@ function ListModel.BuildRows(items, state)
         end
     end
 
-    SortItems(filteredItems, sortKey, sortAscending)
+    SortItems(filteredItems, sortKey, sortAscending, secondarySortKey, secondarySortAscending)
 
     if not ListModel.IsGrouped(groupKey) then
         local rows = {}

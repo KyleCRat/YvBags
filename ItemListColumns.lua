@@ -243,6 +243,15 @@ function Columns.GetColumnBySortKey(sortKey)
     return nil
 end
 
+function Columns.GetSortLabel(sortKey)
+    local column = Columns.GetColumnBySortKey(sortKey)
+    if column then
+        return column.tooltipTitle or column.sortLabel or column.label or sortKey
+    end
+
+    return sortKey or ""
+end
+
 function Columns.GetColumnGap()
     return COLUMN_GAP
 end

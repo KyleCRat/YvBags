@@ -52,6 +52,13 @@ local HEADER_TOOLTIP_TEXT_COLOR_R = 0.86
 local HEADER_TOOLTIP_TEXT_COLOR_G = 0.86
 local HEADER_TOOLTIP_TEXT_COLOR_B = 0.86
 local GROUP_MENU_TITLE = "Group By"
+local PRIMARY_SORT_MENU_TITLE = "Primary Sort"
+local PRIMARY_SORT_DIRECTION_MENU_TITLE = "Sort Direction"
+local SECONDARY_SORT_MENU_TITLE = "Secondary Sort"
+local SECONDARY_SORT_DIRECTION_MENU_TITLE = "Secondary Direction"
+local NO_SECONDARY_SORT_LABEL = "None"
+local ASCENDING_LABEL = "Ascending"
+local DESCENDING_LABEL = "Descending"
 local EMPTY_TEXT_COLOR_R = 0.5
 local EMPTY_TEXT_COLOR_G = 0.5
 local EMPTY_TEXT_COLOR_B = 0.5
@@ -149,27 +156,147 @@ local function HideTooltip()
     end
 end
 
-local function ShowGroupMenu(owner, list)
+local function GetDefaultSortAscending(sortKey)
+    local column = Columns.GetColumnBySortKey(sortKey)
+    return not (column and column.defaultAscending == false)
+end
+
+local function GetMenuSelectionLabel(title, value)
+    return title .. ": " .. value
+end
+
+local function GetPrimarySortLabel(sortKey)
+    return Columns.GetSortLabel(ListModel.NormalizeSortKey(sortKey))
+end
+
+local function AddPrimarySortMenu(rootDescription, list)
+    local menu = rootDescription:CreateButton(GetMenuSelectionLabel(PRIMARY_SORT_MENU_TITLE, GetPrimarySortLabel(list.sortKey)))
+
+    local function IsPrimarySortSelected(sortKey)
+        return list.sortKey == ListModel.NormalizeSortKey(sortKey)
+    end
+
+    local function SetPrimarySort(sortKey)
+        sortKey = ListModel.NormalizeSortKey(sortKey)
+
+        local sortAscending = list.sortAscending
+        if list.sortKey ~= sortKey then
+            sortAscending = GetDefaultSortAscending(sortKey)
+        end
+
+        list:SetSort(sortKey, sortAscending)
+        return MenuResponse.Refresh
+    end
+
+    for _, sortKey in ipairs(ListModel.GetSortKeyList()) do
+        menu:CreateRadio(GetPrimarySortLabel(sortKey), IsPrimarySortSelected, SetPrimarySort, sortKey)
+    end
+
+    menu:CreateDivider()
+    menu:CreateTitle(PRIMARY_SORT_DIRECTION_MENU_TITLE)
+
+    local function IsAscending()
+        return list.sortAscending == true
+    end
+
+    local function SetAscending()
+        list:SetSort(list.sortKey, true)
+        return MenuResponse.Refresh
+    end
+
+    local function IsDescending()
+        return list.sortAscending == false
+    end
+
+    local function SetDescending()
+        list:SetSort(list.sortKey, false)
+        return MenuResponse.Refresh
+    end
+
+    menu:CreateRadio(ASCENDING_LABEL, IsAscending, SetAscending)
+    menu:CreateRadio(DESCENDING_LABEL, IsDescending, SetDescending)
+end
+
+local function GetSecondarySortLabel(sortKey)
+    sortKey = ListModel.NormalizeSecondarySortKey(sortKey)
+    if sortKey == ListModel.GetNoSecondarySortKey() then
+        return NO_SECONDARY_SORT_LABEL
+    end
+
+    return Columns.GetSortLabel(sortKey)
+end
+
+local function AddSecondarySortMenu(rootDescription, list)
+    local menu = rootDescription:CreateButton(GetMenuSelectionLabel(SECONDARY_SORT_MENU_TITLE, GetSecondarySortLabel(list.secondarySortKey)))
+
+    local function IsSecondarySortSelected(sortKey)
+        return list.secondarySortKey == ListModel.NormalizeSecondarySortKey(sortKey)
+    end
+
+    local function SetSecondarySort(sortKey)
+        list:SetSecondarySort(sortKey)
+        return MenuResponse.Refresh
+    end
+
+    for _, sortKey in ipairs(ListModel.GetSecondarySortKeyList()) do
+        local normalizedSortKey = ListModel.NormalizeSecondarySortKey(sortKey)
+        if normalizedSortKey == ListModel.GetNoSecondarySortKey() or normalizedSortKey ~= list.sortKey then
+            menu:CreateRadio(GetSecondarySortLabel(sortKey), IsSecondarySortSelected, SetSecondarySort, sortKey)
+        end
+    end
+
+    menu:CreateDivider()
+    menu:CreateTitle(SECONDARY_SORT_DIRECTION_MENU_TITLE)
+
+    local function IsAscending()
+        return list.secondarySortAscending == true
+    end
+
+    local function SetAscending()
+        list:SetSecondarySortDirection(true)
+        return MenuResponse.Refresh
+    end
+
+    local function IsDescending()
+        return list.secondarySortAscending == false
+    end
+
+    local function SetDescending()
+        list:SetSecondarySortDirection(false)
+        return MenuResponse.Refresh
+    end
+
+    menu:CreateRadio(ASCENDING_LABEL, IsAscending, SetAscending)
+    menu:CreateRadio(DESCENDING_LABEL, IsDescending, SetDescending)
+end
+
+local function AddGroupMenu(rootDescription, list)
+    local menu = rootDescription:CreateButton(GetMenuSelectionLabel(GROUP_MENU_TITLE, ListModel.GetGroupLabel(list.groupKey)))
+
+    local function IsSelected(groupKey)
+        return list.groupKey == ListModel.NormalizeGroupKey(groupKey)
+    end
+
+    local function SetSelected(groupKey)
+        list:SetGroup(groupKey)
+        return MenuResponse.Refresh
+    end
+
+    for _, groupKey in ipairs(ListModel.GetGroupKeyList()) do
+        menu:CreateRadio(ListModel.GetGroupLabel(groupKey), IsSelected, SetSelected, groupKey)
+    end
+end
+
+local function ShowHeaderContextMenu(owner, list)
     if not MenuUtil or not MenuUtil.CreateContextMenu then
         return
     end
 
     HideTooltip()
     MenuUtil.CreateContextMenu(owner, function(_, rootDescription)
-        rootDescription:CreateTitle(GROUP_MENU_TITLE)
-
-        local function IsSelected(groupKey)
-            return list.groupKey == ListModel.NormalizeGroupKey(groupKey)
-        end
-
-        local function SetSelected(groupKey)
-            list:SetGroup(groupKey)
-            return MenuResponse.Refresh
-        end
-
-        for _, groupKey in ipairs(ListModel.GetGroupKeyList()) do
-            rootDescription:CreateRadio(ListModel.GetGroupLabel(groupKey), IsSelected, SetSelected, groupKey)
-        end
+        AddGroupMenu(rootDescription, list)
+        AddPrimarySortMenu(rootDescription, list)
+        AddSecondarySortMenu(rootDescription, list)
     end)
 end
 
@@ -291,7 +418,7 @@ local function HeaderSeparator_OnMouseUp(separator, mouseButton)
     UpdateHeaderSeparatorVisualState(separator)
 
     if mouseButton == "RightButton" and separator.list then
-        ShowGroupMenu(separator, separator.list)
+        ShowHeaderContextMenu(separator, separator.list)
     end
 end
 
@@ -474,7 +601,7 @@ local function CreateHeader(parent, list)
 
         button:SetScript("OnClick", function(self, mouseButton)
             if mouseButton == "RightButton" then
-                ShowGroupMenu(self, list)
+                ShowHeaderContextMenu(self, list)
             elseif self.column.sortKey then
                 list:SetSort(self.column.sortKey)
             end
@@ -508,6 +635,11 @@ function ItemList.Create(parent)
     list.searchText = ""
     list.sortKey = ListModel.NormalizeSortKey(NS.db:Get("list", "sortKey"))
     list.sortAscending = NS.db:Get("list", "sortAscending") ~= false
+    list.secondarySortKey = ListModel.NormalizeSecondarySortKey(NS.db:Get("list", "secondarySortKey"))
+    list.secondarySortAscending = NS.db:Get("list", "secondarySortAscending") ~= false
+    if list.secondarySortKey == list.sortKey then
+        list.secondarySortKey = ListModel.GetNoSecondarySortKey()
+    end
     list.groupKey = ListModel.NormalizeGroupKey(NS.db:Get("list", "groupKey"))
     list.collapsedGroups = {}
 
@@ -625,16 +757,60 @@ function ItemList.Create(parent)
             if self.sortKey == sortKey then
                 sortAscending = not self.sortAscending
             else
-                local column = Columns.GetColumnBySortKey(sortKey)
-                sortAscending = not (column and column.defaultAscending == false)
+                sortAscending = GetDefaultSortAscending(sortKey)
             end
         end
 
         self.sortKey = sortKey
         self.sortAscending = sortAscending == true
 
+        if self.secondarySortKey == self.sortKey then
+            self.secondarySortKey = ListModel.GetNoSecondarySortKey()
+            NS.db:Set("list", "secondarySortKey", self.secondarySortKey)
+        end
+
         NS.db:Set("list", "sortKey", self.sortKey)
         NS.db:Set("list", "sortAscending", self.sortAscending)
+
+        self:RefreshDataProvider(true)
+    end
+
+    function list:SetSecondarySort(sortKey, sortAscending)
+        sortKey = ListModel.NormalizeSecondarySortKey(sortKey)
+        if sortKey == self.sortKey then
+            sortKey = ListModel.GetNoSecondarySortKey()
+        end
+
+        if sortAscending == nil then
+            if sortKey == self.secondarySortKey then
+                sortAscending = self.secondarySortAscending
+            elseif sortKey == ListModel.GetNoSecondarySortKey() then
+                sortAscending = true
+            else
+                sortAscending = GetDefaultSortAscending(sortKey)
+            end
+        end
+
+        if self.secondarySortKey == sortKey and self.secondarySortAscending == (sortAscending == true) then
+            return
+        end
+
+        self.secondarySortKey = sortKey
+        self.secondarySortAscending = sortAscending == true
+        NS.db:Set("list", "secondarySortKey", self.secondarySortKey)
+        NS.db:Set("list", "secondarySortAscending", self.secondarySortAscending)
+
+        self:RefreshDataProvider(true)
+    end
+
+    function list:SetSecondarySortDirection(sortAscending)
+        sortAscending = sortAscending == true
+        if self.secondarySortAscending == sortAscending then
+            return
+        end
+
+        self.secondarySortAscending = sortAscending
+        NS.db:Set("list", "secondarySortAscending", self.secondarySortAscending)
 
         self:RefreshDataProvider(true)
     end
