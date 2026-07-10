@@ -14,6 +14,7 @@ local FOOTER_TEXT_SIZE = 18
 local FOOTER_TEXT_COLOR_R = 1
 local FOOTER_TEXT_COLOR_G = 1
 local FOOTER_TEXT_COLOR_B = 1
+local FOOTER_TEXT_Y_OFFSET = -1
 local FOOTER_FONT_LAYER = "OVERLAY"
 
 -- Left footer group
@@ -103,6 +104,8 @@ function Footer.UpdateMoney(frame)
     else
         frame.moneyText:SetTextColor(FOOTER_TEXT_COLOR_R, FOOTER_TEXT_COLOR_G, FOOTER_TEXT_COLOR_B)
     end
+
+    NS.FooterCurrencies.Refresh(frame)
 end
 
 local function GetMoneyTooltipAnchor(frame)
@@ -459,7 +462,8 @@ function Footer.Create(frame)
     local statsText = statsHoverFrame:CreateFontString(nil, FOOTER_FONT_LAYER)
     statsText:SetFont(GetPrimaryFont(), FOOTER_TEXT_SIZE)
     statsText:SetTextColor(FOOTER_TEXT_COLOR_R, FOOTER_TEXT_COLOR_G, FOOTER_TEXT_COLOR_B)
-    statsText:SetAllPoints(statsHoverFrame)
+    statsText:SetPoint("TOPLEFT", statsHoverFrame, "TOPLEFT", 0, FOOTER_TEXT_Y_OFFSET)
+    statsText:SetPoint("BOTTOMRIGHT", statsHoverFrame, "BOTTOMRIGHT", 0, FOOTER_TEXT_Y_OFFSET)
     statsText:SetJustifyH("LEFT")
     statsText:SetJustifyV("MIDDLE")
     statsText:SetText("")
@@ -476,9 +480,12 @@ function Footer.Create(frame)
     local moneyText = moneyHoverFrame:CreateFontString(nil, FOOTER_FONT_LAYER)
     moneyText:SetFont(GetPrimaryFont(), FOOTER_TEXT_SIZE)
     moneyText:SetTextColor(FOOTER_TEXT_COLOR_R, FOOTER_TEXT_COLOR_G, FOOTER_TEXT_COLOR_B)
-    moneyText:SetAllPoints(moneyHoverFrame)
+    moneyText:SetPoint("TOPLEFT", moneyHoverFrame, "TOPLEFT", 0, FOOTER_TEXT_Y_OFFSET)
+    moneyText:SetPoint("BOTTOMRIGHT", moneyHoverFrame, "BOTTOMRIGHT", 0, FOOTER_TEXT_Y_OFFSET)
     moneyText:SetJustifyH("RIGHT")
     moneyText:SetJustifyV("MIDDLE")
     moneyText:SetText("")
     frame.moneyText = moneyText
+
+    NS.FooterCurrencies.Create(frame, footer, statsHoverFrame, moneyHoverFrame)
 end

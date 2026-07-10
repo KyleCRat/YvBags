@@ -27,6 +27,7 @@ ItemListModel.lua
 ItemGroupRow.lua
 ItemRow.lua
 ItemList.lua
+FooterCurrencies.lua
 Footer.lua
 MainFrame.lua
 Commands.lua
