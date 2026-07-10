@@ -10,6 +10,7 @@ local MEDIA_TYPE_FONT = LSM and LSM.MediaType and LSM.MediaType.FONT or "font"
 local ICON_BORDER_KEY = "YvBags Icon Border"
 local ICON_BORDER_TEXTURE = "Interface\\AddOns\\YvBags\\Media\\Textures\\Vertex-IconFrame-Border.tga"
 local SORT_ARROW_TEXTURE = "Interface\\AddOns\\YvBags\\Media\\Textures\\Vertex-Arrow.tga"
+local CIRCLE_TEXTURE = "Interface\\AddOns\\YvBags\\Media\\Textures\\Vertex-Circle.tga"
 local SOULBOUND_BINDING_ICON_TEXTURE = "Interface\\AddOns\\YvBags\\Media\\Textures\\Vertex-Lock.tga"
 local WARBOUND_BINDING_ICON_ATLAS = "GM-icon-assist-hover"
 local DIVIDER_TEXTURE = "Interface\\Common\\UI-TooltipDivider"
@@ -36,6 +37,10 @@ end
 
 function Media.GetSortArrowTexture()
     return SORT_ARROW_TEXTURE
+end
+
+function Media.GetCircleTexture()
+    return CIRCLE_TEXTURE
 end
 
 function Media.GetSoulboundBindingIconTexture()

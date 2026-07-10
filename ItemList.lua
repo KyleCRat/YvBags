@@ -48,6 +48,9 @@ local HEADER_SEPARATOR_PRESSED_ALPHA = 0.28
 local HEADER_SEPARATOR_LINE_HOVER_ALPHA = 0.86
 local HEADER_SEPARATOR_LINE_PRESSED_ALPHA = 1
 local HEADER_SEPARATOR_FRAME_LEVEL_OFFSET = 3
+local HEADER_TOOLTIP_TEXT_COLOR_R = 0.86
+local HEADER_TOOLTIP_TEXT_COLOR_G = 0.86
+local HEADER_TOOLTIP_TEXT_COLOR_B = 0.86
 local EMPTY_TEXT_COLOR_R = 0.5
 local EMPTY_TEXT_COLOR_G = 0.5
 local EMPTY_TEXT_COLOR_B = 0.5
@@ -100,6 +103,7 @@ local function ApplyHeaderIcon(button)
         icon:SetAtlas(column.headerAtlas, false)
     else
         icon:SetTexture(column.headerTexture)
+        icon:SetTexCoord(0, 1, 0, 1)
     end
 
     local color = column.headerIconColor
@@ -111,6 +115,31 @@ local function ApplyHeaderIcon(button)
 
     icon:SetSize(GetHeaderIconSize(column), GetHeaderIconSize(column))
     icon:Show()
+end
+
+local function GetHeaderTooltipTitle(column)
+    local title = column.tooltipTitle or GetHeaderText(column)
+    if title and title ~= "" then
+        return title
+    end
+
+    return column.sortLabel or column.sortKey or ""
+end
+
+local function ShowHeaderTooltip(button)
+    local column = button.column
+    if not column or not column.sortKey or not GameTooltip then
+        return
+    end
+
+    local title = GetHeaderTooltipTitle(column)
+    local sortLabel = column.sortLabel or title or column.sortKey
+    local tooltipText = column.tooltipText or ("Sort by " .. sortLabel)
+
+    GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
+    GameTooltip:SetText(title, 1, 1, 1)
+    GameTooltip:AddLine(tooltipText, HEADER_TOOLTIP_TEXT_COLOR_R, HEADER_TOOLTIP_TEXT_COLOR_G, HEADER_TOOLTIP_TEXT_COLOR_B, true)
+    GameTooltip:Show()
 end
 
 local function AnchorHeaderSortIcon(button)
@@ -153,6 +182,7 @@ local function HeaderButton_OnEnter(button)
     if button:IsEnabled() then
         button.isHovered = true
         UpdateHeaderButtonVisualState(button)
+        ShowHeaderTooltip(button)
     end
 end
 
@@ -160,6 +190,9 @@ local function HeaderButton_OnLeave(button)
     button.isHovered = false
     button.isPressed = false
     UpdateHeaderButtonVisualState(button)
+    if GameTooltip then
+        GameTooltip:Hide()
+    end
 end
 
 local function HeaderButton_OnMouseDown(button, mouseButton)

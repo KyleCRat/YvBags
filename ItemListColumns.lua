@@ -25,10 +25,26 @@ local ITEM_ICON_COLUMN_WIDTH = 30
 local COMPACT_ICON_COLUMN_WIDTH = 28
 local HEADER_GOLD_ICON_SIZE = 16
 local BINDING_HEADER_ICON_SIZE = 16
+local RARITY_HEADER_ICON_SIZE = 12
 local PROFESSION_QUALITY_HEADER_ATLAS = "Professions-ChatIcon-Quality-12-Tier2"
 local PROFESSION_QUALITY_HEADER_ICON_SIZE = 16
+local RARE_QUALITY = Enum and Enum.ItemQuality and Enum.ItemQuality.Rare or 3
+local RARE_COLOR_R = 0
+local RARE_COLOR_G = 0.4392156862745098
+local RARE_COLOR_B = 0.8666666666666667
 
 local professionQualityAtlasCache = {}
+
+local function GetQualityColor(quality, fallbackR, fallbackG, fallbackB)
+    local color = ColorManager and ColorManager.GetColorDataForItemQuality and ColorManager.GetColorDataForItemQuality(quality)
+    color = color or (ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality])
+    return {
+        r = color and color.r or fallbackR,
+        g = color and color.g or fallbackG,
+        b = color and color.b or fallbackB,
+    }
+end
+
 local warboundColor = {
     r = WARBOUND_COLOR_R,
     g = WARBOUND_COLOR_G,
@@ -44,6 +60,7 @@ local accentIconColor = {
     g = ACCENT_COLOR_G,
     b = ACCENT_COLOR_B,
 }
+local rarityIconColor = GetQualityColor(RARE_QUALITY, RARE_COLOR_R, RARE_COLOR_G, RARE_COLOR_B)
 local defaultBindingIconInfo = {
     texture = Media.GetSoulboundBindingIconTexture(),
     desaturated = false,
@@ -60,17 +77,116 @@ local goldHeaderLabel = NS.Money and NS.Money.GetGoldIconMarkup and NS.Money.Get
 -- Fixed v1 columns. Later column customization can replace this table without
 -- changing row rendering or list controller code.
 local COLUMNS = {
-    { key = "count", label = "#", width = 40, justify = "RIGHT", sortKey = "quantity", defaultAscending = false },
-    { key = "binding", label = "", headerTexture = Media.GetSoulboundBindingIconTexture(), headerIconSize = BINDING_HEADER_ICON_SIZE, headerIconColor = accentIconColor, width = COMPACT_ICON_COLUMN_WIDTH, justify = "CENTER", sortKey = "binding" },
-    { key = "icon", label = "", width = ITEM_ICON_COLUMN_WIDTH, sortKey = "quality", defaultAscending = false },
-    { key = "professionQuality", label = "", headerAtlas = PROFESSION_QUALITY_HEADER_ATLAS, headerIconSize = PROFESSION_QUALITY_HEADER_ICON_SIZE, width = COMPACT_ICON_COLUMN_WIDTH, justify = "CENTER", sortKey = "professionQuality", defaultAscending = false },
-    { key = "name", label = NAME or "Name", width = 220, sortKey = "name" },
-    { key = "expansion", label = "Exp", width = 48, justify = "RIGHT", sortKey = "expansion", defaultAscending = false },
-    { key = "sellValue", label = goldHeaderLabel, width = 82, justify = "RIGHT", sortKey = "sellValue", defaultAscending = false },
-    { key = "itemLevel", label = "ilvl", width = 44, justify = "RIGHT", sortKey = "itemLevel", defaultAscending = false },
-    { key = "requiredLevel", label = "Req", width = 44, justify = "RIGHT", sortKey = "requiredLevel", defaultAscending = false },
-    { key = "type", label = TYPE or "Type", width = 138, sortKey = "type" },
-    { key = "location", label = "Bag/Slot", width = 68, sortKey = "location" },
+    {
+        key = "count",
+        label = "#",
+        width = 40,
+        justify = "RIGHT",
+        sortKey = "quantity",
+        sortLabel = "quantity",
+        tooltipTitle = "Quantity",
+        defaultAscending = false,
+    },
+    {
+        key = "binding",
+        label = "",
+        headerTexture = Media.GetSoulboundBindingIconTexture(),
+        headerIconSize = BINDING_HEADER_ICON_SIZE,
+        headerIconColor = accentIconColor,
+        width = COMPACT_ICON_COLUMN_WIDTH,
+        justify = "CENTER",
+        sortKey = "binding",
+        sortLabel = "binding status",
+        tooltipTitle = "Binding",
+    },
+    {
+        key = "icon",
+        label = "",
+        headerTexture = Media.GetCircleTexture(),
+        headerIconSize = RARITY_HEADER_ICON_SIZE,
+        headerIconColor = rarityIconColor,
+        width = ITEM_ICON_COLUMN_WIDTH,
+        sortKey = "quality",
+        sortLabel = "rarity",
+        tooltipTitle = "Rarity",
+        defaultAscending = false,
+    },
+    {
+        key = "professionQuality",
+        label = "",
+        headerAtlas = PROFESSION_QUALITY_HEADER_ATLAS,
+        headerIconSize = PROFESSION_QUALITY_HEADER_ICON_SIZE,
+        width = COMPACT_ICON_COLUMN_WIDTH,
+        justify = "CENTER",
+        sortKey = "professionQuality",
+        sortLabel = "profession quality",
+        tooltipTitle = "Profession Quality",
+        defaultAscending = false,
+    },
+    {
+        key = "name",
+        label = NAME or "Name",
+        width = 220,
+        sortKey = "name",
+        sortLabel = "name",
+        tooltipTitle = NAME or "Name",
+    },
+    {
+        key = "expansion",
+        label = "Exp",
+        width = 48,
+        justify = "RIGHT",
+        sortKey = "expansion",
+        sortLabel = "expansion",
+        tooltipTitle = "Expansion",
+        defaultAscending = false,
+    },
+    {
+        key = "sellValue",
+        label = goldHeaderLabel,
+        width = 82,
+        justify = "RIGHT",
+        sortKey = "sellValue",
+        sortLabel = "sell price",
+        tooltipTitle = "Sell Price",
+        defaultAscending = false,
+    },
+    {
+        key = "itemLevel",
+        label = "ilvl",
+        width = 44,
+        justify = "RIGHT",
+        sortKey = "itemLevel",
+        sortLabel = "item level",
+        tooltipTitle = "Item Level",
+        defaultAscending = false,
+    },
+    {
+        key = "requiredLevel",
+        label = "Req",
+        width = 44,
+        justify = "RIGHT",
+        sortKey = "requiredLevel",
+        sortLabel = "required level",
+        tooltipTitle = "Required Level",
+        defaultAscending = false,
+    },
+    {
+        key = "type",
+        label = TYPE or "Type",
+        width = 138,
+        sortKey = "type",
+        sortLabel = "type",
+        tooltipTitle = TYPE or "Type",
+    },
+    {
+        key = "location",
+        label = "Bag/Slot",
+        width = 68,
+        sortKey = "location",
+        sortLabel = "bag and slot",
+        tooltipTitle = "Bag/Slot",
+    },
 }
 
 -- Column formatting

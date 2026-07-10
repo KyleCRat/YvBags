@@ -76,6 +76,7 @@ local SORT_KEY_ALIASES = {
     slot = "location",
     bagslot = "location",
     exp = "expansion",
+    rarity = "quality",
     prof = "professionQuality",
     profession = "professionQuality",
     professionquality = "professionQuality",
