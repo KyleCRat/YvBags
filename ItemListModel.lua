@@ -36,6 +36,16 @@ local GROUP_KEY_LIST = {
     "expansion",
 }
 
+local GROUP_KEY_LABELS = {
+    none = "No Grouping",
+    category = "Category",
+    type = "Item Type",
+    inventorySlot = "Inventory Slot",
+    quality = "Rarity",
+    binding = "Binding",
+    expansion = "Expansion",
+}
+
 local VALID_SORT_KEYS = {
     name = true,
     quality = true,
@@ -297,6 +307,11 @@ end
 
 function ListModel.GetGroupKeyList()
     return GROUP_KEY_LIST
+end
+
+function ListModel.GetGroupLabel(groupKey)
+    groupKey = ListModel.NormalizeGroupKey(groupKey)
+    return GROUP_KEY_LABELS[groupKey] or groupKey
 end
 
 function ListModel.NormalizeSortKey(sortKey)

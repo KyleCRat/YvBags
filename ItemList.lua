@@ -51,6 +51,7 @@ local HEADER_SEPARATOR_FRAME_LEVEL_OFFSET = 3
 local HEADER_TOOLTIP_TEXT_COLOR_R = 0.86
 local HEADER_TOOLTIP_TEXT_COLOR_G = 0.86
 local HEADER_TOOLTIP_TEXT_COLOR_B = 0.86
+local GROUP_MENU_TITLE = "Group By"
 local EMPTY_TEXT_COLOR_R = 0.5
 local EMPTY_TEXT_COLOR_G = 0.5
 local EMPTY_TEXT_COLOR_B = 0.5
@@ -142,6 +143,36 @@ local function ShowHeaderTooltip(button)
     GameTooltip:Show()
 end
 
+local function HideTooltip()
+    if GameTooltip then
+        GameTooltip:Hide()
+    end
+end
+
+local function ShowGroupMenu(owner, list)
+    if not MenuUtil or not MenuUtil.CreateContextMenu then
+        return
+    end
+
+    HideTooltip()
+    MenuUtil.CreateContextMenu(owner, function(_, rootDescription)
+        rootDescription:CreateTitle(GROUP_MENU_TITLE)
+
+        local function IsSelected(groupKey)
+            return list.groupKey == ListModel.NormalizeGroupKey(groupKey)
+        end
+
+        local function SetSelected(groupKey)
+            list:SetGroup(groupKey)
+            return MenuResponse.Refresh
+        end
+
+        for _, groupKey in ipairs(ListModel.GetGroupKeyList()) do
+            rootDescription:CreateRadio(ListModel.GetGroupLabel(groupKey), IsSelected, SetSelected, groupKey)
+        end
+    end)
+end
+
 local function AnchorHeaderSortIcon(button)
     button.sortIcon:ClearAllPoints()
 
@@ -190,9 +221,7 @@ local function HeaderButton_OnLeave(button)
     button.isHovered = false
     button.isPressed = false
     UpdateHeaderButtonVisualState(button)
-    if GameTooltip then
-        GameTooltip:Hide()
-    end
+    HideTooltip()
 end
 
 local function HeaderButton_OnMouseDown(button, mouseButton)
@@ -256,10 +285,14 @@ local function HeaderSeparator_OnMouseDown(separator, mouseButton)
     end
 end
 
-local function HeaderSeparator_OnMouseUp(separator)
+local function HeaderSeparator_OnMouseUp(separator, mouseButton)
     separator.isPressed = false
     separator.isHovered = separator:IsMouseOver()
     UpdateHeaderSeparatorVisualState(separator)
+
+    if mouseButton == "RightButton" and separator.list then
+        ShowGroupMenu(separator, separator.list)
+    end
 end
 
 local function UpdateHeaderSortState(header, list)
@@ -316,7 +349,7 @@ local function CreateHeaderSeparator(parent, xOffset)
     local separator = CreateFrame(BUTTON_FRAME_TYPE, nil, parent)
     separator:SetPoint("LEFT", parent, "LEFT", xOffset - (HEADER_SEPARATOR_HANDLE_WIDTH / 2), 0)
     separator:SetSize(HEADER_SEPARATOR_HANDLE_WIDTH, HEADER_HEIGHT)
-    separator:RegisterForClicks("LeftButtonUp")
+    separator:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     if separator.SetFrameLevel and parent.GetFrameLevel then
         separator:SetFrameLevel(parent:GetFrameLevel() + HEADER_SEPARATOR_FRAME_LEVEL_OFFSET)
     end
@@ -393,7 +426,9 @@ local function CreateHeader(parent, list)
         button:SetPoint("LEFT", content, "LEFT", xOffset, 0)
         button:SetSize(buttonWidth, HEADER_HEIGHT)
         button.column = column
+        button.list = list
         button:SetEnabled(column.sortKey ~= nil)
+        button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 
         local hoverTexture = button:CreateTexture(nil, "BACKGROUND")
         hoverTexture:SetDrawLayer("BACKGROUND", -7)
@@ -437,11 +472,13 @@ local function CreateHeader(parent, list)
         button:SetScript("OnMouseDown", HeaderButton_OnMouseDown)
         button:SetScript("OnMouseUp", HeaderButton_OnMouseUp)
 
-        if column.sortKey then
-            button:SetScript("OnClick", function(self)
+        button:SetScript("OnClick", function(self, mouseButton)
+            if mouseButton == "RightButton" then
+                ShowGroupMenu(self, list)
+            elseif self.column.sortKey then
                 list:SetSort(self.column.sortKey)
-            end)
-        end
+            end
+        end)
 
         header.buttons[#header.buttons + 1] = button
 
@@ -449,6 +486,7 @@ local function CreateHeader(parent, list)
             local separator = CreateHeaderSeparator(content, xOffset + column.width + (columnGap / 2))
             separator.leftColumn = column
             separator.rightColumn = columns[index + 1]
+            separator.list = list
             header.separators[#header.separators + 1] = separator
         end
 
