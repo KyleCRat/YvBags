@@ -68,6 +68,22 @@ local function ClearClientPosition(frame)
     end
 end
 
+local function GetNearestPixelSize(frame, size)
+    if PixelUtil and PixelUtil.GetNearestPixelSize and frame.GetEffectiveScale then
+        return PixelUtil.GetNearestPixelSize(size, frame:GetEffectiveScale())
+    end
+
+    return math.floor(size + 0.5)
+end
+
+local function SetPixelPerfectFrameSize(frame, width, height)
+    frame:SetSize(GetNearestPixelSize(frame, width), GetNearestPixelSize(frame, height))
+end
+
+local function SnapFrameSize(frame)
+    SetPixelPerfectFrameSize(frame, frame:GetWidth(), frame:GetHeight())
+end
+
 local function FormatDebugNumber(value)
     if type(value) == "number" then
         return ("%.3f"):format(value)
@@ -166,7 +182,7 @@ local function RestoreFrameSize(frame)
     local savedWidth = NS.charDB:Get("frame", "width")
     local width = math.min(math.max(savedWidth or maxWidth, MIN_FRAME_WIDTH), maxWidth)
     local height = math.max(NS.charDB:Get("frame", "height") or MIN_FRAME_HEIGHT, MIN_FRAME_HEIGHT)
-    frame:SetSize(width, height)
+    SetPixelPerfectFrameSize(frame, width, height)
 end
 
 -- Footer rendering
@@ -324,6 +340,7 @@ local function CreateResizeButton(frame)
     resizeButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", RESIZE_BUTTON_RIGHT_OFFSET, RESIZE_BUTTON_BOTTOM_OFFSET)
     resizeButton:Init(frame, MIN_FRAME_WIDTH, MIN_FRAME_HEIGHT, maxWidth, nil)
     resizeButton:SetOnResizeStoppedCallback(function(target)
+        SnapFrameSize(target)
         SaveFrameGeometry(target)
         PrintFramePositionDebug(target, "resize-stop")
     end)
@@ -366,8 +383,8 @@ function NS:CreateMainFrame()
     local frame = CreateFrame(FRAME_TYPE, FRAME_NAME, UIParent, MAIN_FRAME_TEMPLATE)
     ApplyBaseFrameTheme(frame)
     PreventClientPositionSaving(frame)
-    RestoreFrameSize(frame)
     frame:SetScale(NS.charDB:Get("frame", "scale"))
+    RestoreFrameSize(frame)
     frame:SetFrameStrata(MAIN_FRAME_STRATA)
     frame:SetToplevel(true)
     frame:SetClampedToScreen(true)

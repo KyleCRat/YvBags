@@ -37,7 +37,7 @@ local HEADER_PRESSED_COLOR_G = ACCENT_COLOR_G
 local HEADER_PRESSED_COLOR_B = ACCENT_COLOR_B
 local HEADER_PRESSED_ALPHA = 0.16
 local HEADER_SORT_ICON_SIZE = 13
-local HEADER_SORT_ICON_GAP = 3
+local HEADER_SORT_ICON_GAP = 1
 local HEADER_SEPARATOR_HANDLE_WIDTH = 6
 local HEADER_SEPARATOR_TOP_OFFSET = 1
 local HEADER_SEPARATOR_BOTTOM_OFFSET = 1
@@ -154,6 +154,20 @@ local function HideTooltip()
     if GameTooltip then
         GameTooltip:Hide()
     end
+end
+
+local function SetPixelPoint(region, point, relativeTo, relativePoint, offsetX, offsetY)
+    if PixelUtil and PixelUtil.SetPoint then
+        PixelUtil.SetPoint(region, point, relativeTo, relativePoint, offsetX, offsetY)
+    else
+        region:SetPoint(point, relativeTo, relativePoint, offsetX, offsetY)
+    end
+end
+
+local function PositionScrollBar(scrollBar, scrollBox)
+    scrollBar:ClearAllPoints()
+    SetPixelPoint(scrollBar, "TOPRIGHT", scrollBox, "TOPRIGHT", SCROLL_BAR_RIGHT_OFFSET, SCROLL_BAR_TOP_OFFSET)
+    SetPixelPoint(scrollBar, "BOTTOMRIGHT", scrollBox, "BOTTOMRIGHT", SCROLL_BAR_RIGHT_OFFSET, SCROLL_BAR_BOTTOM_OFFSET)
 end
 
 local function GetDefaultSortAscending(sortKey)
@@ -664,8 +678,7 @@ function ItemList.Create(parent)
     list.scrollBox = scrollBox
 
     local scrollBar = CreateFrame(SCROLL_BAR_FRAME_TYPE, nil, frame, SCROLL_BAR_TEMPLATE)
-    scrollBar:SetPoint("TOPRIGHT", scrollBox, "TOPRIGHT", SCROLL_BAR_RIGHT_OFFSET, SCROLL_BAR_TOP_OFFSET)
-    scrollBar:SetPoint("BOTTOMRIGHT", scrollBox, "BOTTOMRIGHT", SCROLL_BAR_RIGHT_OFFSET, SCROLL_BAR_BOTTOM_OFFSET)
+    PositionScrollBar(scrollBar, scrollBox)
     list.scrollBar = scrollBar
 
     local view = CreateScrollBoxListLinearView()
