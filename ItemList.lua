@@ -14,7 +14,9 @@ local HEADER_HEIGHT = 24
 local SCROLL_BAR_WIDTH = 14
 local SCROLL_BAR_CONTENT_PADDING = 22
 local SEARCH_BOX_WIDTH = 320
-local SEARCH_BOX_HEIGHT = 20
+local SEARCH_BOX_HEIGHT = 28
+local SEARCH_BOX_TEXT_SIZE = 18
+local SEARCH_BOX_FONT_FLAGS = ""
 local HEADER_TEXT_SIZE = 16
 local EMPTY_TEXT_SIZE = 16
 local HEADER_TEXT_COLOR_R = ACCENT_COLOR_R
@@ -66,7 +68,7 @@ local FONT_STRING_LAYER = "OVERLAY"
 local LIST_FRAME_TYPE = "Frame"
 local BUTTON_FRAME_TYPE = "Button"
 local EDIT_BOX_FRAME_TYPE = "EditBox"
-local SEARCH_BOX_TEMPLATE = "SearchBoxTemplate"
+local SEARCH_BOX_TEMPLATE = "SearchBoxNineSliceTemplate"
 local SCROLL_BOX_TEMPLATE = "WowScrollBoxList"
 local SCROLL_BAR_FRAME_TYPE = "EventFrame"
 local SCROLL_BAR_TEMPLATE = "MinimalScrollBar"
@@ -520,6 +522,10 @@ end
 local function CreateSearchBox(parent, list)
     local searchBox = CreateFrame(EDIT_BOX_FRAME_TYPE, nil, parent, SEARCH_BOX_TEMPLATE)
     searchBox:SetSize(SEARCH_BOX_WIDTH, SEARCH_BOX_HEIGHT)
+    searchBox:SetFont(GetPrimaryFont(), SEARCH_BOX_TEXT_SIZE, SEARCH_BOX_FONT_FLAGS)
+    if searchBox.Instructions then
+        searchBox.Instructions:SetFont(GetPrimaryFont(), SEARCH_BOX_TEXT_SIZE, SEARCH_BOX_FONT_FLAGS)
+    end
     searchBox:SetAutoFocus(false)
     searchBox:SetScript("OnTextChanged", function(self)
         if SearchBoxTemplate_OnTextChanged then

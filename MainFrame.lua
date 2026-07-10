@@ -32,7 +32,8 @@ local FOOTER_MONEY_Y_OFFSET = 0
 local FOOTER_MONEY_HOVER_MIN_WIDTH = 96
 local FOOTER_MONEY_HOVER_PADDING = 8
 local SEARCH_BOX_LEFT_OFFSET = 86
-local SEARCH_BOX_TOP_OFFSET = -40
+local SEARCH_BOX_RIGHT_OFFSET = -6
+local SEARCH_BOX_TOP_OFFSET = -28
 local SEARCH_BOX_FRAME_LEVEL_OFFSET = 8
 local RESIZE_BUTTON_TEMPLATE = "PanelResizeButtonTemplate"
 local RESIZE_BUTTON_RIGHT_OFFSET = -6
@@ -290,6 +291,7 @@ local function CreateSearchBox(frame)
     local searchBox = frame.itemList:CreateSearchBox(frame)
     searchBox:ClearAllPoints()
     searchBox:SetPoint("TOPLEFT", frame, "TOPLEFT", SEARCH_BOX_LEFT_OFFSET, SEARCH_BOX_TOP_OFFSET)
+    searchBox:SetPoint("TOPRIGHT", frame, "TOPRIGHT", SEARCH_BOX_RIGHT_OFFSET, SEARCH_BOX_TOP_OFFSET)
     searchBox:SetFrameLevel(frame:GetFrameLevel() + SEARCH_BOX_FRAME_LEVEL_OFFSET)
     frame.searchBox = searchBox
 end

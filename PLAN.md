@@ -9,7 +9,7 @@ YvBags is a player-bag replacement addon that presents bag contents as a sortabl
 - Use `UIPanelButtonTemplate` or current Blizzard button templates for text/action buttons.
 - Use native close buttons, title handling, insets, nine-slice borders, and tooltip helpers where practical.
 - Use `WowScrollBoxList` / `MinimalScrollBar` patterns for the item list if they fit the virtualization requirements.
-- Preserve native Blizzard item button templates for item rows.
+- Use a native/secure Blizzard item-button bridge for item interactions, while rendering custom list-row visuals ourselves.
 - Check the local Blizzard Interface Code before manually recreating a standard frame, button, dropdown, scroll, or settings control.
 
 ## V1 Scope
@@ -58,31 +58,37 @@ YvBags is a player-bag replacement addon that presents bag contents as a sortabl
 ### List UI
 - Show bags only as a list; no grid mode.
 - Use a virtualized scrolling list for performance.
-- Preserve native Blizzard item button behavior for item interactions.
+- Preserve native Blizzard item interaction behavior through a hidden native/secure item-button bridge.
+- Treat the full row as the item for hover, tooltip, left-click, right-click, and drag behavior.
 - Include clickable column headers for sorting.
+- Center column header labels/icons.
+- Show header tooltips describing each column and its sort behavior.
+- Right-click a column header or header divider to open the list context menu.
+- Use a reserved right-side scrollbar buffer so row hover visuals extend behind the floating scrollbar without covering clipped column data.
 - Use fixed v1 columns:
-  - Icon
+  - Quantity (`#`)
+  - Binding icon
+  - Item icon / rarity
+  - Profession quality icon
   - Name
-  - Quantity
+  - Expansion
+  - Sell value
   - Item level
   - Required level
   - Type/subtype
-  - Quality
-  - Binding
-  - Expansion
-  - Sell value
-  - Bag/slot location
-  - Profession quality
+- Do not include a visible Quality text column in v1; rarity is shown through item name color, icon border color, and the icon/rarity sort header.
+- Do not include a visible Bag/Slot column in v1; keep the column definition disabled for future optional column visibility.
+- Binding and profession quality columns should be icon-only with no text fallback.
 - Do not implement column visibility editing in v1.
 - Do not implement column resizing in v1.
 - Do not implement column reordering in v1.
 
-### Bag/Slot Location Column
-- Display the item's physical container location.
+### Bag/Slot Location Data
+- Store each item's physical container location internally.
 - The value should identify both the bag and slot, for example `Bag 0 / Slot 4` or a compact equivalent.
-- This is useful for debugging, deterministic sorting, and users who need to know where an item actually lives.
-- Sorting by bag/slot should sort by bag ID first and slot ID second.
-- Bag/slot data should remain internal even if the visible column is later hidden or moved to v2 column settings.
+- Use bag/slot data for stable fallback ordering, manual sort mode, debugging, item lookup, and future optional column visibility.
+- Do not expose Bag/Slot as a visible v1 column.
+- Do not expose Bag/Slot as a user-facing v1 sort option.
 
 ### Bag Management
 - Show equipped bag slot buttons in the YvBags frame.
@@ -113,28 +119,38 @@ YvBags is a player-bag replacement addon that presents bag contents as a sortabl
 - Bag cleanup is separate from emptying one equipped bag before replacing it.
 
 ### Sorting And Grouping
+- Support Manual primary sort mode.
+  - Manual sort should display items in physical bag/slot order.
+  - Manual primary sort should force secondary sort to `None` and disable secondary sort selection.
 - Sort by name.
 - Sort by quality.
 - Sort by item level.
 - Sort by quantity.
 - Sort by type/subtype.
 - Sort by sell value.
-- Sort by bag/slot location.
 - Sort by expansion.
 - Sort by profession quality.
+- Sort by binding.
+- Sort by category.
+- Support secondary sorting for non-manual primary sort modes.
+- Expose grouping, primary sort, and secondary sort through the header context menu.
+- Keep the open context menu visually synchronized when sort choices change.
 - Group by category.
 - Group by item type.
-- Group by inventory slot.
 - Group by quality.
 - Group by binding.
 - Group by expansion.
 - Support collapsible groups.
+- Use styled category/group rows with modern expand/collapse buttons and accent dividers.
 - Do not sort by age/newness in v1.
 - Do not implement favorites-always-on-top in v1.
+- Do not expose bag/slot sorting in v1.
+- Do not expose inventory-slot grouping in v1.
 
 ### Search And Filtering
 - Search by item name.
-- Search by tooltip text if practical for v1 item data.
+- Search by item type/subtype, category name, binding text, and item ID.
+- Move tooltip-text search to a future category/filtering pass.
 - Keep filtering architecture compatible with future category filters and custom rules.
 
 ### Item Interaction
@@ -145,6 +161,8 @@ YvBags is a player-bag replacement addon that presents bag contents as a sortabl
 - Pickup/split stacks through Blizzard item buttons where supported by native item button behavior.
 - Show locked item state.
 - Show item cooldowns.
+- Render cooldown and GCD state as a smooth row-wide shade/progress overlay.
+- Optionally prefix item cooldown text in the item name; do not show timer text for GCD-only cooldowns.
 
 ### Trash Automation
 - Automatically sell Blizzard gray-quality junk items when a merchant/vendor window opens, if the setting is enabled.
@@ -159,6 +177,7 @@ YvBags is a player-bag replacement addon that presents bag contents as a sortabl
 - Close button.
 - Show Blizzard bags button.
 - Search box.
+- Search box should live in the main frame sub-header area, not inside the list body.
 - Do not include character selector dropdown.
 - Do not include equipment set selector dropdown.
 - Do not include side panels or side tabs for secondary inventory types.
@@ -176,6 +195,7 @@ YvBags is a player-bag replacement addon that presents bag contents as a sortabl
 - Use the standard Blizzard Settings UI, not a custom settings window.
 - Include feature toggles needed for v1 behavior.
 - Include sorting/grouping settings needed for v1 behavior.
+- Include a display setting for showing cooldown text in item names.
 - Include gray-junk autosell setting.
 - Do not include settings profile management in v1.
 - Do not include copy/rename/delete profile UI in v1.
@@ -288,9 +308,10 @@ Validation:
 - Build the movable/resizable main frame.
 - Persist position, size, and scale.
 - Build virtualized list rows.
-- Use native Blizzard item button behavior for item interaction.
+- Use a hidden native/secure item-button bridge for item interaction while rendering custom row visuals.
 - Render fixed v1 columns.
 - Show native item tooltips, item comparison, lock state, and cooldown state.
+- Render cooldown/GCD state with a smooth row-wide overlay.
 - Add current character money display.
 
 Validation:
@@ -300,17 +321,25 @@ Validation:
 - Position and size persist after reload.
 
 ### Chunk 4: List Behavior And Categories
-- Add search.
-- Add column-header sorting.
+- Status: Complete.
+- Add search in the main frame sub-header.
+- Add column-header sorting with centered labels/icons, sort arrows, header tooltips, and header dividers.
+- Add right-click header context menu for grouping, primary sort, and secondary sort.
+- Add Manual primary sort mode using physical bag/slot order.
+- Add secondary sorting for non-manual primary sort modes.
+- Disable and clear secondary sort when primary sort is Manual.
 - Add grouping.
-- Add collapsible groups.
+- Add collapsible group rows with modern expand/collapse buttons and accent dividers.
 - Implement v1-lite built-in categories.
 - Assign category keys during item normalization.
-- Support grouping by category, type, inventory slot, quality, binding, and expansion.
+- Support grouping by category, type, quality, binding, and expansion.
+- Keep Bag/Slot data internal; do not show it as a v1 column, sort option, or group option.
 
 Validation:
 - Search filters visible rows correctly.
-- Sorting is deterministic.
+- Sorting is deterministic, including Manual fallback order.
+- Secondary sorting applies only when a non-manual primary sort is active.
+- Header context menu updates live when sort state changes.
 - Grouping and collapse state behave correctly after bag updates.
 - Category grouping works without a category editor.
 
