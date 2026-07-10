@@ -26,6 +26,7 @@ local DEFAULT_ICON_BORDER_COLOR_B = 0.55
 local ICON_BORDER_ALPHA = 1
 local RARITY_HIGHLIGHT_ALPHA = 0.16
 local DEFAULT_HIGHLIGHT_ALPHA = 0.08
+local CONTAINER_HIGHLIGHT_ALPHA = 0.14
 local COOLDOWN_SHADE_COLOR_R = 0
 local COOLDOWN_SHADE_COLOR_G = 0
 local COOLDOWN_SHADE_COLOR_B = 0
@@ -53,6 +54,7 @@ local COOLDOWN_TEXT_UPDATE_INTERVAL = 0.1
 local COOLDOWN_CACHE_TTL = 0.2
 local FALLBACK_ITEM_ICON = 134400
 local ITEM_BUTTON_GLOBAL_NAME_PREFIX = "YvBagsItemListButton"
+local CONTAINER_HIGHLIGHT_COLOR_R, CONTAINER_HIGHLIGHT_COLOR_G, CONTAINER_HIGHLIGHT_COLOR_B = NS.Media.GetAccentColor()
 
 local buttonCount = 0
 local cooldownCache = {}
@@ -100,6 +102,18 @@ local function UpdateIconBorderColor(row, item)
     end
 
     row.iconBorder:Show()
+end
+
+local function UpdateContainerHighlight(row, highlightedBagID)
+    if not row.containerHighlight then
+        return
+    end
+
+    if row.item and highlightedBagID and row.item.bagID == highlightedBagID then
+        row.containerHighlight:Show()
+    else
+        row.containerHighlight:Hide()
+    end
 end
 
 local function ClearHoverTooltipState()
@@ -466,6 +480,11 @@ local function InitializeRow(row)
     row:EnableMouse(false)
     row:SetID(0)
 
+    row.containerHighlight = row:CreateTexture(nil, ROW_HIGHLIGHT_LAYER)
+    row.containerHighlight:SetAllPoints(row)
+    row.containerHighlight:SetColorTexture(CONTAINER_HIGHLIGHT_COLOR_R, CONTAINER_HIGHLIGHT_COLOR_G, CONTAINER_HIGHLIGHT_COLOR_B, CONTAINER_HIGHLIGHT_ALPHA)
+    row.containerHighlight:Hide()
+
     row.highlight = row:CreateTexture(nil, ROW_HIGHLIGHT_LAYER)
     row.highlight:SetAllPoints(row)
     row.highlight:SetColorTexture(DEFAULT_HIGHLIGHT_COLOR_R, DEFAULT_HIGHLIGHT_COLOR_G, DEFAULT_HIGHLIGHT_COLOR_B, DEFAULT_HIGHLIGHT_ALPHA)
@@ -595,7 +614,12 @@ function ItemRow.RefreshCooldown(row)
     end
 end
 
-function ItemRow.Render(row, item)
+function ItemRow.SetHighlightedBagID(row, highlightedBagID)
+    row.highlightedBagID = highlightedBagID
+    UpdateContainerHighlight(row, highlightedBagID)
+end
+
+function ItemRow.Render(row, item, list)
     if not row.rowInitialized then
         InitializeRow(row)
     end
@@ -603,7 +627,9 @@ function ItemRow.Render(row, item)
     local columns = Columns.GetColumns()
 
     row.item = item
+    row.highlightedBagID = list and list.highlightedBagID
     UpdateRowHighlightColor(row, item)
+    UpdateContainerHighlight(row, row.highlightedBagID)
     UpdateIconBorderColor(row, item)
     UpdateItemButton(row.itemButton, item)
 
@@ -667,6 +693,10 @@ function ItemRow.Reset(row)
 
     if row.highlight then
         row.highlight:Hide()
+    end
+
+    if row.containerHighlight then
+        row.containerHighlight:Hide()
     end
 
     ClearRowCooldown(row)

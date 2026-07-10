@@ -18,6 +18,7 @@ Constants\Binding.lua
 Formatting\Money.lua
 Categories.lua
 Containers.lua
+BagManagement.lua
 ItemModel.lua
 Data.lua
 ItemListColumns.lua

@@ -543,6 +543,34 @@ local function CreateSearchBox(parent, list)
     return searchBox
 end
 
+local function TryPlaceCursorItem()
+    if CursorHasItem and CursorHasItem() and NS.BagManagement and NS.BagManagement.PlaceCursorItemInInventory then
+        return NS.BagManagement.PlaceCursorItemInInventory()
+    end
+
+    return false
+end
+
+local function OnDropTargetMouseUp(_, button)
+    if button == "LeftButton" then
+        TryPlaceCursorItem()
+    end
+end
+
+local function OnDropTargetReceiveDrag()
+    TryPlaceCursorItem()
+end
+
+local function HookDropTarget(frame)
+    if not frame then
+        return
+    end
+
+    frame:EnableMouse(true)
+    frame:HookScript("OnMouseUp", OnDropTargetMouseUp)
+    frame:HookScript("OnReceiveDrag", OnDropTargetReceiveDrag)
+end
+
 local function CreateHeaderSeparator(parent, xOffset)
     local separator = CreateFrame(BUTTON_FRAME_TYPE, nil, parent)
     separator:SetPoint("LEFT", parent, "LEFT", xOffset - (HEADER_SEPARATOR_HANDLE_WIDTH / 2), 0)
@@ -751,12 +779,16 @@ function ItemList.Create(parent)
         if elementData.rowType == ListModel.GetRowTypeGroup() then
             factory(BUTTON_FRAME_TYPE, function(row, rowData)
                 row.rightClipPadding = SCROLL_BAR_CONTENT_PADDING
+                if not row.dropTargetHooked then
+                    HookDropTarget(row)
+                    row.dropTargetHooked = true
+                end
                 GroupRow.Render(row, rowData, list)
             end)
         else
             factory(LIST_FRAME_TYPE, function(row, rowData)
                 row.rightClipPadding = SCROLL_BAR_CONTENT_PADDING
-                ItemRow.Render(row, rowData.item)
+                ItemRow.Render(row, rowData.item, list)
             end)
         end
     end)
@@ -769,6 +801,8 @@ function ItemList.Create(parent)
     end)
     ScrollUtil.InitScrollBoxListWithScrollBar(scrollBox, scrollBar, view)
     list.view = view
+    HookDropTarget(frame)
+    HookDropTarget(scrollBox)
 
     local emptyText = frame:CreateFontString(nil, FONT_STRING_LAYER)
     emptyText:SetFont(GetPrimaryFont(), EMPTY_TEXT_SIZE)
@@ -798,6 +832,21 @@ function ItemList.Create(parent)
     function list:SetItems(items)
         self.items = items or {}
         self:RefreshDataProvider(true)
+    end
+
+    function list:SetHighlightedBagID(bagID)
+        if self.highlightedBagID == bagID then
+            return
+        end
+
+        self.highlightedBagID = bagID
+        if self.scrollBox and self.scrollBox.ForEachFrame then
+            self.scrollBox:ForEachFrame(function(row)
+                if row.rowInitialized and ItemRow.SetHighlightedBagID then
+                    ItemRow.SetHighlightedBagID(row, self.highlightedBagID)
+                end
+            end)
+        end
     end
 
     function list:SetSearchText(searchText)

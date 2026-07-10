@@ -344,6 +344,7 @@ Validation:
 - Category grouping works without a category editor.
 
 ### Chunk 5: Bag Management
+- Status: Implemented, pending in-game validation.
 - Add equipped bag buttons, including the equipped reagent bag.
 - Show current equipped bag icons.
 - Support left-click/drag bag pickup for swapping.
