@@ -4,8 +4,8 @@ local Footer = {}
 NS.Footer = Footer
 
 -- Layout
-local FOOTER_LEFT_OFFSET = 14
-local FOOTER_RIGHT_OFFSET = -34
+local FOOTER_LEFT_OFFSET = 3
+local FOOTER_RIGHT_OFFSET = -15
 local FOOTER_BOTTOM_OFFSET = 6
 local FOOTER_HEIGHT = 24
 
@@ -16,11 +16,14 @@ local FOOTER_TEXT_COLOR_G = 1
 local FOOTER_TEXT_COLOR_B = 1
 local FOOTER_FONT_LAYER = "OVERLAY"
 
--- Inventory stats
-local FOOTER_STATS_X_OFFSET = 0
+-- Left footer group
 local FOOTER_STATS_Y_OFFSET = 0
+local FOOTER_BAG_BUTTONS_X_OFFSET = 2
+local FOOTER_STATS_TO_BAG_BUTTON_PADDING = 8
 local FOOTER_STATS_HOVER_MIN_WIDTH = 64
 local FOOTER_STATS_HOVER_PADDING = 8
+
+-- Inventory stats
 local FOOTER_FREE_SPACE_LOW_RATIO = 0.05
 local FOOTER_FREE_SPACE_LOW_COLOR_R = 1
 local FOOTER_FREE_SPACE_LOW_COLOR_G = 0.82
@@ -30,13 +33,12 @@ local FOOTER_FREE_SPACE_ZERO_COLOR_G = 0.2
 local FOOTER_FREE_SPACE_ZERO_COLOR_B = 0.15
 
 -- Money
-local FOOTER_MONEY_X_OFFSET = 0
+local FOOTER_MONEY_X_OFFSET = 2
 local FOOTER_MONEY_Y_OFFSET = 0
 local FOOTER_MONEY_HOVER_MIN_WIDTH = 96
 local FOOTER_MONEY_HOVER_PADDING = 8
 
 -- Bag buttons
-local FOOTER_BAG_BUTTONS_X_OFFSET = 86
 local FOOTER_BAG_BUTTON_SIZE = 24
 local FOOTER_BAG_BUTTON_ICON_SIZE = 18
 local FOOTER_BAG_BUTTON_BORDER_SIZE = 24
@@ -123,13 +125,8 @@ local function ShowMoneyTooltip(frame)
 
     GameTooltip:SetOwner(frame, GetMoneyTooltipAnchor(frame))
     GameTooltip:ClearLines()
-    GameTooltip:SetText(MONEY or "Money", 1, 1, 1)
 
-    if SetTooltipMoney then
-        SetTooltipMoney(GameTooltip, copper, "STATIC")
-    elseif NS.Money and NS.Money.FormatExact then
-        GameTooltip:AddLine(NS.Money.FormatExact(copper, true), 1, 1, 1)
-    end
+    GameTooltip:AddLine(NS.Money.FormatExact(copper, true), 1, 1, 1)
 
     GameTooltip:Show()
 end
@@ -164,7 +161,6 @@ local function ShowInventoryStatsTooltip(frame)
     local stats = NS.Inventory:GetStats()
     GameTooltip:SetOwner(frame, "ANCHOR_RIGHT")
     GameTooltip:ClearLines()
-    GameTooltip:SetText(INVENTORY_TOOLTIP or "Inventory", 1, 1, 1)
     GameTooltip:AddDoubleLine("Used / Total", ("%d / %d"):format(stats.usedSlots or 0, stats.totalSlots or 0), 1, 1, 1, 1, 1, 1)
     AddTooltipDivider(GameTooltip)
 
@@ -201,9 +197,7 @@ local function UpdateInventoryStats(frame)
 
     frame.statsText:SetTextColor(GetInventoryStatsTextColor(stats))
 
-    if frame.statsHoverFrame then
-        frame.statsHoverFrame:SetWidth(math.max(FOOTER_STATS_HOVER_MIN_WIDTH, frame.statsText:GetStringWidth() + FOOTER_STATS_HOVER_PADDING))
-    end
+    frame.statsHoverFrame:SetWidth(math.max(FOOTER_STATS_HOVER_MIN_WIDTH, frame.statsText:GetStringWidth() + FOOTER_STATS_HOVER_PADDING))
 end
 
 -- Bag button tooltips
@@ -414,6 +408,14 @@ local function CreateBagButton(parent, index)
     return button
 end
 
+local function GetBagButtonGroupWidth(buttonCount)
+    if buttonCount <= 0 then
+        return 0
+    end
+
+    return FOOTER_BAG_BUTTONS_X_OFFSET + (buttonCount * FOOTER_BAG_BUTTON_SIZE) + ((buttonCount - 1) * FOOTER_BAG_BUTTON_GAP)
+end
+
 local function CreateBagButtons(frame, footer)
     frame.bagButtons = {}
 
@@ -425,6 +427,8 @@ local function CreateBagButtons(frame, footer)
     function frame:UpdateBagButtons()
         Footer.UpdateBagButtons(self)
     end
+
+    return GetBagButtonGroupWidth(maxButtons)
 end
 
 -- Footer lifecycle
@@ -441,8 +445,10 @@ function Footer.Create(frame)
     footer:SetHeight(FOOTER_HEIGHT)
     frame.footer = footer
 
+    local bagButtonGroupWidth = CreateBagButtons(frame, footer)
+
     local statsHoverFrame = CreateFrame(BUTTON_TYPE, nil, footer)
-    statsHoverFrame:SetPoint("LEFT", footer, "LEFT", FOOTER_STATS_X_OFFSET, FOOTER_STATS_Y_OFFSET)
+    statsHoverFrame:SetPoint("LEFT", footer, "LEFT", bagButtonGroupWidth + FOOTER_STATS_TO_BAG_BUTTON_PADDING, FOOTER_STATS_Y_OFFSET)
     statsHoverFrame:SetSize(FOOTER_STATS_HOVER_MIN_WIDTH, FOOTER_HEIGHT)
     statsHoverFrame:RegisterForClicks("LeftButtonUp")
     statsHoverFrame:SetScript("OnEnter", ShowInventoryStatsTooltip)
@@ -453,12 +459,11 @@ function Footer.Create(frame)
     local statsText = statsHoverFrame:CreateFontString(nil, FOOTER_FONT_LAYER)
     statsText:SetFont(GetPrimaryFont(), FOOTER_TEXT_SIZE)
     statsText:SetTextColor(FOOTER_TEXT_COLOR_R, FOOTER_TEXT_COLOR_G, FOOTER_TEXT_COLOR_B)
-    statsText:SetPoint("LEFT", statsHoverFrame, "LEFT", 0, 0)
+    statsText:SetAllPoints(statsHoverFrame)
     statsText:SetJustifyH("LEFT")
+    statsText:SetJustifyV("MIDDLE")
     statsText:SetText("")
     frame.statsText = statsText
-
-    CreateBagButtons(frame, footer)
 
     local moneyHoverFrame = CreateFrame(FRAME_TYPE, nil, footer)
     moneyHoverFrame:SetPoint("RIGHT", footer, "RIGHT", FOOTER_MONEY_X_OFFSET, FOOTER_MONEY_Y_OFFSET)
@@ -471,8 +476,9 @@ function Footer.Create(frame)
     local moneyText = moneyHoverFrame:CreateFontString(nil, FOOTER_FONT_LAYER)
     moneyText:SetFont(GetPrimaryFont(), FOOTER_TEXT_SIZE)
     moneyText:SetTextColor(FOOTER_TEXT_COLOR_R, FOOTER_TEXT_COLOR_G, FOOTER_TEXT_COLOR_B)
-    moneyText:SetPoint("RIGHT", moneyHoverFrame, "RIGHT", 0, 0)
+    moneyText:SetAllPoints(moneyHoverFrame)
     moneyText:SetJustifyH("RIGHT")
+    moneyText:SetJustifyV("MIDDLE")
     moneyText:SetText("")
     frame.moneyText = moneyText
 end
