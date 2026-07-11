@@ -10,26 +10,54 @@ local ListModel = NS.ItemListModel
 local Media = NS.Media
 local ACCENT_COLOR_R, ACCENT_COLOR_G, ACCENT_COLOR_B = Media.GetAccentColor()
 
+-- Frame construction
+local LIST_FRAME_TYPE = "Frame"
+local BUTTON_FRAME_TYPE = "Button"
+local EDIT_BOX_FRAME_TYPE = "EditBox"
+local SEARCH_BOX_TEMPLATE = "SearchBoxNineSliceTemplate"
+local SCROLL_BOX_TEMPLATE = "WowScrollBoxList"
+local SCROLL_BAR_FRAME_TYPE = "EventFrame"
+local SCROLL_BAR_TEMPLATE = "MinimalScrollBar"
+local FONT_STRING_LAYER = "OVERLAY"
+
+-- Header layout
 local HEADER_HEIGHT = 24
-local SCROLL_BAR_WIDTH = 14
-local SCROLL_BAR_CONTENT_PADDING = 22
-local SEARCH_BOX_WIDTH = 320
-local SEARCH_BOX_HEIGHT = 28
-local SEARCH_BOX_TEXT_SIZE = 18
-local SEARCH_BOX_FONT_FLAGS = ""
+local HEADER_LEFT_OFFSET = 0
+local HEADER_TOP_OFFSET = 0
+local HEADER_RIGHT_OFFSET = 0
+local HEADER_BOTTOM_DIVIDER_LEFT_OFFSET = 2
+local HEADER_BOTTOM_DIVIDER_RIGHT_OFFSET = -2
+local HEADER_BOTTOM_DIVIDER_BOTTOM_OFFSET = -6
+
+-- Header text and icons
 local HEADER_TEXT_SIZE = 16
-local EMPTY_TEXT_SIZE = 16
 local HEADER_TEXT_COLOR_R = ACCENT_COLOR_R
 local HEADER_TEXT_COLOR_G = ACCENT_COLOR_G
 local HEADER_TEXT_COLOR_B = ACCENT_COLOR_B
+local HEADER_SORT_ICON_SIZE = 13
+local HEADER_SORT_ICON_GAP = 1
+local HEADER_TOOLTIP_TEXT_COLOR_R = 0.86
+local HEADER_TOOLTIP_TEXT_COLOR_G = 0.86
+local HEADER_TOOLTIP_TEXT_COLOR_B = 0.86
+
+-- Header dividers and resize handles
 local HEADER_DIVIDER_HEIGHT = 14
 local HEADER_DIVIDER_COLOR_R = ACCENT_COLOR_R
 local HEADER_DIVIDER_COLOR_G = ACCENT_COLOR_G
 local HEADER_DIVIDER_COLOR_B = ACCENT_COLOR_B
 local HEADER_DIVIDER_ALPHA = 0.68
-local HEADER_BOTTOM_DIVIDER_LEFT_OFFSET = 2
-local HEADER_BOTTOM_DIVIDER_RIGHT_OFFSET = -2
-local HEADER_BOTTOM_DIVIDER_BOTTOM_OFFSET = -6
+local HEADER_SEPARATOR_HANDLE_WIDTH = 6
+local HEADER_SEPARATOR_TOP_OFFSET = 1
+local HEADER_SEPARATOR_BOTTOM_OFFSET = 1
+local HEADER_SEPARATOR_TEXTURE_LENGTH = HEADER_HEIGHT - HEADER_SEPARATOR_TOP_OFFSET - HEADER_SEPARATOR_BOTTOM_OFFSET
+local HEADER_SEPARATOR_TEXTURE_THICKNESS = 6
+local HEADER_SEPARATOR_HOVER_ALPHA = 0.14
+local HEADER_SEPARATOR_PRESSED_ALPHA = 0.28
+local HEADER_SEPARATOR_LINE_HOVER_ALPHA = 0.86
+local HEADER_SEPARATOR_LINE_PRESSED_ALPHA = 1
+local HEADER_SEPARATOR_FRAME_LEVEL_OFFSET = 3
+
+-- Header interactions
 local HEADER_HOVER_COLOR_R = ACCENT_COLOR_R
 local HEADER_HOVER_COLOR_G = ACCENT_COLOR_G
 local HEADER_HOVER_COLOR_B = ACCENT_COLOR_B
@@ -38,21 +66,8 @@ local HEADER_PRESSED_COLOR_R = ACCENT_COLOR_R
 local HEADER_PRESSED_COLOR_G = ACCENT_COLOR_G
 local HEADER_PRESSED_COLOR_B = ACCENT_COLOR_B
 local HEADER_PRESSED_ALPHA = 0.16
-local HEADER_SORT_ICON_SIZE = 13
-local HEADER_SORT_ICON_GAP = 1
-local HEADER_SEPARATOR_HANDLE_WIDTH = 6
-local HEADER_SEPARATOR_TOP_OFFSET = 1
-local HEADER_SEPARATOR_BOTTOM_OFFSET = 1
-local HEADER_SEPARATOR_TEXTURE_LENGTH = HEADER_HEIGHT - HEADER_SEPARATOR_TOP_OFFSET - HEADER_SEPARATOR_BOTTOM_OFFSET
-local HEADER_SEPARATOR_TEXTURE_THICKNESS = 6
-local HEADER_SEPARATOR_HOVER_ALPHA = 0.16
-local HEADER_SEPARATOR_PRESSED_ALPHA = 0.28
-local HEADER_SEPARATOR_LINE_HOVER_ALPHA = 0.86
-local HEADER_SEPARATOR_LINE_PRESSED_ALPHA = 1
-local HEADER_SEPARATOR_FRAME_LEVEL_OFFSET = 3
-local HEADER_TOOLTIP_TEXT_COLOR_R = 0.86
-local HEADER_TOOLTIP_TEXT_COLOR_G = 0.86
-local HEADER_TOOLTIP_TEXT_COLOR_B = 0.86
+
+-- Header context menu
 local GROUP_MENU_TITLE = "Group By"
 local PRIMARY_SORT_MENU_TITLE = "Primary Sort"
 local PRIMARY_SORT_DIRECTION_MENU_TITLE = "Sort Direction"
@@ -61,20 +76,16 @@ local SECONDARY_SORT_DIRECTION_MENU_TITLE = "Secondary Direction"
 local NO_SECONDARY_SORT_LABEL = "None"
 local ASCENDING_LABEL = "Ascending"
 local DESCENDING_LABEL = "Descending"
-local EMPTY_TEXT_COLOR_R = 0.5
-local EMPTY_TEXT_COLOR_G = 0.5
-local EMPTY_TEXT_COLOR_B = 0.5
-local FONT_STRING_LAYER = "OVERLAY"
-local LIST_FRAME_TYPE = "Frame"
-local BUTTON_FRAME_TYPE = "Button"
-local EDIT_BOX_FRAME_TYPE = "EditBox"
-local SEARCH_BOX_TEMPLATE = "SearchBoxNineSliceTemplate"
-local SCROLL_BOX_TEMPLATE = "WowScrollBoxList"
-local SCROLL_BAR_FRAME_TYPE = "EventFrame"
-local SCROLL_BAR_TEMPLATE = "MinimalScrollBar"
-local HEADER_LEFT_OFFSET = 0
-local HEADER_TOP_OFFSET = 0
-local HEADER_RIGHT_OFFSET = 0
+
+-- Search box
+local SEARCH_BOX_WIDTH = 320
+local SEARCH_BOX_HEIGHT = 28
+local SEARCH_BOX_TEXT_SIZE = 18
+local SEARCH_BOX_FONT_FLAGS = ""
+
+-- Scroll box
+local SCROLL_BAR_WIDTH = 14
+local SCROLL_BAR_CONTENT_PADDING = 22
 local SCROLL_BOX_LEFT_OFFSET = 0
 local SCROLL_BOX_RIGHT_OFFSET = 0
 local SCROLL_BOX_TOP_GAP = -2
@@ -82,9 +93,42 @@ local SCROLL_BOX_BOTTOM_OFFSET = 0
 local SCROLL_BAR_RIGHT_OFFSET = -8
 local SCROLL_BAR_TOP_OFFSET = -2
 local SCROLL_BAR_BOTTOM_OFFSET = 2
+
+-- Empty state
+local EMPTY_TEXT_SIZE = 16
+local EMPTY_TEXT_COLOR_R = 0.5
+local EMPTY_TEXT_COLOR_G = 0.5
+local EMPTY_TEXT_COLOR_B = 0.5
 local EMPTY_TEXT_X_OFFSET = 0
 local EMPTY_TEXT_Y_OFFSET = 0
 local EMPTY_LIST_TEXT = "No bag items"
+
+-- Cursor item drop overlay
+local DROP_OVERLAY_FRAME_LEVEL_OFFSET = 80
+local DROP_OVERLAY_MANUAL_HEIGHT = 50
+local DROP_OVERLAY_TEXT_SIZE = 22
+local DROP_OVERLAY_TEXT_FLAGS = "OUTLINE, SLUG"
+local DROP_OVERLAY_TEXT_COLOR_R = ACCENT_COLOR_R
+local DROP_OVERLAY_TEXT_COLOR_G = ACCENT_COLOR_G
+local DROP_OVERLAY_TEXT_COLOR_B = ACCENT_COLOR_B
+local DROP_OVERLAY_TEXT_FORMAT = "Place %s into your bags"
+local DROP_OVERLAY_FALLBACK_ITEM_NAME = "item"
+local DROP_OVERLAY_TEXT_SIDE_PADDING = 24
+local DROP_OVERLAY_BACKGROUND_R = 0
+local DROP_OVERLAY_BACKGROUND_G = 0
+local DROP_OVERLAY_BACKGROUND_B = 0
+local DROP_OVERLAY_BACKGROUND_ALPHA = 0.72
+local DROP_OVERLAY_HOVER_BACKGROUND_ALPHA = 0.18
+local DROP_OVERLAY_HOVER_BACKGROUND_INSET = 9
+local DROP_OVERLAY_GLOW_CORNER_TEXTURE = "Interface\\Common\\GlowBorder-Corner"
+local DROP_OVERLAY_GLOW_TOP_TEXTURE = "Interface\\Common\\GlowBorder-Top"
+local DROP_OVERLAY_GLOW_LEFT_TEXTURE = "Interface\\Common\\GlowBorder-Left"
+local DROP_OVERLAY_GLOW_CORNER_SIZE = 16
+local DROP_OVERLAY_GLOW_MIN_ALPHA = 0.35
+local DROP_OVERLAY_GLOW_MAX_ALPHA = 0.85
+local DROP_OVERLAY_GLOW_PULSE_DURATION = 0.85
+local DROP_OVERLAY_MODE_FULL = "full"
+local DROP_OVERLAY_MODE_MANUAL = "manual"
 
 local function GetPrimaryFont()
     return NS.Media and NS.Media.GetPrimaryFont and NS.Media.GetPrimaryFont() or STANDARD_TEXT_FONT
@@ -543,12 +587,36 @@ local function CreateSearchBox(parent, list)
     return searchBox
 end
 
+-- Cursor item placement overlay
+
 local function TryPlaceCursorItem()
     if CursorHasItem and CursorHasItem() and NS.BagManagement and NS.BagManagement.PlaceCursorItemInInventory then
         return NS.BagManagement.PlaceCursorItemInInventory()
     end
 
     return false
+end
+
+local function GetCursorItemDropText()
+    if not GetCursorInfo then
+        return nil
+    end
+
+    local cursorType, itemID, itemLink = GetCursorInfo()
+    if cursorType ~= "item" then
+        return nil
+    end
+
+    local itemName = itemLink
+    if not itemName and itemID then
+        if C_Item and C_Item.GetItemInfo then
+            itemName = C_Item.GetItemInfo(itemID)
+        elseif GetItemInfo then
+            itemName = GetItemInfo(itemID)
+        end
+    end
+
+    return DROP_OVERLAY_TEXT_FORMAT:format(itemName or DROP_OVERLAY_FALLBACK_ITEM_NAME)
 end
 
 local function OnDropTargetMouseUp(_, button)
@@ -569,6 +637,260 @@ local function HookDropTarget(frame)
     frame:EnableMouse(true)
     frame:HookScript("OnMouseUp", OnDropTargetMouseUp)
     frame:HookScript("OnReceiveDrag", OnDropTargetReceiveDrag)
+end
+
+local function OnCursorDropOverlayClick(overlay, button)
+    if button == "LeftButton" and TryPlaceCursorItem() then
+        overlay:Hide()
+    end
+end
+
+local function SetCursorDropOverlayHovered(overlay, hovered)
+    if not overlay or overlay.hovered == hovered then
+        return
+    end
+
+    overlay.hovered = hovered
+
+    if overlay.hoverBackground then
+        overlay.hoverBackground:SetShown(hovered)
+    end
+end
+
+local function StartCursorDropOverlayGlow(overlay)
+    if not overlay.glowPulse then
+        return
+    end
+
+    overlay.glow:SetAlpha(DROP_OVERLAY_GLOW_MIN_ALPHA)
+    overlay.glowPulse:Play()
+end
+
+local function StopCursorDropOverlayGlow(overlay)
+    if not overlay.glowPulse then
+        return
+    end
+
+    if overlay.glowPulse:IsPlaying() then
+        overlay.glowPulse:Stop()
+    end
+
+    overlay.glow:SetAlpha(DROP_OVERLAY_GLOW_MIN_ALPHA)
+end
+
+local function RestartCursorDropOverlayGlow(overlay)
+    if not overlay:IsShown() then
+        return
+    end
+
+    StopCursorDropOverlayGlow(overlay)
+    StartCursorDropOverlayGlow(overlay)
+end
+
+local function CreateOverlayGlowTexture(parent, texture, alpha)
+    local region = parent:CreateTexture(nil, "BORDER")
+    region:SetTexture(texture)
+    region:SetBlendMode("ADD")
+    region:SetDesaturated(true)
+    region:SetVertexColor(ACCENT_COLOR_R, ACCENT_COLOR_G, ACCENT_COLOR_B, alpha)
+    return region
+end
+
+local function CreateCursorDropOverlayGlow(parent)
+    local glow = CreateFrame(LIST_FRAME_TYPE, nil, parent)
+    glow:SetAllPoints(parent)
+    glow:SetAlpha(DROP_OVERLAY_GLOW_MIN_ALPHA)
+
+    local topLeft = CreateOverlayGlowTexture(glow, DROP_OVERLAY_GLOW_CORNER_TEXTURE, 1)
+    topLeft:SetSize(DROP_OVERLAY_GLOW_CORNER_SIZE, DROP_OVERLAY_GLOW_CORNER_SIZE)
+    topLeft:SetPoint("TOPLEFT", glow, "TOPLEFT", 0, 0)
+
+    local topRight = CreateOverlayGlowTexture(glow, DROP_OVERLAY_GLOW_CORNER_TEXTURE, 1)
+    topRight:SetSize(DROP_OVERLAY_GLOW_CORNER_SIZE, DROP_OVERLAY_GLOW_CORNER_SIZE)
+    topRight:SetPoint("TOPRIGHT", glow, "TOPRIGHT", 0, 0)
+    topRight:SetTexCoord(1, 0, 0, 1)
+
+    local bottomLeft = CreateOverlayGlowTexture(glow, DROP_OVERLAY_GLOW_CORNER_TEXTURE, 1)
+    bottomLeft:SetSize(DROP_OVERLAY_GLOW_CORNER_SIZE, DROP_OVERLAY_GLOW_CORNER_SIZE)
+    bottomLeft:SetPoint("BOTTOMLEFT", glow, "BOTTOMLEFT", 0, 0)
+    bottomLeft:SetTexCoord(0, 1, 1, 0)
+
+    local bottomRight = CreateOverlayGlowTexture(glow, DROP_OVERLAY_GLOW_CORNER_TEXTURE, 1)
+    bottomRight:SetSize(DROP_OVERLAY_GLOW_CORNER_SIZE, DROP_OVERLAY_GLOW_CORNER_SIZE)
+    bottomRight:SetPoint("BOTTOMRIGHT", glow, "BOTTOMRIGHT", 0, 0)
+    bottomRight:SetTexCoord(1, 0, 1, 0)
+
+    local top = CreateOverlayGlowTexture(glow, DROP_OVERLAY_GLOW_TOP_TEXTURE, 1)
+    top:SetPoint("TOPLEFT", topLeft, "TOPRIGHT", 0, 0)
+    top:SetPoint("BOTTOMRIGHT", topRight, "BOTTOMLEFT", 0, 0)
+
+    local bottom = CreateOverlayGlowTexture(glow, DROP_OVERLAY_GLOW_TOP_TEXTURE, 1)
+    bottom:SetPoint("TOPLEFT", bottomLeft, "TOPRIGHT", 0, 0)
+    bottom:SetPoint("BOTTOMRIGHT", bottomRight, "BOTTOMLEFT", 0, 0)
+    bottom:SetTexCoord(0, 1, 1, 0)
+
+    local left = CreateOverlayGlowTexture(glow, DROP_OVERLAY_GLOW_LEFT_TEXTURE, 1)
+    left:SetPoint("TOPLEFT", topLeft, "BOTTOMLEFT", 0, 0)
+    left:SetPoint("BOTTOMRIGHT", bottomLeft, "TOPRIGHT", 0, 0)
+
+    local right = CreateOverlayGlowTexture(glow, DROP_OVERLAY_GLOW_LEFT_TEXTURE, 1)
+    right:SetPoint("TOPLEFT", topRight, "BOTTOMLEFT", 0, 0)
+    right:SetPoint("BOTTOMRIGHT", bottomRight, "TOPRIGHT", 0, 0)
+    right:SetTexCoord(1, 0, 0, 1)
+
+    local pulse = glow:CreateAnimationGroup()
+    pulse:SetLooping("BOUNCE")
+    local alpha = pulse:CreateAnimation("Alpha")
+    alpha:SetFromAlpha(DROP_OVERLAY_GLOW_MIN_ALPHA)
+    alpha:SetToAlpha(DROP_OVERLAY_GLOW_MAX_ALPHA)
+    alpha:SetDuration(DROP_OVERLAY_GLOW_PULSE_DURATION)
+
+    parent.glow = glow
+    parent.glowPulse = pulse
+    return glow
+end
+
+local function CreateCursorDropOverlay(parent)
+    local overlay = CreateFrame(BUTTON_FRAME_TYPE, nil, parent)
+    overlay:RegisterForClicks("LeftButtonUp")
+    overlay:EnableMouse(true)
+    overlay:SetScript("OnClick", OnCursorDropOverlayClick)
+    overlay:SetScript("OnReceiveDrag", function(self)
+        if TryPlaceCursorItem() then
+            self:Hide()
+        end
+    end)
+    overlay:SetScript("OnEnter", function(self)
+        SetCursorDropOverlayHovered(self, true)
+    end)
+    overlay:SetScript("OnLeave", function(self)
+        SetCursorDropOverlayHovered(self, false)
+    end)
+    overlay:SetScript("OnShow", StartCursorDropOverlayGlow)
+    overlay:SetScript("OnHide", StopCursorDropOverlayGlow)
+    if overlay.SetFrameLevel and parent.GetFrameLevel then
+        overlay:SetFrameLevel(parent:GetFrameLevel() + DROP_OVERLAY_FRAME_LEVEL_OFFSET)
+    end
+
+    local background = overlay:CreateTexture(nil, "BACKGROUND")
+    background:SetAllPoints(overlay)
+    background:SetColorTexture(DROP_OVERLAY_BACKGROUND_R, DROP_OVERLAY_BACKGROUND_G, DROP_OVERLAY_BACKGROUND_B, DROP_OVERLAY_BACKGROUND_ALPHA)
+    overlay.background = background
+
+    local hoverBackground = overlay:CreateTexture(nil, "BACKGROUND")
+    hoverBackground:SetDrawLayer("BACKGROUND", 1)
+    hoverBackground:SetPoint("TOPLEFT", overlay, "TOPLEFT", DROP_OVERLAY_HOVER_BACKGROUND_INSET, -DROP_OVERLAY_HOVER_BACKGROUND_INSET)
+    hoverBackground:SetPoint("BOTTOMRIGHT", overlay, "BOTTOMRIGHT", -DROP_OVERLAY_HOVER_BACKGROUND_INSET, DROP_OVERLAY_HOVER_BACKGROUND_INSET)
+    hoverBackground:SetColorTexture(ACCENT_COLOR_R, ACCENT_COLOR_G, ACCENT_COLOR_B, DROP_OVERLAY_HOVER_BACKGROUND_ALPHA)
+    hoverBackground:Hide()
+    overlay.hoverBackground = hoverBackground
+
+    CreateCursorDropOverlayGlow(overlay)
+
+    local text = overlay:CreateFontString(nil, FONT_STRING_LAYER)
+    text:SetFont(GetPrimaryFont(), DROP_OVERLAY_TEXT_SIZE, DROP_OVERLAY_TEXT_FLAGS)
+    text:SetTextColor(DROP_OVERLAY_TEXT_COLOR_R, DROP_OVERLAY_TEXT_COLOR_G, DROP_OVERLAY_TEXT_COLOR_B)
+    text:SetPoint("LEFT", overlay, "LEFT", DROP_OVERLAY_TEXT_SIDE_PADDING, 0)
+    text:SetPoint("RIGHT", overlay, "RIGHT", -DROP_OVERLAY_TEXT_SIDE_PADDING, 0)
+    text:SetJustifyH("CENTER")
+    text:SetJustifyV("MIDDLE")
+    text:SetWordWrap(false)
+    overlay.text = text
+
+    overlay:Hide()
+    return overlay
+end
+
+local function SetScrollBoxManualDropActive(list, active)
+    if list.manualDropActive == active then
+        return
+    end
+
+    list.manualDropActive = active
+    list.scrollBox:ClearAllPoints()
+    list.scrollBox:SetPoint("TOPLEFT", list.header, "BOTTOMLEFT", SCROLL_BOX_LEFT_OFFSET, SCROLL_BOX_TOP_GAP)
+
+    if active then
+        list.scrollBox:SetPoint("BOTTOMRIGHT", list.cursorDropOverlay, "TOPRIGHT", SCROLL_BOX_RIGHT_OFFSET, 0)
+    else
+        list.scrollBox:SetPoint("BOTTOMRIGHT", list.frame, "BOTTOMRIGHT", SCROLL_BOX_RIGHT_OFFSET, SCROLL_BOX_BOTTOM_OFFSET)
+    end
+
+    PositionScrollBar(list.scrollBar, list.scrollBox)
+end
+
+local function SetCursorDropOverlayMode(list, mode)
+    local overlay = list.cursorDropOverlay
+    if overlay.mode == mode then
+        return
+    end
+
+    overlay.mode = mode
+    overlay:ClearAllPoints()
+
+    if mode == DROP_OVERLAY_MODE_MANUAL then
+        overlay:SetPoint("BOTTOMLEFT", list.frame, "BOTTOMLEFT", SCROLL_BOX_LEFT_OFFSET, SCROLL_BOX_BOTTOM_OFFSET)
+        overlay:SetPoint("BOTTOMRIGHT", list.frame, "BOTTOMRIGHT", SCROLL_BOX_RIGHT_OFFSET, SCROLL_BOX_BOTTOM_OFFSET)
+        overlay:SetHeight(DROP_OVERLAY_MANUAL_HEIGHT)
+    else
+        overlay:SetPoint("TOPLEFT", list.scrollBox, "TOPLEFT", 0, 0)
+        overlay:SetPoint("BOTTOMRIGHT", list.scrollBox, "BOTTOMRIGHT", 0, 0)
+    end
+
+    RestartCursorDropOverlayGlow(overlay)
+end
+
+local function IsCursorOverDropArea(list)
+    if list.cursorDropOverlay and list.cursorDropOverlay:IsMouseOver() then
+        return true
+    end
+
+    if not list.frame:IsMouseOver() then
+        return false
+    end
+
+    return not (list.header and list.header:IsMouseOver())
+end
+
+local function UpdateCursorDropOverlay(list)
+    local overlay = list.cursorDropOverlay
+    if not overlay or not list.scrollBox then
+        return
+    end
+
+    local dropText
+    local manualMode = IsManualSortKey(list.sortKey)
+    if CursorHasItem and CursorHasItem() and IsCursorOverDropArea(list) then
+        dropText = GetCursorItemDropText()
+    end
+
+    if dropText then
+        if manualMode then
+            SetCursorDropOverlayMode(list, DROP_OVERLAY_MODE_MANUAL)
+            SetScrollBoxManualDropActive(list, true)
+        else
+            SetScrollBoxManualDropActive(list, false)
+            SetCursorDropOverlayMode(list, DROP_OVERLAY_MODE_FULL)
+        end
+
+        if overlay.dropText ~= dropText then
+            overlay.text:SetText(dropText)
+            overlay.dropText = dropText
+        end
+
+        if not overlay:IsShown() then
+            overlay:Show()
+        end
+
+        SetCursorDropOverlayHovered(overlay, overlay:IsMouseOver())
+    else
+        overlay.dropText = nil
+        SetScrollBoxManualDropActive(list, false)
+        SetCursorDropOverlayHovered(overlay, false)
+        if overlay:IsShown() then
+            overlay:Hide()
+        end
+    end
 end
 
 local function CreateHeaderSeparator(parent, xOffset)
@@ -803,6 +1125,11 @@ function ItemList.Create(parent)
     list.view = view
     HookDropTarget(frame)
     HookDropTarget(scrollBox)
+
+    list.cursorDropOverlay = CreateCursorDropOverlay(frame)
+    frame:SetScript("OnUpdate", function()
+        UpdateCursorDropOverlay(list)
+    end)
 
     local emptyText = frame:CreateFontString(nil, FONT_STRING_LAYER)
     emptyText:SetFont(GetPrimaryFont(), EMPTY_TEXT_SIZE)
