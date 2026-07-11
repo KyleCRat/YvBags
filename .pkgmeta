@@ -1,0 +1,18 @@
+package-as: YvBags
+
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown
+
+ignore:
+  - .pkgmeta
+  - .git
+  - PLAN.md
+  - TODO.md
+  - "*.afphoto"
+  - "Media/Textures/*.afphoto"
+  - "*.png"
+  - "Media/Textures/*.png"
+  - Media/Textures/Soulbound.tga
+  - Media/Textures/UIGroupManager2x.BLP
+  - Media/Textures/Vertex-Border.tga

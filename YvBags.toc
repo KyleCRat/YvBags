@@ -3,6 +3,7 @@
 ## Notes: List-based player bag replacement.
 ## Author: Yvairel
 ## Version: 12.0.7-1
+## IconTexture: Interface\Icons\INV_Misc_Bag_08
 ## SavedVariables: YvBagsDB
 ## SavedVariablesPerCharacter: YvBagsCharacterDB
 
