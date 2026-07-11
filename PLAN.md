@@ -76,7 +76,8 @@ YvBags is a player-bag replacement addon that presents bag contents as a sortabl
   - Sell value
   - Item level
   - Required level
-  - Type/subtype
+  - Type
+  - Subtype
 - Do not include a visible Quality text column in v1; rarity is shown through item name color, icon border color, and the icon/rarity sort header.
 - Do not include a visible Bag/Slot column in v1; keep the column definition disabled for future optional column visibility.
 - Binding and profession quality columns should be icon-only with no text fallback.
@@ -127,7 +128,8 @@ YvBags is a player-bag replacement addon that presents bag contents as a sortabl
 - Sort by quality.
 - Sort by item level.
 - Sort by quantity.
-- Sort by type/subtype.
+- Sort by type.
+- Sort by subtype.
 - Sort by sell value.
 - Sort by expansion.
 - Sort by profession quality.

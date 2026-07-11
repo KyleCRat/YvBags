@@ -21,6 +21,7 @@ local SORT_KEY_LIST = {
     "requiredLevel",
     "quantity",
     "type",
+    "subtype",
     "sellValue",
     "expansion",
     "professionQuality",
@@ -36,6 +37,7 @@ local SECONDARY_SORT_KEY_LIST = {
     "requiredLevel",
     "quantity",
     "type",
+    "subtype",
     "sellValue",
     "expansion",
     "professionQuality",
@@ -69,6 +71,7 @@ local VALID_SORT_KEYS = {
     requiredLevel = true,
     quantity = true,
     type = true,
+    subtype = true,
     sellValue = true,
     expansion = true,
     professionQuality = true,
@@ -84,6 +87,7 @@ local VALID_SECONDARY_SORT_KEYS = {
     requiredLevel = true,
     quantity = true,
     type = true,
+    subtype = true,
     sellValue = true,
     expansion = true,
     professionQuality = true,
@@ -117,6 +121,8 @@ local PRIMARY_SORT_KEY_ALIASES = {
     sellvalue = "sellValue",
     exp = "expansion",
     rarity = "quality",
+    sub = "subtype",
+    itemsubtype = "subtype",
     prof = "professionQuality",
     profession = "professionQuality",
     professionquality = "professionQuality",
@@ -138,6 +144,8 @@ local SECONDARY_SORT_KEY_ALIASES = {
     sellvalue = "sellValue",
     exp = "expansion",
     rarity = "quality",
+    sub = "subtype",
+    itemsubtype = "subtype",
     prof = "professionQuality",
     profession = "professionQuality",
     professionquality = "professionQuality",
@@ -198,12 +206,12 @@ local function GetExpansionName(expansionID)
     return "Expansion " .. tostring(expansionID)
 end
 
-local function GetTypeText(item)
-    if item.type and item.subtype and item.subtype ~= "" and item.subtype ~= item.type then
-        return item.type .. " / " .. item.subtype
-    end
+local function GetTypeSortText(item)
+    return (item.type or "") .. "\001" .. (item.subtype or "")
+end
 
-    return item.type or item.subtype or ""
+local function GetSubtypeSortText(item)
+    return (item.subtype or "") .. "\001" .. (item.type or "")
 end
 
 local function GetSortValue(item, sortKey)
@@ -218,7 +226,9 @@ local function GetSortValue(item, sortKey)
     elseif sortKey == "quantity" then
         return NumberValue(item.count, 0)
     elseif sortKey == "type" then
-        return TextValue(GetTypeText(item))
+        return TextValue(GetTypeSortText(item))
+    elseif sortKey == "subtype" then
+        return TextValue(GetSubtypeSortText(item))
     elseif sortKey == "sellValue" then
         return NumberValue(item.totalSellValue or item.sellValue, 0)
     elseif sortKey == "expansion" then

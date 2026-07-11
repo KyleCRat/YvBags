@@ -179,10 +179,18 @@ local COLUMNS = {
     {
         key = "type",
         label = TYPE or "Type",
-        width = 138,
+        width = 78,
         sortKey = "type",
         sortLabel = "type",
         tooltipTitle = TYPE or "Type",
+    },
+    {
+        key = "subtype",
+        label = "Subtype",
+        width = 100,
+        sortKey = "subtype",
+        sortLabel = "subtype",
+        tooltipTitle = "Subtype",
     },
     -- Disabled for v1; retained for future optional column visibility.
     {
@@ -207,12 +215,12 @@ local function FormatMoney(copper)
     return NS.Money and NS.Money.Format and NS.Money.Format(copper) or "-"
 end
 
-local function FormatType(item)
-    if item.type and item.subtype and item.subtype ~= "" and item.subtype ~= item.type then
-        return item.type .. " / " .. item.subtype
+local function FormatSubtype(item)
+    if not item.subtype or item.subtype == "" or item.subtype == item.type then
+        return "-"
     end
 
-    return item.type or item.subtype or "-"
+    return item.subtype
 end
 
 local function IsColumnEnabled(column)
@@ -308,7 +316,9 @@ function Columns.FormatColumn(item, columnKey)
     elseif columnKey == "requiredLevel" then
         return EmptyDash(item.requiredLevel)
     elseif columnKey == "type" then
-        return FormatType(item)
+        return EmptyDash(item.type)
+    elseif columnKey == "subtype" then
+        return FormatSubtype(item)
     elseif columnKey == "binding" then
         return ""
     elseif columnKey == "expansion" then
