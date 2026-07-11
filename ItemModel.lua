@@ -229,6 +229,15 @@ local function GetBattlePetLinkInfo(hyperlink)
     return speciesID, level, quality, maxHealth, power, speed, StripLinkDisplayBrackets(name)
 end
 
+local function GetBattlePetSpeciesIcon(speciesID)
+    if not speciesID or not C_PetJournal or not C_PetJournal.GetPetInfoBySpeciesID then
+        return nil
+    end
+
+    local _, icon = C_PetJournal.GetPetInfoBySpeciesID(speciesID)
+    return icon
+end
+
 -- Normalized item builder
 function ItemModel.Normalize(container, slotIndex, containerItemInfo)
     -- Resolve the link or item ID used for Blizzard item metadata.
@@ -315,8 +324,10 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
     local battlePetPower
     local battlePetSpeed
     local battlePetName
+    local battlePetIcon
     if isBattlePet then
         battlePetSpeciesID, battlePetLevel, battlePetQuality, battlePetMaxHealth, battlePetPower, battlePetSpeed, battlePetName = GetBattlePetLinkInfo(containerItemInfo.hyperlink)
+        battlePetIcon = GetBattlePetSpeciesIcon(battlePetSpeciesID)
         itemQuality = battlePetQuality or itemQuality or containerItemInfo.quality
         staticItemLevel = battlePetLevel or staticItemLevel
         fullItemType = BATTLE_PET or "Battle Pet"
@@ -376,7 +387,7 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
         staticLink = fullLink,
         linkType = linkType,
         linkOptions = linkOptions,
-        icon = fullIcon or containerItemInfo.iconFileID or instantIcon or UNKNOWN_ITEM_ICON,
+        icon = battlePetIcon or fullIcon or containerItemInfo.iconFileID or instantIcon or UNKNOWN_ITEM_ICON,
         count = containerItemInfo.stackCount or 1,
         quality = itemQuality or containerItemInfo.quality,
         itemLevel = displayItemLevel,
@@ -415,6 +426,7 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
         battlePetPower = battlePetPower,
         battlePetSpeed = battlePetSpeed,
         battlePetName = battlePetName,
+        battlePetIcon = battlePetIcon,
         professionQuality = professionQuality,
         professionQualityType = professionQualityType,
         isLocked = containerItemInfo.isLocked,
