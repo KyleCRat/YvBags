@@ -355,6 +355,16 @@ local COMMANDS = {
         description = "Set list grouping",
         func = PrintGroupUsage,
     },
+    {
+        triggers = { "settings", "options", "config" },
+        name = "Settings",
+        description = ("Open %s settings"):format(ADDON_NAME),
+        func = function()
+            if NS:IsInitialized() and NS.Settings and NS.Settings.Open then
+                NS.Settings.Open()
+            end
+        end,
+    },
 }
 
 local function PrintHelp()

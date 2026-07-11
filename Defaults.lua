@@ -11,6 +11,7 @@ NS.defaults = {
     global = {
         debug = false,
         features = {
+            replaceBlizzardBags = true,
             autosellGrayJunk = false,
         },
         list = {

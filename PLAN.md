@@ -21,6 +21,7 @@ YvBags is a player-bag replacement addon that presents bag contents as a sortabl
 - Main movable and resizable bag window.
 - Save bag window position, size, and scale.
   - Scale should go through our `LibPopupSlider`, similar to our other addons.
+  - Scale range is 50% to 150%, with 100% centered in the control range.
 - Support current character bags only.
 - Player inventory only; include backpack, equipped bag slots, and the equipped reagent bag.
 - Do not replace bank, reagent bank, warband bank, guild bank, or void storage.
@@ -174,8 +175,15 @@ YvBags is a player-bag replacement addon that presents bag contents as a sortabl
 - Current character money display.
 - Free-space display.
 - Settings button.
+  - Use a larger gear icon in the sub-header, immediately left of the search box.
+- Title-bar scale control.
+  - Use `LibPopupSlider`.
+  - Place it immediately left of the close button.
+  - Render as a text button showing the current value, such as `Scale: 100%`.
+  - Use a 50% to 150% range.
 - Close button.
 - Show Blizzard bags button.
+  - Use left-click on the backpack footer icon as the v1 Show Blizzard bags control.
 - Search box.
 - Search box should live in the main frame sub-header area, not inside the list body.
 - Do not include character selector dropdown.
@@ -196,6 +204,7 @@ YvBags is a player-bag replacement addon that presents bag contents as a sortabl
 - Include feature toggles needed for v1 behavior.
 - Include sorting/grouping settings needed for v1 behavior.
 - Include a display setting for showing cooldown text in item names.
+- Include a per-character frame scale setting.
 - Include gray-junk autosell setting.
 - Do not include settings profile management in v1.
 - Do not include copy/rename/delete profile UI in v1.
@@ -363,17 +372,26 @@ Validation:
 - Blizzard cleanup/sort triggers from the free-space display.
 
 ### Chunk 6: Replacement Behavior, Settings, And Automation
+- Status: Implemented, pending in-game validation.
 - Replace Blizzard player bag open/close/toggle behavior.
 - Hide default Blizzard player bag frames while YvBags is active.
-- Add Show Blizzard bags button.
+- Add Show Blizzard bags behavior.
+  - Left-clicking the backpack icon in the footer opens/restores the Blizzard bag frames.
 - Add standard Blizzard Settings UI.
 - Add `LibPopupSlider` scale control.
+  - Embed `Libs\LibPopupSlider-1.0\LibPopupSlider-1.0.xml` in the TOC.
+  - Place the scale control on the title bar immediately left of the close button.
+  - Render the scale control as a text button showing `Scale: X%`.
+  - Use a 50% to 150% range.
+- Add frame scale to the standard Blizzard Settings UI.
+- Move the settings gear icon into the sub-header immediately left of the search box.
 - Add feature toggles needed for v1.
 - Add optional gray-junk autosell on merchant/vendor open.
 - Final pass for combat guards, event cleanup, and reload behavior.
 
 Validation:
 - Standard bag hotkeys and bag API hooks open YvBags.
-- Blizzard bags can be restored from the YvBags button.
+- Blizzard bags can be restored from the backpack footer icon.
+- Scale changes through the title-bar `LibPopupSlider` button and Settings slider persist after reload.
 - Settings persist and live-refresh where expected.
 - Gray-junk autosell only runs when enabled and a merchant is open.

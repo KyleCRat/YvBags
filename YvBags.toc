@@ -10,6 +10,7 @@ Libs\LibStub\LibStub.lua
 Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
 Libs\LibSharedMedia-3.0\lib.xml
 Libs\LibSimpleDB-1.0\embed.xml
+Libs\LibPopupSlider-1.0\LibPopupSlider-1.0.xml
 
 Defaults.lua
 Core.lua
@@ -19,6 +20,8 @@ Formatting\Money.lua
 Categories.lua
 Containers.lua
 BagManagement.lua
+BlizzardBags.lua
+JunkAutosell.lua
 ItemModel.lua
 Data.lua
 ItemListColumns.lua
@@ -29,5 +32,6 @@ ItemRow.lua
 ItemList.lua
 FooterCurrencies.lua
 Footer.lua
+Settings.lua
 MainFrame.lua
 Commands.lua

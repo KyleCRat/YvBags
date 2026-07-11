@@ -276,7 +276,9 @@ local function ShowBagButtonTooltip(button)
     if AddBagUsageTooltipLine(button) then
         AddTooltipDivider(GameTooltip)
     end
-    if not button.isBackpack then
+    if button.isBackpack then
+        AddTooltipActionLine(GameTooltip, "Left-click to show Blizzard bags")
+    else
         AddTooltipActionLine(GameTooltip, "Left-click or drag to pick up this bag")
     end
     AddTooltipActionLine(GameTooltip, "Right-click to empty this bag")
@@ -323,6 +325,10 @@ local function OnBagButtonClick(button, mouseButton)
     if mouseButton == "RightButton" then
         if NS.BagManagement.EmptyBag then
             NS.BagManagement.EmptyBag(button.containerID)
+        end
+    elseif button.isBackpack then
+        if NS.BlizzardBags and NS.BlizzardBags.ShowBlizzardBags then
+            NS.BlizzardBags.ShowBlizzardBags()
         end
     elseif not button.isBackpack and NS.BagManagement.HandleBagButtonClick then
         NS.BagManagement.HandleBagButtonClick(button.containerID)
