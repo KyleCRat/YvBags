@@ -36,6 +36,20 @@ local SORT_LABELS = {
     category = "Category",
     manual = "Manual",
 }
+local EXPANSION_LABELS = {
+    [0] = "WoW",
+    [1] = "BC",
+    [2] = "WLK",
+    [3] = "CAT",
+    [4] = "MoP",
+    [5] = "WoD",
+    [6] = "LEG",
+    [7] = "BFA",
+    [8] = "SL",
+    [9] = "DF",
+    [10] = "TWW",
+    [11] = "MID",
+}
 
 local professionQualityAtlasCache = {}
 local enabledColumns
@@ -138,9 +152,9 @@ local COLUMNS = {
     },
     {
         key = "expansion",
-        label = "Exp",
+        label = "Xpac",
         width = 48,
-        justify = "RIGHT",
+        justify = "CENTER",
         sortKey = "expansion",
         sortLabel = "expansion",
         tooltipTitle = "Expansion",
@@ -221,6 +235,14 @@ local function FormatSubtype(item)
     end
 
     return item.subtype
+end
+
+local function FormatExpansion(expansionID)
+    if expansionID == nil then
+        return "-"
+    end
+
+    return EXPANSION_LABELS[expansionID] or tostring(expansionID)
 end
 
 local function IsColumnEnabled(column)
@@ -322,7 +344,7 @@ function Columns.FormatColumn(item, columnKey)
     elseif columnKey == "binding" then
         return ""
     elseif columnKey == "expansion" then
-        return EmptyDash(item.expansionID)
+        return FormatExpansion(item.expansionID)
     elseif columnKey == "sellValue" then
         return FormatMoney(item.totalSellValue or item.sellValue)
     elseif columnKey == "location" then

@@ -72,7 +72,7 @@ YvBags is a player-bag replacement addon that presents bag contents as a sortabl
   - Item icon / rarity
   - Profession quality icon
   - Name
-  - Expansion
+  - Xpac / expansion abbreviation
   - Sell value
   - Item level
   - Required level
