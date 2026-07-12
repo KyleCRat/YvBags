@@ -1,0 +1,180 @@
+# YvBags Agent Guide
+
+This file is the standing product and engineering contract for work in the YvBags repository. Read it before changing the addon, then use `TODO.md` for deferred work.
+
+## Product Boundary
+
+- YvBags is a list-based replacement for the current character's player bags.
+- Supported containers are the backpack, equipped bag slots, and the equipped reagent bag.
+- Bank, reagent bank, warband bank, guild bank, void storage, cached characters, and grid mode are intentionally out of scope unless the user explicitly changes the product boundary.
+- Preserve manual bag-slot ordering alongside sorted and grouped list modes.
+- Do not quietly expand scope into a general inventory database or bank addon.
+
+## Environment
+
+- Current target: World of Warcraft: Midnight, Interface `120007` (12.0.7).
+- WoW uses Lua 5.1. Do not use `goto`, `continue`, native bitwise operators, or later-Lua features.
+- There is no local Lua interpreter in this workspace. Do not block work on `lua` or `luac`; use focused code review and in-game testing instead.
+- Use four spaces, no tabs. Keep source files UTF-8 with LF endings and a final newline.
+- Files load in the explicit order in `YvBags.toc`. When adding or moving a module, verify that every dependency loads before its consumer.
+
+## Engineering Priorities
+
+Performance and extensibility are requirements, not cleanup tasks for later.
+
+- Protect scrolling, hover, bag-update, and cooldown paths from repeated expensive work.
+- Keep the virtualized list virtualized. Never create one permanent frame per inventory item.
+- Normalize data once, cache stable derived values, and make row rendering consume the normalized model.
+- Prefer targeted refreshes over rebuilding all inventory state when the affected container is known.
+- Avoid new per-frame `OnUpdate` work. If continuous updates are necessary, limit them to visible rows or an active interaction and stop them immediately afterward.
+- Do not perform item API, tooltip, atlas, or formatting lookups on every hover or scroll pass when the result can be normalized or cached.
+- Add abstractions only when they establish useful ownership, remove real duplication, or provide a clear extension point.
+- Split modules by contextual ownership, not merely because a file is long.
+- Keep related constants grouped near the top of their owning file with short section comments.
+- Add section headers where they help humans locate a behavior. Avoid comments that only restate the code.
+- Use contextual local names. Reserve addon-prefixed names for globals or globally named frames that genuinely require collision safety.
+- Do not add defensive fallbacks for namespace values that this addon unconditionally defines earlier in the TOC.
+
+## Blizzard-First Rule
+
+- Blizzard's current API documentation and exported Interface code are authoritative. Sorted is useful for feature discovery, not as the authority for current API behavior.
+- Before manually implementing standard UI or item behavior, inspect the current Blizzard implementation and prefer supported APIs, templates, mixins, atlases, and utilities.
+- Use modern Blizzard UI templates. The main frame uses `ButtonFrameTemplate`; text controls should use current Blizzard button assets such as the modern tertiary button atlases where appropriate.
+- Keep custom visuals separate from native behavior when Blizzard's visual template is unsuitable.
+
+## Required WoW Upgrade Audit
+
+Every time the addon target is upgraded to a new WoW version or client patch:
+
+1. Re-export the current Blizzard Interface Lua and generated API documentation.
+2. Update the TOC Interface value and compatibility documentation only after reviewing the export.
+3. Compare Blizzard's current container item button hover, leave, cursor, tooltip, comparison, merchant, readable-item, and modified-click behavior with the previous export.
+4. Check especially `ContainerFrameItemButton_OnEnter`, its matching leave path, `ContainerFrameItemButton_CalculateItemTooltipAnchors`, and any mixins or helpers they now call.
+5. Add any new mouseover cursor or visual behavior to YvBags' immediate implementation in `ItemTooltip.lua`.
+6. Keep the delayed native Blizzard hover call as the compatibility fallback unless Blizzard's implementation changes enough to require redesign.
+7. Test rapid row sweeps, dress-up comparison modifiers, merchant sell cursors, readable items, item comparison tooltips, item use, drag, and cursor cleanup in game.
+
+This audit is mandatory because YvBags immediately mirrors selected Blizzard mouseover behavior before the 50 ms tooltip debounce completes. New Blizzard behavior will eventually run through the delayed native call, but it will not feel immediate until the mirror is updated.
+
+## Architecture And Ownership
+
+- `Defaults.lua`: addon identity constants, account defaults, and character defaults.
+- `Core.lua`: `ADDON_LOADED`, LibSimpleDB construction, shared event dispatch, and initialization callbacks.
+- `Containers.lua`: discovery and metadata for player-owned bag containers and empty slots.
+- `ItemModel.lua`: the normalized occupied-slot item model, including async fallbacks, binding, keystones, caged pets, expansion, and profession quality.
+- `Data.lua`: inventory state, targeted container refreshes, debounced reconciliation scans, pending item data, indexes, totals, and update callbacks.
+- `Categories.lua`: built-in v1-lite category assignment and labels.
+- `Constants/Binding.lua`: binding keys and binding predicates. Use these constants instead of repeating binding strings.
+- `ItemListModel.lua`: search, grouping, primary sorting, secondary sorting, manual ordering, and display-row construction.
+- `ItemListColumns.lua`: fixed/disabled column definitions, header metadata, cell formatting, and column-owned visual metadata.
+- `ItemList.lua`: list controller, ScrollBox setup, headers, context menus, search box, clipping, scrollbar buffer, and cursor-drop overlay.
+- `ItemRow.lua`: pooled item-row visuals, native item-button bridge, binding/profession icons, highlights, and cooldown rendering.
+- `ItemGroupRow.lua`: pooled category/group rows and collapse controls.
+- `ItemTooltip.lua`: debounced native tooltips, custom anchoring, and immediate cursor feedback.
+- `BagManagement.lua`: bag pickup/swap, compatible item placement, empty-bag state machine, and Blizzard bag cleanup.
+- `Footer.lua`: bag buttons, bag-space display, money, footer layout, and related tooltips.
+- `FooterCurrencies.lua`: tracked backpack currencies, responsive fitting, currency tooltips, and untracking.
+- `BlizzardBags.lua`: replacement wrappers for Blizzard bag open, close, toggle, and restore behavior.
+- `JunkAutosell.lua`: optional use of Blizzard's native gray-junk selling API.
+- `Media.lua`: centralized fonts, textures, atlases, colors, and LibSharedMedia registration.
+- `Formatting/Money.lua`: shared compact and exact money formatting.
+- `Settings.lua`: native Blizzard Settings registrations and live setting callbacks.
+- `MainFrame.lua`: frame construction, title/subheader controls, sizing, positioning, scale, and top-level refresh wiring.
+- `Commands.lua`: slash commands and diagnostics.
+
+## Critical Implementation Invariants
+
+### Inventory Data
+
+- `BAG_UPDATE` uses `Inventory:RefreshContainerNow` for the affected player container so counts and rows update promptly.
+- Noisier follow-up events use the 0.2-second `Inventory:ScheduleScan` path to reconcile all containers.
+- Preserve `itemsByLocation`, `locationKey`, bag ID, and slot index even when Bag/Slot is not user-visible. Manual mode and item-button routing depend on physical location.
+- New normalized fields belong in `ItemModel.lua`. Update pending-item diagnostics, sorting/filtering consumers, and row formatting only when they need that field.
+- Item data is asynchronous. A temporary cache miss must not permanently classify an item as unknown.
+- Keystone links and caged battle-pet links are special item-like records. Do not simplify them back to ordinary item-info-only handling.
+
+### Virtualized Secure Rows
+
+- The visible row is the item. Hovering or clicking any part of it must behave like the item icon would in Blizzard bags.
+- Each pooled row uses a named `ContainerFrameItemButtonTemplate` button stretched across the row as a native interaction bridge.
+- The bridge owns Blizzard click, use, drag, pickup, split-stack, cursor, and tooltip semantics. Do not replace those paths with direct calls such as `UseContainerItem`, which can taint or fail in combat.
+- All visible pixels belong to custom row regions. Native button textures are deliberately suppressed so template art is not stretched across the row.
+- Configure protected button geometry and reusable regions during row initialization. Do not resize, re-anchor, or recreate protected row buttons during combat refreshes.
+- ScrollBox rows are pooled. Every render and reset path must clear state that could leak to the next item, including tooltip, highlight, icon, binding, lock, cooldown, and bag-hover state.
+- Keep fast scrolling and item interaction functional in combat.
+
+### Hover And Tooltips
+
+- `ItemTooltip.lua` immediately handles the currently mirrored cursor feedback, including dress-up, merchant sell, readable-item, and `SetCursorHoveredItem` state.
+- The full Blizzard `ContainerFrameItemButton_OnEnter` path runs after `TOOLTIP_SHOW_DELAY` (`0.05` seconds) to avoid expensive tooltip rendering during quick row sweeps.
+- Do not move heavy tooltip work back into immediate `OnEnter` handlers.
+- Tooltip positioning can use row-edge or cursor anchoring through `USE_CURSOR_ANCHOR`. Row-edge placement chooses the side nearest the cursor, then falls back to the side with room.
+- Custom tooltip lines may still be added after the native tooltip is populated; the debounce does not prevent addon-specific tooltip content.
+
+### Cooldowns And Secret Values
+
+- Cooldown and GCD progress is rendered as a smooth row-wide shade, not as Blizzard icon art.
+- Only visible rows with active cooldowns should run cooldown `OnUpdate` work.
+- Cooldown lookups are cached briefly. Preserve or improve that cache when extending cooldown display.
+- WoW 12.0 cooldown values may be secret. Never compare, divide, format, or curve a secret value. If values are secret or not safely numeric, omit the custom cooldown visualization and let Blizzard behavior remain authoritative.
+
+### Sorting, Grouping, And Drops
+
+- Manual primary sort means physical bag/slot order. It forces secondary sort to `None` and disables secondary selection.
+- Bag/Slot remains an internal, disabled column and is not a user-facing sort or group option.
+- In sorted modes, a cursor-held item shows a full-list insertion overlay to avoid accidental swaps.
+- In Manual mode, rows remain available for normal item swapping and a bottom insertion area is reserved for placing an item into available bag space.
+- Header context menus intentionally stay open and return refresh responses when choices change.
+
+### Bag Management
+
+- Emptying a bag is an asynchronous state machine. Move one source slot, wait for a confirmed source-slot change, then continue.
+- Never turn emptying back into a tight loop. WoW bag locks and update events do not complete synchronously.
+- Exclude the source bag from destinations or items can swap back and forth forever.
+- Preserve item-family compatibility, stack-first placement, cursor checks, timeout/failure handling, and the single-operation guard.
+- Use Blizzard's bag sort API for cleanup; do not implement a custom physical inventory sorter.
+
+### Persistence And Settings
+
+- Use `LibSimpleDB-1.0` for all SavedVariables reads and writes.
+- `NS.db` is account-wide. `NS.charDB` is per-character and currently owns frame position, size, and scale.
+- Add defaults in `Defaults.lua` before reading new settings. Use `Get` and `Set`, and register callbacks when a setting must refresh live UI.
+- Expose user settings through Blizzard's standard Settings API. Profiles and column editors remain future work.
+- Preserve the frame's reported point, relative point, x, and y. `SetDontSavePosition(true)` and `SetUserPlaced(false)` prevent the client from applying a second saved position.
+
+### Media And Visual Settings
+
+- Register shared media from the structured tables in `Media.lua`; do not duplicate texture, atlas, font, binding-icon, or accent definitions in consumers.
+- Access shared assets through `NS.Media` getters.
+- The accent color is currently centralized but static. `TODO.md` tracks making it user-configurable, so new accent-colored regions should use `NS.Media.GetAccentColor()` and remain compatible with a future live refresh.
+- Keep visual constants in the module that owns the visual. Future appearance settings should be able to override them without restructuring behavior.
+
+## Change Workflow
+
+1. Read `AGENTS.md`, `TODO.md`, and the owning module before changing behavior.
+2. Check Blizzard's current docs/export before recreating standard UI, item, container, tooltip, or cursor behavior.
+3. Identify the normalized data, model, controller, and row-rendering impact before editing. Keep those responsibilities separated.
+4. Consider performance explicitly: event frequency, visible-row count, cacheability, allocations, tooltip work, and combat restrictions.
+5. Implement the smallest coherent change and preserve future extension points already recorded in the plan.
+6. Update defaults, settings, TOC load order, README, plan, or changelog when the behavior changes their contract.
+7. Run `git diff --check` and inspect the final diff. Do not introduce unrelated formatting or metadata churn.
+8. Validate in game in proportion to risk. There is no local Lua runtime.
+9. Do not commit, tag, or push unless the user explicitly asks.
+
+## In-Game Regression Checklist
+
+Use the relevant subset for small changes and the full list before release:
+
+- Reload with no Lua errors and confirm SavedVariables persist.
+- Open, close, and toggle YvBags through normal bag bindings; test restoring Blizzard bags.
+- Resize, move, scale, reload, and confirm geometry does not jump.
+- Scroll rapidly and hover rapidly without visible hitching.
+- Use, drag, split, compare, and inspect items; repeat scrolling and item use in combat.
+- Confirm immediate cursor feedback and the 50 ms tooltip debounce.
+- Use an item and confirm targeted count refresh plus cooldown/GCD rendering.
+- Test search, all grouping modes, primary/secondary sorting, Manual mode, and collapsed groups.
+- Swap and empty normal and reagent bags; test insufficient compatible space and concurrent empty attempts.
+- Drop cursor items in sorted and Manual modes, including stack merging and specialty-bag compatibility.
+- Check free-space totals, Blizzard cleanup, money, tracked currencies, tooltips, and currency fitting at narrow widths.
+- Test settings live refresh and persistence.
+- Test gray-junk autosell at a merchant with the setting both disabled and enabled.

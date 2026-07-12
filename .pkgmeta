@@ -7,7 +7,7 @@ manual-changelog:
 ignore:
   - .pkgmeta
   - .git
-  - PLAN.md
+  - AGENTS.md
   - TODO.md
   - "*.afphoto"
   - "Media/Textures/*.afphoto"
