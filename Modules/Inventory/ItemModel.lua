@@ -1,5 +1,6 @@
 local _, NS = ...
 
+-- Occupied-slot normalization, async fallbacks, and special item-link handling.
 local ItemModel = {}
 NS.ItemModel = ItemModel
 

@@ -2,20 +2,8 @@ local _, NS = ...
 
 local ADDON_NAME = NS.ADDON_NAME
 
-local function HasInventoryModule()
-    if not NS.Inventory then
-        NS:Print("Inventory module is not loaded.")
-        return false
-    end
-
-    return true
-end
-
+-- Inventory diagnostics
 local function PrintInventoryStats()
-    if not HasInventoryModule() then
-        return
-    end
-
     if not NS.Inventory.initialScanComplete then
         NS.Inventory:ScanNow("slash-stats")
     end
@@ -32,10 +20,6 @@ local function PrintInventoryStats()
 end
 
 local function PrintInventoryContainers()
-    if not HasInventoryModule() then
-        return
-    end
-
     local containers = NS.Inventory:GetContainers()
     if #containers == 0 then
         NS.Inventory:ScanNow("slash-containers")
@@ -54,10 +38,6 @@ local function PrintInventoryContainers()
 end
 
 local function PrintPendingItems()
-    if not HasInventoryModule() then
-        return
-    end
-
     NS.Inventory:ScanNow("slash-pending")
 
     local pendingItems = NS.Inventory:GetPendingItems()
@@ -110,16 +90,13 @@ local function PrintPendingItems()
     end
 end
 
+-- List command parsing and dispatch
 local function JoinKeys(keys)
     return table.concat(keys or {}, ", ")
 end
 
 local function GetSortLabel(sortKey)
-    if NS.ItemListColumns and NS.ItemListColumns.GetSortLabel then
-        return NS.ItemListColumns.GetSortLabel(sortKey)
-    end
-
-    return sortKey or ""
+    return NS.ItemListColumns.GetSortLabel(sortKey)
 end
 
 local function GetItemList()
@@ -132,7 +109,7 @@ local function GetItemList()
         return nil
     end
 
-    local frame = NS.frame or (NS.CreateMainFrame and NS:CreateMainFrame())
+    local frame = NS.frame or NS.MainFrame.Create()
     if not frame or not frame.itemList then
         NS:Print("Item list is not loaded.")
         return nil
@@ -265,6 +242,7 @@ local function SetGroupCommand(arguments)
     NS:Print(("Grouping by %s."):format(list.groupKey))
 end
 
+-- Command registry
 local COMMANDS = {
     {
         triggers = { "", "toggle" },
@@ -272,7 +250,7 @@ local COMMANDS = {
         description = ("Toggle the %s frame"):format(ADDON_NAME),
         func = function()
             if NS:IsInitialized() then
-                NS:ToggleFrame()
+                NS.MainFrame.Toggle()
             end
         end,
     },
@@ -282,7 +260,7 @@ local COMMANDS = {
         description = ("Open the %s frame"):format(ADDON_NAME),
         func = function()
             if NS:IsInitialized() then
-                NS:ShowFrame()
+                NS.MainFrame.Show()
             end
         end,
     },
@@ -292,7 +270,7 @@ local COMMANDS = {
         description = ("Close the %s frame"):format(ADDON_NAME),
         func = function()
             if NS:IsInitialized() then
-                NS:HideFrame()
+                NS.MainFrame.Hide()
             end
         end,
     },
@@ -301,7 +279,7 @@ local COMMANDS = {
         name = "Scan",
         description = "Rescan player bags and print inventory stats",
         func = function()
-            if NS:IsInitialized() and HasInventoryModule() then
+            if NS:IsInitialized() then
                 NS.Inventory:ScanNow("slash")
                 PrintInventoryStats()
             end
@@ -360,13 +338,14 @@ local COMMANDS = {
         name = "Settings",
         description = ("Open %s settings"):format(ADDON_NAME),
         func = function()
-            if NS:IsInitialized() and NS.Settings and NS.Settings.Open then
+            if NS:IsInitialized() then
                 NS.Settings.Open()
             end
         end,
     },
 }
 
+-- Slash command entry point
 local function PrintHelp()
     for _, command in ipairs(COMMANDS) do
         NS:Print(("/ybags %s - %s"):format(command.triggers[1], command.description))

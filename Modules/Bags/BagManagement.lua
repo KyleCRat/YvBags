@@ -1,5 +1,6 @@
 local _, NS = ...
 
+-- Player bag-slot interaction and asynchronous empty-bag operation contract.
 local BagManagement = {}
 NS.BagManagement = BagManagement
 
@@ -24,7 +25,7 @@ local emptyBagOperation
 local function AddError(message)
     if UIErrorsFrame and UIErrorsFrame.AddExternalErrorMessage then
         UIErrorsFrame:AddExternalErrorMessage(message)
-    elseif NS.Print then
+    else
         NS:Print(message)
     end
 end
@@ -86,7 +87,7 @@ local function GetContainerFamily(containerID)
         end
     end
 
-    local inventoryID = Containers and Containers.GetContainerInventoryID and Containers.GetContainerInventoryID(containerID)
+    local inventoryID = Containers.GetContainerInventoryID(containerID)
     local link = inventoryID and GetInventoryItemLink and GetInventoryItemLink("player", inventoryID)
     if link and GetItemFamily then
         return GetItemFamily(link) or 0
@@ -158,7 +159,7 @@ local function GetPlayerContainerIDs()
         end
     end
 
-    local firstReagentBagID = Containers and Containers.GetFirstReagentBagID and Containers.GetFirstReagentBagID() or (normalBagSlots + 1)
+    local firstReagentBagID = Containers.GetFirstReagentBagID()
     for containerID = firstReagentBagID, firstReagentBagID + (NUM_REAGENTBAG_SLOTS or 0) - 1 do
         if GetContainerNumSlots(containerID) > 0 then
             containerIDs[#containerIDs + 1] = containerID
@@ -239,15 +240,12 @@ local function GetBagSlotIcon(containerID, inventoryID)
         return icon
     end
 
-    if Containers and Containers.GetContainerIcon then
-        return Containers.GetContainerIcon(containerID)
-    end
-
-    return UNKNOWN_ITEM_ICON
+    return Containers.GetContainerIcon(containerID) or UNKNOWN_ITEM_ICON
 end
 
+-- Empty-bag operation state
 local function IsReagentBagContainer(containerID)
-    local firstReagentBagID = Containers and Containers.GetFirstReagentBagID and Containers.GetFirstReagentBagID() or ((NUM_BAG_SLOTS or 4) + 1)
+    local firstReagentBagID = Containers.GetFirstReagentBagID()
     return containerID >= firstReagentBagID
 end
 
@@ -315,9 +313,7 @@ end
 local function FinishEmptyBagOperation(success, message)
     emptyBagOperation = nil
 
-    if NS.Inventory then
-        NS.Inventory:ScheduleScan(success and "empty-bag-complete" or "empty-bag-failed")
-    end
+    NS.Inventory:ScheduleScan(success and "empty-bag-complete" or "empty-bag-failed")
 
     if not success and message then
         AddError(message)
@@ -398,6 +394,7 @@ local function OnBagStateChanged(_, bagID)
     end
 end
 
+-- Public bag interaction contract
 function BagManagement.GetBagSlots()
     local slots = {}
     local normalBagSlots = NUM_BAG_SLOTS or 4
@@ -410,11 +407,11 @@ function BagManagement.GetBagSlots()
         isEquipped = true,
         icon = GetBagSlotIcon(BACKPACK_ID),
         numSlots = GetContainerNumSlots(BACKPACK_ID),
-        name = Containers and Containers.GetContainerName and Containers.GetContainerName(BACKPACK_ID) or (BACKPACK_TOOLTIP or "Backpack"),
+        name = Containers.GetContainerName(BACKPACK_ID),
     }
 
     for containerID = 1, normalBagSlots do
-        local inventoryID = Containers and Containers.GetContainerInventoryID and Containers.GetContainerInventoryID(containerID)
+        local inventoryID = Containers.GetContainerInventoryID(containerID)
         slots[#slots + 1] = {
             containerID = containerID,
             inventoryID = inventoryID,
@@ -423,13 +420,13 @@ function BagManagement.GetBagSlots()
             isEquipped = inventoryID and GetInventoryItemTexture and GetInventoryItemTexture("player", inventoryID) ~= nil,
             icon = GetBagSlotIcon(containerID, inventoryID),
             numSlots = GetContainerNumSlots(containerID),
-            name = Containers and Containers.GetContainerName and Containers.GetContainerName(containerID) or ("Bag %d"):format(containerID),
+            name = Containers.GetContainerName(containerID),
         }
     end
 
-    local firstReagentBagID = Containers and Containers.GetFirstReagentBagID and Containers.GetFirstReagentBagID() or (normalBagSlots + 1)
+    local firstReagentBagID = Containers.GetFirstReagentBagID()
     for containerID = firstReagentBagID, firstReagentBagID + (NUM_REAGENTBAG_SLOTS or 0) - 1 do
-        local inventoryID = Containers and Containers.GetContainerInventoryID and Containers.GetContainerInventoryID(containerID)
+        local inventoryID = Containers.GetContainerInventoryID(containerID)
         slots[#slots + 1] = {
             containerID = containerID,
             inventoryID = inventoryID,
@@ -438,7 +435,7 @@ function BagManagement.GetBagSlots()
             isEquipped = inventoryID and GetInventoryItemTexture and GetInventoryItemTexture("player", inventoryID) ~= nil,
             icon = GetBagSlotIcon(containerID, inventoryID),
             numSlots = GetContainerNumSlots(containerID),
-            name = Containers and Containers.GetContainerName and Containers.GetContainerName(containerID) or (EQUIP_CONTAINER_REAGENT or "Reagent Bag"),
+            name = Containers.GetContainerName(containerID),
         }
     end
 
@@ -446,7 +443,7 @@ function BagManagement.GetBagSlots()
 end
 
 function BagManagement.PickupBag(containerID)
-    local inventoryID = Containers and Containers.GetContainerInventoryID and Containers.GetContainerInventoryID(containerID)
+    local inventoryID = Containers.GetContainerInventoryID(containerID)
     if not inventoryID then
         return false
     end
@@ -469,7 +466,7 @@ function BagManagement.PickupBag(containerID)
 end
 
 function BagManagement.PutCursorInBagSlot(containerID)
-    local inventoryID = Containers and Containers.GetContainerInventoryID and Containers.GetContainerInventoryID(containerID)
+    local inventoryID = Containers.GetContainerInventoryID(containerID)
     if not inventoryID or not PutItemInBag then
         return false
     end

@@ -51,7 +51,7 @@ Every time the addon target is upgraded to a new WoW version or client patch:
 2. Update the TOC Interface value and compatibility documentation only after reviewing the export.
 3. Compare Blizzard's current container item button hover, leave, cursor, tooltip, comparison, merchant, readable-item, and modified-click behavior with the previous export.
 4. Check especially `ContainerFrameItemButton_OnEnter`, its matching leave path, `ContainerFrameItemButton_CalculateItemTooltipAnchors`, and any mixins or helpers they now call.
-5. Add any new mouseover cursor or visual behavior to YvBags' immediate implementation in `UI/ItemTooltip.lua`.
+5. Add any new mouseover cursor or visual behavior to YvBags' immediate implementation in `Modules/ItemList/Tooltip.lua`.
 6. Keep the delayed native Blizzard hover call as the compatibility fallback unless Blizzard's implementation changes enough to require redesign.
 7. Test rapid row sweeps, dress-up comparison modifiers, merchant sell cursors, readable items, item comparison tooltips, item use, drag, and cursor cleanup in game.
 
@@ -61,26 +61,35 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 
 - `Defaults.lua`: addon identity constants, account defaults, and character defaults.
 - `Core.lua`: `ADDON_LOADED`, LibSimpleDB construction, shared event dispatch, and initialization callbacks.
-- `Inventory/Containers.lua`: discovery and metadata for player-owned bag containers and empty slots.
-- `Inventory/ItemModel.lua`: the normalized occupied-slot item model, including async fallbacks, binding, keystones, caged pets, expansion, and profession quality.
-- `Inventory/Data.lua`: inventory state, targeted container refreshes, debounced reconciliation scans, pending item data, indexes, totals, and update callbacks.
-- `Inventory/Categories.lua`: built-in v1-lite category assignment and labels.
+- `Modules/Inventory/Containers.lua`: discovery and metadata for player-owned bag containers and empty slots.
+- `Modules/Inventory/ItemModel.lua`: normalized occupied-slot item data, including async fallbacks, binding, keystones, caged pets, expansion, and profession quality.
+- `Modules/Inventory/Inventory.lua`: live inventory state, targeted container refreshes, debounced reconciliation scans, pending item data, indexes, totals, and update callbacks.
+- `Modules/Inventory/Categories.lua`: built-in v1-lite category assignment and labels.
 - `Constants/Binding.lua`: binding keys and binding predicates. Use these constants instead of repeating binding strings.
-- `UI/ItemListModel.lua`: search, grouping, primary sorting, secondary sorting, manual ordering, and display-row construction.
-- `UI/ItemListColumns.lua`: fixed/disabled column definitions, header metadata, cell formatting, and column-owned visual metadata.
-- `UI/ItemList.lua`: list controller, ScrollBox setup, headers, context menus, search box, clipping, scrollbar buffer, and cursor-drop overlay.
-- `UI/ItemRow.lua`: pooled item-row visuals, native item-button bridge, binding/profession icons, highlights, and cooldown rendering.
-- `UI/ItemGroupRow.lua`: pooled category/group rows and collapse controls.
-- `UI/ItemTooltip.lua`: debounced native tooltips, custom anchoring, and immediate cursor feedback.
-- `Inventory/BagManagement.lua`: bag pickup/swap, compatible item placement, empty-bag state machine, and Blizzard bag cleanup.
-- `UI/Footer.lua`: bag buttons, bag-space display, money, footer layout, and related tooltips.
-- `UI/FooterCurrencies.lua`: tracked backpack currencies, responsive fitting, currency tooltips, and untracking.
-- `Features/BlizzardBags.lua`: replacement wrappers for Blizzard bag open, close, toggle, and restore behavior.
-- `Features/JunkAutosell.lua`: optional use of Blizzard's native gray-junk selling API.
+- `Modules/Bags/BagManagement.lua`: bag pickup/swap, compatible item placement, empty-bag state machine, and Blizzard bag cleanup. Keep the asynchronous emptying state machine together.
+- `Modules/Bags/BlizzardBags.lua`: replacement wrappers for Blizzard bag open, close, toggle, and restore behavior.
+- `Modules/Bags/JunkAutosell.lua`: optional use of Blizzard's native gray-junk selling API.
+- `Modules/ItemList/Columns.lua`: fixed/disabled column definitions, header metadata, cell formatting, and column-owned visual metadata.
+- `Modules/ItemList/Model.lua`: search, grouping, primary sorting, secondary sorting, manual ordering, and display-row construction. Cache sort values here rather than in row rendering.
+- `Modules/ItemList/List.lua`: list state, ScrollBox composition, data-provider refreshes, and coordination between list-owned modules.
+- `Modules/ItemList/Header.lua`: header visuals, sorting/grouping context menus, sort indicators, and separator interactions.
+- `Modules/ItemList/SearchBox.lua`: search-box creation and list search dispatch.
+- `Modules/ItemList/CursorDrop.lua`: cursor-item drop targets, insertion overlay, and active cursor polling.
+- `Modules/ItemList/ItemRow.lua`: pooled item-row layout and custom visual rendering.
+- `Modules/ItemList/ItemButton.lua`: native `ContainerFrameItemButtonTemplate` interaction bridge and suppression of native button art.
+- `Modules/ItemList/Cooldown.lua`: secret-safe cooldown/GCD lookup, cached state, row shade, and cooldown name prefix.
+- `Modules/ItemList/GroupRow.lua`: pooled category/group rows and collapse controls.
+- `Modules/ItemList/Tooltip.lua`: debounced native tooltips, custom anchoring, immediate cursor feedback, and pooled-button cleanup.
+- `Modules/ItemList/Layout.lua`: geometry shared by the list, header, scrollbar, and drop overlay.
+- `Modules/MainFrame/MainFrame.lua`: top-level frame lifecycle and composition.
+- `Modules/MainFrame/Geometry.lua`: frame scale, size, position persistence, pixel snapping, and position diagnostics.
+- `Modules/MainFrame/Controls.lua`: title-bar scale control and subheader settings/search controls.
+- `Modules/MainFrame/Layout.lua`: geometry shared by main-frame modules.
+- `Modules/MainFrame/Footer.lua`: bag buttons, bag-space display, money, footer layout, and related tooltips.
+- `Modules/MainFrame/FooterCurrencies.lua`: tracked backpack currencies, responsive fitting, currency tooltips, and untracking.
 - `Media.lua`: centralized fonts, textures, atlases, colors, and LibSharedMedia registration.
 - `Formatting/Money.lua`: shared compact and exact money formatting.
 - `Settings.lua`: native Blizzard Settings registrations and live setting callbacks.
-- `UI/MainFrame.lua`: frame construction, title/subheader controls, sizing, positioning, scale, and top-level refresh wiring.
 - `Commands.lua`: slash commands and diagnostics.
 
 ## Critical Implementation Invariants
@@ -90,7 +99,7 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - `BAG_UPDATE` uses `Inventory:RefreshContainerNow` for the affected player container so counts and rows update promptly.
 - Noisier follow-up events use the 0.2-second `Inventory:ScheduleScan` path to reconcile all containers.
 - Preserve `itemsByLocation`, `locationKey`, bag ID, and slot index even when Bag/Slot is not user-visible. Manual mode and item-button routing depend on physical location.
-- New normalized fields belong in `Inventory/ItemModel.lua`. Update pending-item diagnostics, sorting/filtering consumers, and row formatting only when they need that field.
+- New normalized fields belong in `Modules/Inventory/ItemModel.lua`. Update pending-item diagnostics, sorting/filtering consumers, and row formatting only when they need that field.
 - Item data is asynchronous. A temporary cache miss must not permanently classify an item as unknown.
 - Keystone links and caged battle-pet links are special item-like records. Do not simplify them back to ordinary item-info-only handling.
 
@@ -106,7 +115,7 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 
 ### Hover And Tooltips
 
-- `UI/ItemTooltip.lua` immediately handles the currently mirrored cursor feedback, including dress-up, merchant sell, readable-item, and `SetCursorHoveredItem` state.
+- `Modules/ItemList/Tooltip.lua` immediately handles the currently mirrored cursor feedback, including dress-up, merchant sell, readable-item, and `SetCursorHoveredItem` state.
 - The full Blizzard `ContainerFrameItemButton_OnEnter` path runs after `TOOLTIP_SHOW_DELAY` (`0.05` seconds) to avoid expensive tooltip rendering during quick row sweeps.
 - Do not move heavy tooltip work back into immediate `OnEnter` handlers.
 - Tooltip positioning can use row-edge or cursor anchoring through `USE_CURSOR_ANCHOR`. Row-edge placement chooses the side nearest the cursor, then falls back to the side with room.
@@ -156,8 +165,8 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 2. Check Blizzard's current docs/export before recreating standard UI, item, container, tooltip, or cursor behavior.
 3. Identify the normalized data, model, controller, and row-rendering impact before editing. Keep those responsibilities separated.
 4. Consider performance explicitly: event frequency, visible-row count, cacheability, allocations, tooltip work, and combat restrictions.
-5. Implement the smallest coherent change and preserve future extension points already recorded in the plan.
-6. Update defaults, settings, TOC load order, README, plan, or changelog when the behavior changes their contract.
+5. Implement the smallest coherent change and preserve extension points documented here or in `TODO.md`.
+6. Update defaults, settings, TOC load order, README, `TODO.md`, or changelog when the behavior changes their contract.
 7. Run `git diff --check` and inspect the final diff. Do not introduce unrelated formatting or metadata churn.
 8. Validate in game in proportion to risk. There is no local Lua runtime.
 9. Do not commit, tag, or push unless the user explicitly asks.

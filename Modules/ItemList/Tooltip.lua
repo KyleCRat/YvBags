@@ -1,5 +1,6 @@
 local _, NS = ...
 
+-- Debounced native item tooltips and immediate cursor-feedback contract.
 local ItemTooltip = {}
 NS.ItemTooltip = ItemTooltip
 
@@ -20,6 +21,7 @@ local schedulerFrame
 local pendingButton
 local pendingElapsed = 0
 
+-- Tooltip positioning
 local function GetScreenSize()
     local width = GetScreenWidth and GetScreenWidth() or nil
     local height = GetScreenHeight and GetScreenHeight() or nil
@@ -153,6 +155,7 @@ local function AnchorRowTooltip(row, tooltip)
     end
 end
 
+-- Immediate cursor feedback and cleanup
 local function IsRegisteredRowButton(button)
     local row = button and button.row
     return row and row.itemButton == button and button.usesCustomTooltipAnchor
@@ -229,6 +232,7 @@ local function HideTooltip(button)
     end
 end
 
+-- Delayed native tooltip rendering
 local function ShouldShowTooltip(button)
     return IsRegisteredRowButton(button) and button.IsMouseOver and button:IsMouseOver() and button.HasItem and button:HasItem()
 end
@@ -293,6 +297,7 @@ local function OnRowButtonLeave(button)
     HideTooltip(button)
 end
 
+-- Public tooltip contract
 function ItemTooltip.Initialize()
     if hooked or not hooksecurefunc or not ContainerFrameItemButton_CalculateItemTooltipAnchors then
         return
@@ -316,4 +321,10 @@ function ItemTooltip.RegisterRowButton(button)
     button:SetScript("OnEnter", OnRowButtonEnter)
     button:SetScript("OnLeave", OnRowButtonLeave)
     ItemTooltip.Initialize()
+end
+
+function ItemTooltip.ResetButton(button)
+    if pendingButton == button or button.tooltipShown or (button.IsMouseOver and button:IsMouseOver()) then
+        HideTooltip(button)
+    end
 end

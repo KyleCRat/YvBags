@@ -5,6 +5,7 @@ NS.Settings = AddonSettings
 
 local ADDON_NAME = NS.ADDON_NAME
 
+-- Setting IDs
 local SETTING_REPLACE_BLIZZARD_BAGS = ADDON_NAME .. "_REPLACE_BLIZZARD_BAGS"
 local SETTING_AUTOSELL_GRAY_JUNK = ADDON_NAME .. "_AUTOSELL_GRAY_JUNK"
 local SETTING_SHOW_COOLDOWNS_IN_NAME = ADDON_NAME .. "_SHOW_COOLDOWNS_IN_NAME"
@@ -15,6 +16,7 @@ local SETTING_PRIMARY_SORT_DIRECTION = ADDON_NAME .. "_PRIMARY_SORT_DIRECTION"
 local SETTING_SECONDARY_SORT_KEY = ADDON_NAME .. "_SECONDARY_SORT_KEY"
 local SETTING_SECONDARY_SORT_DIRECTION = ADDON_NAME .. "_SECONDARY_SORT_DIRECTION"
 
+-- Control values and labels
 local SCALE_MIN_PERCENT = 50
 local SCALE_MAX_PERCENT = 150
 local SCALE_STEP_PERCENT = 5
@@ -22,6 +24,7 @@ local NO_SECONDARY_SORT_LABEL = "None"
 local ASCENDING_LABEL = "Ascending"
 local DESCENDING_LABEL = "Descending"
 
+-- Stored values and live UI dispatch
 local function GetItemList()
     return NS.frame and NS.frame.itemList
 end
@@ -39,29 +42,19 @@ local function AddSection(layout, title)
 end
 
 local function GetSortLabel(sortKey)
-    if NS.ItemListColumns and NS.ItemListColumns.GetSortLabel then
-        return NS.ItemListColumns.GetSortLabel(sortKey)
-    end
-
-    return sortKey or ""
+    return NS.ItemListColumns.GetSortLabel(sortKey)
 end
 
 local function GetGroupLabel(groupKey)
-    if NS.ItemListModel and NS.ItemListModel.GetGroupLabel then
-        return NS.ItemListModel.GetGroupLabel(groupKey)
-    end
-
-    return groupKey or ""
+    return NS.ItemListModel.GetGroupLabel(groupKey)
 end
 
 local function GetBooleanSetting(section, key)
-    return NS.db and NS.db:Get(section, key) == true
+    return NS.db:Get(section, key) == true
 end
 
 local function SetBooleanSetting(section, key, value)
-    if NS.db then
-        NS.db:Set(section, key, value == true)
-    end
+    NS.db:Set(section, key, value == true)
 end
 
 local function FormatScalePercent(value)
@@ -69,22 +62,14 @@ local function FormatScalePercent(value)
 end
 
 local function GetFrameScalePercent()
-    local scale = NS.defaults.character.frame.scale
-    if NS.charDB then
-        scale = NS.charDB:Get("frame", "scale") or scale
-    end
+    local scale = NS.charDB:Get("frame", "scale") or NS.defaults.character.frame.scale
 
     return math.floor((scale * 100) + 0.5)
 end
 
 local function SetFrameScalePercent(value)
     value = math.max(SCALE_MIN_PERCENT, math.min(SCALE_MAX_PERCENT, tonumber(value) or 100))
-
-    if NS.SetFrameScale then
-        NS:SetFrameScale(value / 100)
-    elseif NS.charDB then
-        NS.charDB:Set("frame", "scale", value / 100)
-    end
+    NS.MainFrameGeometry.SetScale(value / 100)
 end
 
 local function SetReplaceBlizzardBags(value)
@@ -113,9 +98,10 @@ local function SetShowCooldownsInName(value)
 end
 
 local function GetListValue(key)
-    return NS.db and NS.db:Get("list", key)
+    return NS.db:Get("list", key)
 end
 
+-- List setting updates
 local function SetStoredPrimarySort(sortKey)
     local ListModel = NS.ItemListModel
     sortKey = ListModel.NormalizeSortKey(sortKey)
@@ -200,6 +186,7 @@ local function SetGroup(groupKey)
     end
 end
 
+-- Dropdown option data
 local function CreateSortOptions()
     local container = Settings.CreateControlTextContainer()
     for _, sortKey in ipairs(NS.ItemListModel.GetSortKeyList()) do
@@ -235,6 +222,7 @@ local function CreateDirectionOptions()
     return container:GetData()
 end
 
+-- Blizzard Settings control registration
 local function RegisterCheckbox(category, variable, name, defaultValue, getValue, setValue, tooltip)
     local setting = Settings.RegisterProxySetting(category, variable, Settings.VarType.Boolean, name, defaultValue, getValue, setValue)
     Settings.CreateCheckbox(category, setting, tooltip)
@@ -259,6 +247,7 @@ local function RegisterSlider(category, variable, name, defaultValue, getValue, 
     return setting
 end
 
+-- Public settings contract
 function AddonSettings.Open()
     if Settings and Settings.OpenToCategory and AddonSettings.category then
         Settings.OpenToCategory(AddonSettings.category:GetID())

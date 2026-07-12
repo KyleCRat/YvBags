@@ -1,5 +1,6 @@
 local _, NS = ...
 
+-- Fixed-column definitions, formatting, and column-owned visual metadata.
 local Columns = {}
 NS.ItemListColumns = Columns
 
@@ -91,7 +92,7 @@ local warboundBindingIconInfo = {
     color = warboundColor,
     size = WARBOUND_BINDING_ICON_SIZE,
 }
-local goldHeaderLabel = NS.Money and NS.Money.GetGoldIconMarkup and NS.Money.GetGoldIconMarkup(HEADER_GOLD_ICON_SIZE) or "Gold"
+local goldHeaderLabel = NS.Money.GetGoldIconMarkup(HEADER_GOLD_ICON_SIZE)
 
 -- Fixed v1 columns. Later column customization can replace this table without
 -- changing row rendering or list controller code.
@@ -226,7 +227,7 @@ local function EmptyDash(value)
 end
 
 local function FormatMoney(copper)
-    return NS.Money and NS.Money.Format and NS.Money.Format(copper) or "-"
+    return NS.Money.Format(copper)
 end
 
 local function FormatSubtype(item)
@@ -264,6 +265,7 @@ local function GetEnabledColumns()
     return enabledColumns
 end
 
+-- Column visual state
 local function SetNameTextColor(fontString, item)
     local color = item and item.quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[item.quality]
     if color then
@@ -274,7 +276,7 @@ local function SetNameTextColor(fontString, item)
 end
 
 local function SetSellValueTextColor(fontString, item)
-    local display = item and NS.Money and NS.Money.GetDisplay and NS.Money.GetDisplay(item.totalSellValue or item.sellValue)
+    local display = item and NS.Money.GetDisplay(item.totalSellValue or item.sellValue)
     local color = display and display.color
     if color then
         fontString:SetTextColor(color.r, color.g, color.b)
@@ -283,6 +285,7 @@ local function SetSellValueTextColor(fontString, item)
     end
 end
 
+-- Public column contract
 function Columns.GetColumns()
     return GetEnabledColumns()
 end
@@ -295,6 +298,11 @@ function Columns.GetColumnBySortKey(sortKey)
     end
 
     return nil
+end
+
+function Columns.GetDefaultSortAscending(sortKey)
+    local column = Columns.GetColumnBySortKey(sortKey)
+    return not (column and column.defaultAscending == false)
 end
 
 function Columns.GetSortLabel(sortKey)

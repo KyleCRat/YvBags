@@ -1,5 +1,6 @@
 local _, NS = ...
 
+-- Player-container discovery, metadata, and physical location helpers.
 local Containers = {}
 NS.Containers = Containers
 

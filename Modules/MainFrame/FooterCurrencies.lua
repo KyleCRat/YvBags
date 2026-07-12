@@ -1,5 +1,6 @@
 local _, NS = ...
 
+-- Responsive tracked-currency footer display and tooltip contract.
 local FooterCurrencies = {}
 NS.FooterCurrencies = FooterCurrencies
 
@@ -39,6 +40,7 @@ local BUTTON_TYPE = "Button"
 local TEXTURE_LAYER_ARTWORK = "ARTWORK"
 local TEXTURE_LAYER_OVERLAY = "OVERLAY"
 
+-- Formatting and tracked-currency data
 local function GetPrimaryFont()
     return NS.Media.GetPrimaryFont()
 end
@@ -134,6 +136,7 @@ local function GetTrackedCurrencies()
     return currencies
 end
 
+-- Tooltip rendering
 local function AddTooltipDivider(tooltip)
     if GameTooltip_AddBlankLineToTooltip then
         GameTooltip_AddBlankLineToTooltip(tooltip)
@@ -196,6 +199,7 @@ local function ShowCurrencyTooltip(button)
     GameTooltip:AddLine(GetCurrencyTooltipLabel(hoveredCurrency), r, g, b)
     GameTooltip:AddLine(FormatAmountWithMax(hoveredCurrency), 1, 1, 1)
     AddTooltipDivider(GameTooltip)
+    AddTooltipActionLine(GameTooltip, "Left-click to open currencies")
     AddTooltipActionLine(GameTooltip, "Middle-click to stop tracking")
     GameTooltip:Show()
 end
@@ -204,6 +208,7 @@ local function HideCurrencyTooltip()
     GameTooltip:Hide()
 end
 
+-- Currency interaction
 local function RefreshTokenFrame()
     if BackpackTokenFrame and BackpackTokenFrame.Update then
         BackpackTokenFrame:Update()
@@ -254,6 +259,7 @@ local function OnCurrencyLeave(button)
     HideCurrencyTooltip()
 end
 
+-- Button rendering and layout
 local function MeasureCurrencyButton(button, currency)
     button.countText:SetText(FormatLargeAmount(currency.quantity))
     return math.max(
@@ -267,7 +273,6 @@ local function UpdateCurrencyButton(button, currency, width)
 
     button.currency = currency
     button:SetWidth(width)
-    button.countText:SetText(FormatLargeAmount(currency.quantity))
     button.icon:SetTexture(currency.iconFileID)
     button.border:SetVertexColor(r, g, b, CURRENCY_ICON_BORDER_ALPHA)
     button:Show()
@@ -308,6 +313,7 @@ local function CreateCurrencyButton(parent)
     return button
 end
 
+-- Public footer-currency contract
 function FooterCurrencies.Refresh(frame)
     if not frame or not frame.currencyContainer or not frame.currencyButtons then
         return

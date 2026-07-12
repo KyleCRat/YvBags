@@ -1,5 +1,6 @@
 local _, NS = ...
 
+-- Live player-inventory state, targeted refreshes, and reconciliation scans.
 local Inventory = {}
 NS.Inventory = Inventory
 

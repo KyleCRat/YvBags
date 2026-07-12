@@ -1,5 +1,6 @@
 local _, NS = ...
 
+-- Pooled group-row visuals and collapse interaction contract.
 local GroupRow = {}
 NS.ItemGroupRow = GroupRow
 
@@ -52,8 +53,9 @@ local TOGGLE_TEXCOORDS = {
     },
 }
 
+-- Row construction and visual state
 local function GetPrimaryFont()
-    return NS.Media and NS.Media.GetPrimaryFont and NS.Media.GetPrimaryFont() or STANDARD_TEXT_FONT
+    return NS.Media.GetPrimaryFont()
 end
 
 local function GetRightClipPadding(row)
@@ -160,6 +162,7 @@ local function InitializeRow(row)
     row.groupInitialized = true
 end
 
+-- Public row contract
 function GroupRow.GetRowHeight()
     return ROW_HEIGHT
 end

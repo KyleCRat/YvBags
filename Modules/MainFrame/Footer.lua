@@ -1,5 +1,6 @@
 local _, NS = ...
 
+-- Footer layout, bag controls, inventory totals, money, and tooltips.
 local Footer = {}
 NS.Footer = Footer
 
@@ -90,10 +91,10 @@ function Footer.UpdateMoney(frame)
     end
 
     local copper = GetMoney and GetMoney() or 0
-    local display = NS.Money and NS.Money.GetDisplay and NS.Money.GetDisplay(copper, true)
-    local color = display and display.color
+    local display = NS.Money.GetDisplay(copper, true)
+    local color = display.color
 
-    frame.moneyText:SetText(display and display.text or "0")
+    frame.moneyText:SetText(display.text)
     if frame.moneyHoverFrame then
         frame.moneyHoverFrame.copper = copper
         frame.moneyHoverFrame:SetWidth(math.max(FOOTER_MONEY_HOVER_MIN_WIDTH, frame.moneyText:GetStringWidth() + FOOTER_MONEY_HOVER_PADDING))
@@ -182,13 +183,11 @@ local function HideInventoryStatsTooltip()
 end
 
 local function SortBagsFromStatsDisplay()
-    if NS.BagManagement and NS.BagManagement.CleanupBags then
-        NS.BagManagement.CleanupBags()
-    end
+    NS.BagManagement.CleanupBags()
 end
 
 local function UpdateInventoryStats(frame)
-    if not frame.statsText or not NS.Inventory then
+    if not frame.statsText then
         return
     end
 
@@ -205,7 +204,7 @@ end
 
 -- Bag button tooltips
 local function GetBagUsageCounts(button)
-    if NS.Inventory and button.containerID then
+    if button.containerID then
         local container = NS.Inventory:GetContainer(button.containerID)
         if container then
             return container.usedSlots or 0, container.numSlots or button.numSlots or 0
@@ -298,9 +297,7 @@ local function OnBagButtonEnter(button)
         button.highlight:Show()
     end
 
-    if NS.frame and NS.frame.itemList and NS.frame.itemList.SetHighlightedBagID then
-        NS.frame.itemList:SetHighlightedBagID(button.containerID)
-    end
+    NS.frame.itemList:SetHighlightedBagID(button.containerID)
 
     ShowBagButtonTooltip(button)
 end
@@ -310,7 +307,7 @@ local function OnBagButtonLeave(button)
         button.highlight:Hide()
     end
 
-    if NS.frame and NS.frame.itemList and NS.frame.itemList.SetHighlightedBagID and NS.frame.itemList.highlightedBagID == button.containerID then
+    if NS.frame.itemList.highlightedBagID == button.containerID then
         NS.frame.itemList:SetHighlightedBagID(nil)
     end
 
@@ -318,31 +315,23 @@ local function OnBagButtonLeave(button)
 end
 
 local function OnBagButtonClick(button, mouseButton)
-    if not NS.BagManagement then
-        return
-    end
-
     if mouseButton == "RightButton" then
-        if NS.BagManagement.EmptyBag then
-            NS.BagManagement.EmptyBag(button.containerID)
-        end
+        NS.BagManagement.EmptyBag(button.containerID)
     elseif button.isBackpack then
-        if NS.BlizzardBags and NS.BlizzardBags.ShowBlizzardBags then
-            NS.BlizzardBags.ShowBlizzardBags()
-        end
-    elseif not button.isBackpack and NS.BagManagement.HandleBagButtonClick then
+        NS.BlizzardBags.ShowBlizzardBags()
+    else
         NS.BagManagement.HandleBagButtonClick(button.containerID)
     end
 end
 
 local function OnBagButtonDragStart(button)
-    if not button.isBackpack and NS.BagManagement and NS.BagManagement.PickupBag then
+    if not button.isBackpack then
         NS.BagManagement.PickupBag(button.containerID)
     end
 end
 
 local function OnBagButtonReceiveDrag(button)
-    if not button.isBackpack and NS.BagManagement and NS.BagManagement.PutCursorInBagSlot then
+    if not button.isBackpack then
         NS.BagManagement.PutCursorInBagSlot(button.containerID)
     end
 end
@@ -372,7 +361,7 @@ local function UpdateBagButton(button, slot)
 end
 
 function Footer.UpdateBagButtons(frame)
-    if not frame.bagButtons or not NS.BagManagement or not NS.BagManagement.GetBagSlots then
+    if not frame.bagButtons then
         return
     end
 

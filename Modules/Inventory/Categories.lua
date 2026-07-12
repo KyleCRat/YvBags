@@ -1,5 +1,6 @@
 local _, NS = ...
 
+-- Built-in v1 category assignment and labels.
 local Categories = {}
 NS.Categories = Categories
 

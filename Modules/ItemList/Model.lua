@@ -1,5 +1,6 @@
 local _, NS = ...
 
+-- Search, grouping, sorting, and display-row construction contract.
 local ListModel = {}
 NS.ItemListModel = ListModel
 
@@ -165,6 +166,7 @@ local GROUP_KEY_ALIASES = {
     exp = "expansion",
 }
 
+-- Sort value normalization and comparison
 local function Lower(value)
     return strlower(tostring(value or ""))
 end
@@ -254,9 +256,18 @@ local function CompareLocation(left, right)
     return NumberValue(left.slotIndex, 0) < NumberValue(right.slotIndex, 0)
 end
 
-local function CompareSort(left, right, sortKey, sortAscending)
-    local leftValue = GetSortValue(left, sortKey)
-    local rightValue = GetSortValue(right, sortKey)
+local function BuildSortValueCache(items, sortKey)
+    local values = {}
+    for _, item in ipairs(items) do
+        values[item] = GetSortValue(item, sortKey)
+    end
+
+    return values
+end
+
+local function CompareSort(left, right, values, sortAscending)
+    local leftValue = values[left]
+    local rightValue = values[right]
 
     if leftValue ~= rightValue then
         if sortAscending then
@@ -270,15 +281,24 @@ local function CompareSort(left, right, sortKey, sortAscending)
 end
 
 local function SortItems(items, sortKey, sortAscending, secondarySortKey, secondarySortAscending)
+    local primaryValues
+    local secondaryValues
+    if sortKey ~= MANUAL_SORT_KEY then
+        primaryValues = BuildSortValueCache(items, sortKey)
+        if secondarySortKey and secondarySortKey ~= NO_SECONDARY_SORT_KEY and secondarySortKey ~= sortKey then
+            secondaryValues = BuildSortValueCache(items, secondarySortKey)
+        end
+    end
+
     table.sort(items, function(left, right)
-        if sortKey ~= MANUAL_SORT_KEY then
-            local primaryResult = CompareSort(left, right, sortKey, sortAscending)
+        if primaryValues then
+            local primaryResult = CompareSort(left, right, primaryValues, sortAscending)
             if primaryResult ~= nil then
                 return primaryResult
             end
 
-            if secondarySortKey and secondarySortKey ~= NO_SECONDARY_SORT_KEY and secondarySortKey ~= sortKey then
-                local secondaryResult = CompareSort(left, right, secondarySortKey, secondarySortAscending)
+            if secondaryValues then
+                local secondaryResult = CompareSort(left, right, secondaryValues, secondarySortAscending)
                 if secondaryResult ~= nil then
                     return secondaryResult
                 end
@@ -289,27 +309,22 @@ local function SortItems(items, sortKey, sortAscending, secondarySortKey, second
     end)
 end
 
+-- Search and grouping
+local function FieldMatchesSearch(value, searchText)
+    return value ~= nil and string.find(Lower(value), searchText, 1, true) ~= nil
+end
+
 local function ItemMatchesSearch(item, searchText)
     if not searchText or searchText == "" then
         return true
     end
 
-    local fields = {
-        item.name,
-        item.type,
-        item.subtype,
-        item.categoryName,
-        item.bindingText,
-        item.itemID,
-    }
-
-    for _, field in ipairs(fields) do
-        if field and string.find(Lower(field), searchText, 1, true) then
-            return true
-        end
-    end
-
-    return false
+    return FieldMatchesSearch(item.name, searchText)
+        or FieldMatchesSearch(item.type, searchText)
+        or FieldMatchesSearch(item.subtype, searchText)
+        or FieldMatchesSearch(item.categoryName, searchText)
+        or FieldMatchesSearch(item.bindingText, searchText)
+        or FieldMatchesSearch(item.itemID, searchText)
 end
 
 local function GetGroupInfo(item, groupKey)
@@ -347,6 +362,7 @@ local function NormalizeKey(key, aliases, validKeys, defaultKey)
     return defaultKey
 end
 
+-- Public model contract
 function ListModel.GetRowTypeItem()
     return ROW_TYPE_ITEM
 end
@@ -369,6 +385,10 @@ end
 
 function ListModel.GetManualSortKey()
     return MANUAL_SORT_KEY
+end
+
+function ListModel.IsManualSortKey(sortKey)
+    return ListModel.NormalizeSortKey(sortKey) == MANUAL_SORT_KEY
 end
 
 function ListModel.GetGroupKeyList()

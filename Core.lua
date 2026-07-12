@@ -91,9 +91,7 @@ function NS:Initialize()
         callback()
     end
 
-    if NS.CreateMainFrame then
-        NS:CreateMainFrame()
-    end
+    NS.MainFrame.Create()
 end
 
 local function OnAddonLoaded(self, loadedAddon)

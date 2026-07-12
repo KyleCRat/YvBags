@@ -1,5 +1,6 @@
 local _, NS = ...
 
+-- Optional merchant-triggered use of Blizzard's native gray-junk seller.
 local JunkAutosell = {}
 NS.JunkAutosell = JunkAutosell
 
@@ -9,7 +10,7 @@ local merchantOpen = false
 local sellScheduled = false
 
 local function IsEnabled()
-    return NS.db and NS.db:Get("features", "autosellGrayJunk") == true
+    return NS.db:Get("features", "autosellGrayJunk") == true
 end
 
 local function CanSellJunk()
@@ -31,6 +32,7 @@ local function SellJunk()
     C_MerchantFrame.SellAllJunkItems()
 end
 
+-- Public scheduling contract
 function JunkAutosell.ScheduleSell()
     if sellScheduled or not CanSellJunk() then
         return
@@ -44,6 +46,7 @@ function JunkAutosell.ScheduleSell()
     end
 end
 
+-- Merchant event state
 local function OnMerchantShow()
     merchantOpen = true
     JunkAutosell.ScheduleSell()
@@ -63,11 +66,9 @@ NS:RegisterInitCallback(function()
     NS:RegisterEventHandler("MERCHANT_UPDATE", OnMerchantUpdate)
     NS:RegisterEventHandler("MERCHANT_CLOSED", OnMerchantClosed)
 
-    if NS.db and NS.db.RegisterCallback then
-        NS.db:RegisterCallback("features.autosellGrayJunk", function(_, enabled)
-            if enabled == true then
-                JunkAutosell.ScheduleSell()
-            end
-        end)
-    end
+    NS.db:RegisterCallback("features.autosellGrayJunk", function(_, enabled)
+        if enabled == true then
+            JunkAutosell.ScheduleSell()
+        end
+    end)
 end)
