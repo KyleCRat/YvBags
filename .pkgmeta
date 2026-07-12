@@ -6,6 +6,8 @@ manual-changelog:
 
 ignore:
   - .pkgmeta
+  - .editorconfig
+  - .gitattributes
   - .git
   - AGENTS.md
   - TODO.md
