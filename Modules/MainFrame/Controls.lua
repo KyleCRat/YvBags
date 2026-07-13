@@ -38,6 +38,8 @@ local SETTINGS_BUTTON_SEARCH_GAP = 6
 local SEARCH_BOX_RIGHT_OFFSET = -6
 local SEARCH_BOX_TOP_OFFSET = -28
 local SEARCH_BOX_FRAME_LEVEL_OFFSET = 8
+local SEARCH_FOCUS_KEY = "F"
+local SEARCH_SHORTCUT_LISTENER_TEMPLATE = "InsecureKeyboardInputPropagatorTemplate"
 
 local function FormatScalePercent(value)
     return ("%d%%"):format(math.floor((tonumber(value) or 0) + 0.5))
@@ -208,6 +210,53 @@ local function CreateSettingsButton(frame)
 
     frame.settingsButton = button
     return button
+end
+
+local function ResetSearchShortcutListener(listener)
+    if InCombatLockdown() then
+        listener.resetAfterCombat = true
+        return
+    end
+
+    listener.resetAfterCombat = nil
+    listener:SetPropagateKeyboardInput(true)
+    listener:EnableKeyboard(true)
+end
+
+function Controls.RegisterSearchShortcut(frame)
+    local listener = CreateFrame("Frame", nil, frame, SEARCH_SHORTCUT_LISTENER_TEMPLATE)
+    listener:SetAllPoints(frame)
+    listener:EnableKeyboard(true)
+    listener:SetScript("OnKeyDown", function(self, key)
+        if InCombatLockdown() then
+            return
+        end
+
+        local keyboardFocus = GetCurrentKeyBoardFocus()
+        local canFocusSearch = not keyboardFocus or keyboardFocus == frame.searchBox
+        local isSearchShortcut = key == SEARCH_FOCUS_KEY
+            and IsControlKeyDown()
+            and not IsAltKeyDown()
+            and not IsShiftKeyDown()
+        if canFocusSearch and isSearchShortcut then
+            self:SetPropagateKeyboardInput(false)
+            self:EnableKeyboard(false)
+            frame.searchBox:SetFocus()
+            C_Timer.After(0, function()
+                ResetSearchShortcutListener(self)
+            end)
+        end
+    end)
+    listener:RegisterEvent("PLAYER_REGEN_DISABLED")
+    listener:RegisterEvent("PLAYER_REGEN_ENABLED")
+    listener:SetScript("OnEvent", function(self, event)
+        if event == "PLAYER_REGEN_DISABLED" then
+            frame.searchBox:ClearFocus()
+        elseif self.resetAfterCombat then
+            ResetSearchShortcutListener(self)
+        end
+    end)
+    frame.searchShortcutListener = listener
 end
 
 function Controls.CreateSearch(frame)

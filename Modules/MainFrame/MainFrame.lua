@@ -134,6 +134,7 @@ function MainFrame.Create()
 
         Refresh(self)
     end)
+    Controls.RegisterSearchShortcut(frame)
 
     NS.frame = frame
     Refresh(frame)

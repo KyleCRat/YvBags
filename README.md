@@ -23,6 +23,8 @@ YvBags is a World of Warcraft bag replacement addon that shows your current char
 
 YvBags opens from normal bag keybinds when **Replace Blizzard Bags** is enabled. You can also use `/ybags` to toggle the frame.
 
+While the YvBags frame is open and you are out of combat, press `Ctrl+F` to focus the search field. The shortcut is inactive while the frame is closed or during combat and does not change the player's saved binding.
+
 Right-click a column header to change grouping, primary sort, or secondary sort. Left-click sortable headers to sort by that column.
 
 The footer includes:
