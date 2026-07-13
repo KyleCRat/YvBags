@@ -4,6 +4,7 @@
 
 ### Added
 - Added `Ctrl+F` to focus bag search while the YvBags frame is open and the player is out of combat without changing the player's saved binding.
+- Expanded bag search to include tooltip text and displayed column values.
 
 ## [12.0.7-1] - 2026-07-11
 

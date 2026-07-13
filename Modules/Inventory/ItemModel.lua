@@ -11,6 +11,7 @@ local BindingKeys = Binding.Keys
 
 local UNKNOWN_ITEM_ICON = 134400
 local CAGED_BATTLE_PET_ITEM_ID = 82800
+local tooltipSearchCache = {}
 
 -- Blizzard enum compatibility
 local function EnumValue(enumName, key, fallback)
@@ -161,6 +162,101 @@ local function GetProfessionQuality(itemInfo)
     end
 
     return nil, nil
+end
+
+-- Tooltip search text
+local function IsSecretValue(value)
+    return issecretvalue and issecretvalue(value)
+end
+
+local function GetTooltipText(value)
+    if IsSecretValue(value) then
+        return nil
+    end
+
+    if type(value) ~= "string" or value == "" then
+        return nil
+    end
+
+    local text = C_StringUtil.StripHyperlinks(value)
+    if IsSecretValue(text) then
+        return nil
+    end
+
+    if type(text) == "string" and text ~= "" then
+        return text
+    end
+
+    return nil
+end
+
+local function GetTooltipSearchText(item)
+    local itemReference = item.link
+    if IsSecretValue(itemReference) then
+        return ""
+    end
+
+    if not itemReference then
+        itemReference = item.staticLink
+        if IsSecretValue(itemReference) then
+            return ""
+        end
+    end
+
+    if not itemReference then
+        itemReference = item.itemID
+        if IsSecretValue(itemReference) then
+            return ""
+        end
+    end
+
+    if not itemReference then
+        return ""
+    end
+
+    local cached = tooltipSearchCache[item.locationKey]
+    if cached
+        and cached.itemReference == itemReference
+        and cached.count == item.count
+        and cached.bindingKey == item.bindingKey
+        and cached.isBound == item.isBound
+        and cached.isPendingItemInfo == item.isPendingItemInfo then
+        return cached.text
+    end
+
+    local tooltipData = C_TooltipInfo.GetBagItem(item.bagID, item.slotIndex)
+    if IsSecretValue(tooltipData) or type(tooltipData) ~= "table" then
+        return ""
+    end
+
+    local lines = tooltipData.lines
+    if IsSecretValue(lines) or type(lines) ~= "table" then
+        return ""
+    end
+
+    local values = {}
+    for _, line in ipairs(lines) do
+        if not IsSecretValue(line) and type(line) == "table" then
+            local leftText = GetTooltipText(line.leftText)
+            local rightText = GetTooltipText(line.rightText)
+            if leftText and rightText then
+                values[#values + 1] = leftText .. " " .. rightText
+            elseif leftText or rightText then
+                values[#values + 1] = leftText or rightText
+            end
+        end
+    end
+
+    local text = table.concat(values, "\n")
+    tooltipSearchCache[item.locationKey] = {
+        itemReference = itemReference,
+        count = item.count,
+        bindingKey = item.bindingKey,
+        isBound = item.isBound,
+        isPendingItemInfo = item.isPendingItemInfo,
+        text = text,
+    }
+    return text
 end
 
 local function GetCurrentBagItemLevel(bagID, slotIndex)
@@ -441,6 +537,7 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
 
     item.categoryKey = Categories.GetCategoryKey(item)
     item.categoryName = Categories.GetCategoryName(item.categoryKey)
+    item.tooltipSearchText = GetTooltipSearchText(item)
 
     return item, itemInfo
 end

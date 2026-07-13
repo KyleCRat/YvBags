@@ -5,6 +5,7 @@ local ListModel = {}
 NS.ItemListModel = ListModel
 
 local Categories = NS.Categories
+local Columns = NS.ItemListColumns
 
 local ROW_TYPE_ITEM = "item"
 local ROW_TYPE_GROUP = "group"
@@ -310,8 +311,85 @@ local function SortItems(items, sortKey, sortAscending, secondarySortKey, second
 end
 
 -- Search and grouping
-local function FieldMatchesSearch(value, searchText)
-    return value ~= nil and string.find(Lower(value), searchText, 1, true) ~= nil
+local function IsSecretValue(value)
+    return issecretvalue and issecretvalue(value)
+end
+
+local function AppendSearchValue(values, value)
+    if IsSecretValue(value) then
+        return
+    end
+
+    if value == nil then
+        return
+    end
+
+    local text = C_StringUtil.StripHyperlinks(tostring(value))
+    if IsSecretValue(text) then
+        return
+    end
+
+    if text ~= "" then
+        values[#values + 1] = text
+    end
+end
+
+local function AppendFormattedColumns(values, item)
+    for _, column in ipairs(Columns.GetColumns()) do
+        local formatted = Columns.FormatColumn(item, column.key)
+        if not IsSecretValue(formatted) and formatted and formatted ~= "" and formatted ~= "-" then
+            AppendSearchValue(values, formatted)
+
+            local label = column.tooltipTitle or column.sortLabel or column.label
+            if label and label ~= "" then
+                AppendSearchValue(values, label .. " " .. formatted)
+            end
+        end
+    end
+end
+
+local function GetMoneySearchText(copper)
+    if IsSecretValue(copper) then
+        return nil
+    end
+
+    if type(copper) ~= "number" or copper <= 0 then
+        return nil
+    end
+
+    local copperPerGold = COPPER_PER_GOLD or 10000
+    local copperPerSilver = COPPER_PER_SILVER or 100
+    local gold = math.floor(copper / copperPerGold)
+    local silver = math.floor((copper - (gold * copperPerGold)) / copperPerSilver)
+    local copperOnly = copper - (gold * copperPerGold) - (silver * copperPerSilver)
+    return ("%d gold %d silver %d copper %dg %ds %dc"):format(gold, silver, copperOnly, gold, silver, copperOnly)
+end
+
+local function BuildItemSearchDocument(item)
+    local values = {}
+    AppendFormattedColumns(values, item)
+    AppendSearchValue(values, item.name)
+    AppendSearchValue(values, item.itemID)
+    AppendSearchValue(values, item.type)
+    AppendSearchValue(values, item.subtype)
+    AppendSearchValue(values, item.categoryName)
+    AppendSearchValue(values, item.bindingText)
+    AppendSearchValue(values, item.bindingKey)
+    AppendSearchValue(values, GetQualityName(item.quality))
+    AppendSearchValue(values, GetExpansionName(item.expansionID))
+    AppendSearchValue(values, item.itemDescription)
+    AppendSearchValue(values, item.keystoneMapName)
+    AppendSearchValue(values, item.battlePetName)
+
+    local professionQuality = item.professionQuality
+    if not IsSecretValue(professionQuality) and type(professionQuality) == "number" then
+        AppendSearchValue(values, ("profession quality %d"):format(professionQuality))
+    end
+
+    AppendSearchValue(values, GetMoneySearchText(item.totalSellValue))
+    AppendSearchValue(values, item.tooltipSearchText)
+    item.searchDocument = Lower(table.concat(values, "\n"))
+    return item.searchDocument
 end
 
 local function ItemMatchesSearch(item, searchText)
@@ -319,12 +397,8 @@ local function ItemMatchesSearch(item, searchText)
         return true
     end
 
-    return FieldMatchesSearch(item.name, searchText)
-        or FieldMatchesSearch(item.type, searchText)
-        or FieldMatchesSearch(item.subtype, searchText)
-        or FieldMatchesSearch(item.categoryName, searchText)
-        or FieldMatchesSearch(item.bindingText, searchText)
-        or FieldMatchesSearch(item.itemID, searchText)
+    local searchDocument = item.searchDocument or BuildItemSearchDocument(item)
+    return string.find(searchDocument, searchText, 1, true) ~= nil
 end
 
 local function GetGroupInfo(item, groupKey)

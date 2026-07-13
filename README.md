@@ -8,7 +8,7 @@ YvBags is a World of Warcraft bag replacement addon that shows your current char
 - Supports the backpack, equipped bag slots, and equipped reagent bag.
 - Shows bag contents in a virtualized list for fast scrolling.
 - Uses full-row item interaction for tooltips, item use, drag, pickup, and cooldown display.
-- Supports search, collapsible groups, primary sorting, secondary sorting, and manual bag-slot ordering.
+- Supports name, column, and tooltip search plus collapsible groups, primary sorting, secondary sorting, and manual bag-slot ordering.
 - Includes built-in category grouping for common inventory types.
 - Displays quantity, binding, rarity/icon, profession quality, name, expansion, sell value, item level, required level, type, and subtype columns.
 - Shows item rarity through name color and icon border color.
