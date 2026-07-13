@@ -9,6 +9,7 @@ local CATEGORY_LABELS = {
     junk = "Junk",
     keystone = "Mythic Keystone",
     quest = "Quest",
+    openable = "Openable",
     consumable = "Consumable",
     container = "Container",
     weapon = "Weapon",
@@ -29,6 +30,12 @@ local CATEGORY_LABELS = {
 }
 
 Categories.labels = CATEGORY_LABELS
+
+local DEFAULT_CATEGORY_SORT_PRIORITY = 2
+local CATEGORY_SORT_PRIORITIES = {
+    openable = 0,
+    keystone = 1,
+}
 
 -- Blizzard enum compatibility
 local function EnumValue(enumName, key, fallback)
@@ -65,6 +72,10 @@ SetItemClassCategory("Housing", 20, "housing")
 
 -- Public category helpers
 function Categories.GetCategoryKey(item)
+    if item.hasLoot then
+        return "openable"
+    end
+
     if item.isKeystone then
         return "keystone"
     end
@@ -90,6 +101,10 @@ end
 
 function Categories.GetCategoryName(categoryKey)
     return CATEGORY_LABELS[categoryKey] or CATEGORY_LABELS.other
+end
+
+function Categories.GetSortPriority(categoryKey)
+    return CATEGORY_SORT_PRIORITIES[categoryKey] or DEFAULT_CATEGORY_SORT_PRIORITY
 end
 
 function Categories.GetLabels()

@@ -266,7 +266,28 @@ local function BuildSortValueCache(items, sortKey)
     return values
 end
 
-local function CompareSort(left, right, values, sortAscending)
+local function BuildSortPriorityCache(items, sortKey)
+    if sortKey ~= "category" then
+        return nil
+    end
+
+    local priorities = {}
+    for _, item in ipairs(items) do
+        priorities[item] = Categories.GetSortPriority(item.categoryKey)
+    end
+
+    return priorities
+end
+
+local function CompareSort(left, right, values, sortAscending, priorities)
+    if priorities then
+        local leftPriority = priorities[left]
+        local rightPriority = priorities[right]
+        if leftPriority ~= rightPriority then
+            return leftPriority < rightPriority
+        end
+    end
+
     local leftValue = values[left]
     local rightValue = values[right]
 
@@ -284,22 +305,26 @@ end
 local function SortItems(items, sortKey, sortAscending, secondarySortKey, secondarySortAscending)
     local primaryValues
     local secondaryValues
+    local primaryPriorities
+    local secondaryPriorities
     if sortKey ~= MANUAL_SORT_KEY then
         primaryValues = BuildSortValueCache(items, sortKey)
+        primaryPriorities = BuildSortPriorityCache(items, sortKey)
         if secondarySortKey and secondarySortKey ~= NO_SECONDARY_SORT_KEY and secondarySortKey ~= sortKey then
             secondaryValues = BuildSortValueCache(items, secondarySortKey)
+            secondaryPriorities = BuildSortPriorityCache(items, secondarySortKey)
         end
     end
 
     table.sort(items, function(left, right)
         if primaryValues then
-            local primaryResult = CompareSort(left, right, primaryValues, sortAscending)
+            local primaryResult = CompareSort(left, right, primaryValues, sortAscending, primaryPriorities)
             if primaryResult ~= nil then
                 return primaryResult
             end
 
             if secondaryValues then
-                local secondaryResult = CompareSort(left, right, secondaryValues, secondarySortAscending)
+                local secondaryResult = CompareSort(left, right, secondaryValues, secondarySortAscending, secondaryPriorities)
                 if secondaryResult ~= nil then
                     return secondaryResult
                 end
@@ -557,6 +582,7 @@ function ListModel.BuildRows(items, state)
                 key = key,
                 label = label,
                 items = {},
+                sortPriority = groupKey == "category" and Categories.GetSortPriority(key) or 0,
                 sortText = TextValue(label),
             }
             groupMap[id] = group
@@ -567,6 +593,10 @@ function ListModel.BuildRows(items, state)
     end
 
     table.sort(groups, function(left, right)
+        if left.sortPriority ~= right.sortPriority then
+            return left.sortPriority < right.sortPriority
+        end
+
         if left.sortText ~= right.sortText then
             return left.sortText < right.sortText
         end
