@@ -15,10 +15,10 @@ NS.defaults = {
             autosellGrayJunk = false,
         },
         list = {
-            sortKey = "name",
-            sortAscending = true,
-            secondarySortKey = "none",
-            secondarySortAscending = true,
+            sortKey = "quality",
+            sortAscending = false,
+            secondarySortKey = "itemLevel",
+            secondarySortAscending = false,
             groupKey = "category",
         },
         pins = {

@@ -7,6 +7,7 @@
 - Expanded bag search to include tooltip text and displayed column values.
 - Added a prioritized `Openable` category for lootable container items.
 - Added an explicit built-in category order led by `Openable`, `Mythic Keystone`, `Consumable`, and `Equipment`; combined armor and weapons into `Equipment`; and moved `Junk` to the bottom.
+- Changed the default list view to Category grouping with Rarity descending and Item Level descending as the secondary sort.
 - Added account-wide item pinning through middle-click, including top-row, collapsible-group, top-of-group, and normal-sort presentation modes across all grouping and sort modes.
 - Added an accent-colored item-tooltip action hint for middle-click pinning and unpinning.
 - Added a compact accent marker on the left edge of pinned item rows.

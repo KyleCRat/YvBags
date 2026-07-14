@@ -132,6 +132,7 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 
 ### Sorting, Grouping, And Drops
 
+- The fresh default list view groups by Category, sorts primarily by Rarity descending, and sorts secondarily by Item Level descending.
 - Manual primary sort means physical bag/slot order within each active group and pin-presentation partition. It forces secondary sort to `None` and disables secondary selection.
 - Pin state is presentation metadata and must not replace an item's base `categoryKey`; future ordered and custom category rules depend on that separation.
 - Pinned presentation applies across all grouping and sort modes. The supported modes are direct top rows, a collapsible Pinned group, pins first within their normal groups, and normal active-sort placement.
