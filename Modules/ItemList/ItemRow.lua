@@ -15,7 +15,7 @@ local ICON_FRAME_SIZE = 29
 local PROFESSION_QUALITY_ICON_SIZE = 22
 local BINDING_ICON_SIZE = 22
 local ICON_LEFT_OFFSET = 3
-local PIN_MARKER_SIZE = 9
+local PIN_MARKER_SIZE = 16
 local ICON_TEX_COORD_LEFT = 0.08
 local ICON_TEX_COORD_RIGHT = 0.92
 local ICON_TEX_COORD_TOP = 0.08
@@ -182,9 +182,9 @@ local function InitializeRow(row)
 
     row.pinMarker = row.contentClip:CreateTexture(nil, PIN_MARKER_LAYER)
     row.pinMarker:SetDrawLayer(PIN_MARKER_LAYER, PIN_MARKER_SUBLEVEL)
-    row.pinMarker:SetTexture(NS.Media.GetDiamondTexture())
+    row.pinMarker:SetTexture(NS.Media.GetPinnedTexture())
     row.pinMarker:SetSize(PIN_MARKER_SIZE, PIN_MARKER_SIZE)
-    row.pinMarker:SetPoint("CENTER", row.contentClip, "LEFT", 0, 0)
+    row.pinMarker:SetPoint("TOPLEFT", row.contentClip, "TOPLEFT", 0, 0)
     row.pinMarker:Hide()
 
     row.icon = row.contentClip:CreateTexture(nil, ROW_ICON_LAYER)

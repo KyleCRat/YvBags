@@ -28,7 +28,7 @@ local Fonts = {
 local Textures = {
     sortArrow = ADDON_MEDIA_PATH .. "Textures\\Vertex-Arrow.tga",
     circle = ADDON_MEDIA_PATH .. "Textures\\Vertex-Circle.tga",
-    diamond = ADDON_MEDIA_PATH .. "Textures\\Vertex-Diamond.tga",
+    pinned = ADDON_MEDIA_PATH .. "Textures\\Vertex-Pinned.tga",
     soulboundBindingIcon = ADDON_MEDIA_PATH .. "Textures\\Vertex-Lock.tga",
     divider = "Interface\\Common\\UI-TooltipDivider",
 }
@@ -72,8 +72,8 @@ function Media.GetCircleTexture()
     return Textures.circle
 end
 
-function Media.GetDiamondTexture()
-    return Textures.diamond
+function Media.GetPinnedTexture()
+    return Textures.pinned
 end
 
 function Media.GetSoulboundBindingIconTexture()
