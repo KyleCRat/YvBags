@@ -13,6 +13,8 @@ local CURSOR_OFFSET_Y = -12
 local ROW_SIDE_OFFSET_X = 0
 local ROW_SIDE_OFFSET_Y = 0
 local TOOLTIP_SHOW_DELAY = 0.05
+local PIN_ACTION_TEXT = "Middle-click to pin item"
+local UNPIN_ACTION_TEXT = "Middle-click to unpin item"
 local SIDE_LEFT = "LEFT"
 local SIDE_RIGHT = "RIGHT"
 
@@ -237,6 +239,26 @@ local function ShouldShowTooltip(button)
     return IsRegisteredRowButton(button) and button.IsMouseOver and button:IsMouseOver() and button.HasItem and button:HasItem()
 end
 
+local function AddPinActionLine(tooltip)
+    if tooltip ~= GameTooltip then
+        return
+    end
+
+    local button = tooltip:GetOwner()
+    if not ShouldShowTooltip(button) then
+        return
+    end
+
+    local item = button.row and button.row.item
+    if not item then
+        return
+    end
+
+    local r, g, b = NS.Media.GetAccentColor()
+    GameTooltip_AddBlankLineToTooltip(tooltip)
+    tooltip:AddLine(item.isPinned and UNPIN_ACTION_TEXT or PIN_ACTION_TEXT, r, g, b)
+end
+
 local function ShowTooltip(button)
     pendingButton = nil
     pendingElapsed = 0
@@ -308,6 +330,7 @@ function ItemTooltip.Initialize()
             AnchorRowTooltip(button.row, tooltip)
         end
     end)
+    TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, AddPinActionLine)
 
     hooked = true
 end

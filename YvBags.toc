@@ -20,6 +20,7 @@ Constants\Binding.lua
 Formatting\Money.lua
 Modules\Inventory\Categories.lua
 Modules\Inventory\Containers.lua
+Modules\Inventory\Pins.lua
 Modules\Inventory\ItemModel.lua
 Modules\Inventory\Inventory.lua
 Modules\Bags\BagManagement.lua

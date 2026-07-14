@@ -15,6 +15,7 @@ local ICON_FRAME_SIZE = 29
 local PROFESSION_QUALITY_ICON_SIZE = 22
 local BINDING_ICON_SIZE = 22
 local ICON_LEFT_OFFSET = 3
+local PIN_MARKER_SIZE = 9
 local ICON_TEX_COORD_LEFT = 0.08
 local ICON_TEX_COORD_RIGHT = 0.92
 local ICON_TEX_COORD_TOP = 0.08
@@ -31,6 +32,7 @@ local DEFAULT_ICON_BORDER_COLOR_B = 0.55
 local RARITY_HIGHLIGHT_ALPHA = 0.16
 local DEFAULT_HIGHLIGHT_ALPHA = 0.08
 local CONTAINER_HIGHLIGHT_ALPHA = 0.14
+local PIN_MARKER_ALPHA = 0.82
 local FALLBACK_ITEM_ICON = 134400
 local CONTAINER_HIGHLIGHT_COLOR_R, CONTAINER_HIGHLIGHT_COLOR_G, CONTAINER_HIGHLIGHT_COLOR_B = NS.Media.GetAccentColor()
 
@@ -44,6 +46,8 @@ local PROFESSION_QUALITY_LAYER = "ARTWORK"
 local PROFESSION_QUALITY_SUBLEVEL = 7
 local BINDING_ICON_LAYER = "ARTWORK"
 local BINDING_ICON_SUBLEVEL = 7
+local PIN_MARKER_LAYER = "OVERLAY"
+local PIN_MARKER_SUBLEVEL = 2
 
 local function IsTextColumn(column)
     return column.key ~= "icon" and column.key ~= "binding" and column.key ~= "professionQuality"
@@ -83,6 +87,17 @@ local function UpdateContainerHighlight(row)
         and row.highlightedBagID ~= nil
         and row.item.bagID == row.highlightedBagID
     row.containerHighlight:SetShown(highlighted)
+end
+
+local function UpdatePinMarker(row, item)
+    if not item.isPinned then
+        row.pinMarker:Hide()
+        return
+    end
+
+    local r, g, b = NS.Media.GetAccentColor()
+    row.pinMarker:SetVertexColor(r, g, b, PIN_MARKER_ALPHA)
+    row.pinMarker:Show()
 end
 
 -- Row construction and layout
@@ -164,6 +179,13 @@ local function InitializeRow(row)
 
     row.contentClip = CreateFrame("Frame", nil, row)
     row.contentClip:SetClipsChildren(true)
+
+    row.pinMarker = row.contentClip:CreateTexture(nil, PIN_MARKER_LAYER)
+    row.pinMarker:SetDrawLayer(PIN_MARKER_LAYER, PIN_MARKER_SUBLEVEL)
+    row.pinMarker:SetTexture(NS.Media.GetDiamondTexture())
+    row.pinMarker:SetSize(PIN_MARKER_SIZE, PIN_MARKER_SIZE)
+    row.pinMarker:SetPoint("CENTER", row.contentClip, "LEFT", 0, 0)
+    row.pinMarker:Hide()
 
     row.icon = row.contentClip:CreateTexture(nil, ROW_ICON_LAYER)
     row.icon:SetDrawLayer(ROW_ICON_LAYER, ROW_ICON_SUBLEVEL)
@@ -272,6 +294,7 @@ function ItemRow.Render(row, item, list)
 
     UpdateRowHighlightColor(row, item)
     UpdateContainerHighlight(row)
+    UpdatePinMarker(row, item)
     UpdateIconBorderColor(row, item)
     ItemButton.Update(row.itemButton, item)
 
@@ -291,6 +314,7 @@ function ItemRow.Reset(row)
     row:SetID(0)
     row.highlight:Hide()
     row.containerHighlight:Hide()
+    row.pinMarker:Hide()
     Cooldown.Clear(row)
 
     row.icon:SetTexture(nil)

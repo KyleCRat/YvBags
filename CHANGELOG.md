@@ -5,7 +5,11 @@
 ### Added
 - Added `Ctrl+F` to focus bag search while the YvBags frame is open and the player is out of combat without changing the player's saved binding.
 - Expanded bag search to include tooltip text and displayed column values.
-- Added a prioritized `Openable` category for lootable container items, with `Mythic Keystone` immediately below it.
+- Added a prioritized `Openable` category for lootable container items.
+- Added account-wide item pinning through middle-click, including top-row, collapsible-group, top-of-group, and normal-sort presentation modes across all grouping and sort modes.
+- Added an accent-colored item-tooltip action hint for middle-click pinning and unpinning.
+- Added a clipped accent marker on the left edge of pinned item rows.
+- Restored Mythic Keystones to their own prioritized category and gave keystone pins a stable identity across dungeon and level changes.
 
 ## [12.0.7-1] - 2026-07-11
 

@@ -6,6 +6,7 @@ NS.ItemListModel = ListModel
 
 local Categories = NS.Categories
 local Columns = NS.ItemListColumns
+local Pins = NS.ItemPins
 
 local ROW_TYPE_ITEM = "item"
 local ROW_TYPE_GROUP = "group"
@@ -14,6 +15,10 @@ local MANUAL_SORT_KEY = "manual"
 local NO_SECONDARY_SORT_KEY = "none"
 local DEFAULT_SORT_KEY = "name"
 local DEFAULT_GROUP_KEY = "category"
+local PINNED_GROUP_KEY = "pinned"
+local PINNED_GROUP_ID = "pins:pinned"
+local PINNED_GROUP_LABEL = "Pinned"
+local PINNED_GROUP_SORT_PRIORITY = -1
 
 local SORT_KEY_LIST = {
     MANUAL_SORT_KEY,
@@ -406,6 +411,10 @@ local function BuildItemSearchDocument(item)
     AppendSearchValue(values, item.keystoneMapName)
     AppendSearchValue(values, item.battlePetName)
 
+    if item.isPinned then
+        AppendSearchValue(values, "pin pinned")
+    end
+
     local professionQuality = item.professionQuality
     if not IsSecretValue(professionQuality) and type(professionQuality) == "number" then
         AppendSearchValue(values, ("profession quality %d"):format(professionQuality))
@@ -544,6 +553,7 @@ function ListModel.BuildRows(items, state)
     end
     local groupKey = ListModel.NormalizeGroupKey(state and state.groupKey)
     local collapsedGroups = state and state.collapsedGroups or {}
+    local pinDisplayMode = Pins.GetDisplayMode()
     local filteredItems = {}
 
     if items then
@@ -558,7 +568,47 @@ function ListModel.BuildRows(items, state)
 
     if not ListModel.IsGrouped(groupKey) then
         local rows = {}
-        for _, item in ipairs(filteredItems) do
+        local pinnedItems = {}
+        local unpinnedItems = {}
+
+        if pinDisplayMode == Pins.DisplayModes.Normal then
+            unpinnedItems = filteredItems
+        else
+            for _, item in ipairs(filteredItems) do
+                local target = item.isPinned and pinnedItems or unpinnedItems
+                target[#target + 1] = item
+            end
+        end
+
+        if pinDisplayMode == Pins.DisplayModes.Group and #pinnedItems > 0 then
+            local collapsed = collapsedGroups[PINNED_GROUP_ID] == true
+            rows[#rows + 1] = {
+                rowType = ROW_TYPE_GROUP,
+                groupID = PINNED_GROUP_ID,
+                groupKey = PINNED_GROUP_KEY,
+                label = PINNED_GROUP_LABEL,
+                count = #pinnedItems,
+                collapsed = collapsed,
+            }
+
+            if not collapsed then
+                for _, item in ipairs(pinnedItems) do
+                    rows[#rows + 1] = {
+                        rowType = ROW_TYPE_ITEM,
+                        item = item,
+                    }
+                end
+            end
+        else
+            for _, item in ipairs(pinnedItems) do
+                rows[#rows + 1] = {
+                    rowType = ROW_TYPE_ITEM,
+                    item = item,
+                }
+            end
+        end
+
+        for _, item in ipairs(unpinnedItems) do
             rows[#rows + 1] = {
                 rowType = ROW_TYPE_ITEM,
                 item = item,
@@ -570,26 +620,52 @@ function ListModel.BuildRows(items, state)
 
     local groupMap = {}
     local groups = {}
+    local pinnedItems = {}
 
     for _, item in ipairs(filteredItems) do
-        local key, label = GetGroupInfo(item, groupKey)
-        local id = groupKey .. ":" .. tostring(key)
-        local group = groupMap[id]
+        if item.isPinned and pinDisplayMode == Pins.DisplayModes.Top then
+            pinnedItems[#pinnedItems + 1] = item
+        else
+            local key
+            local label
+            local isPinnedGroup = item.isPinned and pinDisplayMode == Pins.DisplayModes.Group
+            if isPinnedGroup then
+                key = PINNED_GROUP_KEY
+                label = PINNED_GROUP_LABEL
+            else
+                key, label = GetGroupInfo(item, groupKey)
+            end
 
-        if not group then
-            group = {
-                id = id,
-                key = key,
-                label = label,
-                items = {},
-                sortPriority = groupKey == "category" and Categories.GetSortPriority(key) or 0,
-                sortText = TextValue(label),
-            }
-            groupMap[id] = group
-            groups[#groups + 1] = group
+            local id = isPinnedGroup and PINNED_GROUP_ID or groupKey .. ":" .. tostring(key)
+            local group = groupMap[id]
+
+            if not group then
+                local sortPriority = 0
+                if isPinnedGroup then
+                    sortPriority = PINNED_GROUP_SORT_PRIORITY
+                elseif groupKey == "category" then
+                    sortPriority = Categories.GetSortPriority(key)
+                end
+
+                group = {
+                    id = id,
+                    key = key,
+                    label = label,
+                    items = {},
+                    sortPriority = sortPriority,
+                    sortText = TextValue(label),
+                }
+                groupMap[id] = group
+                groups[#groups + 1] = group
+            end
+
+            if item.isPinned and pinDisplayMode == Pins.DisplayModes.TopOfGroups then
+                group.pinnedItems = group.pinnedItems or {}
+                group.pinnedItems[#group.pinnedItems + 1] = item
+            else
+                group.items[#group.items + 1] = item
+            end
         end
-
-        group.items[#group.items + 1] = item
     end
 
     table.sort(groups, function(left, right)
@@ -605,18 +681,35 @@ function ListModel.BuildRows(items, state)
     end)
 
     local rows = {}
+    for _, item in ipairs(pinnedItems) do
+        rows[#rows + 1] = {
+            rowType = ROW_TYPE_ITEM,
+            item = item,
+        }
+    end
+
     for _, group in ipairs(groups) do
         local collapsed = collapsedGroups[group.id] == true
+        local pinnedCount = group.pinnedItems and #group.pinnedItems or 0
         rows[#rows + 1] = {
             rowType = ROW_TYPE_GROUP,
             groupID = group.id,
             groupKey = group.key,
             label = group.label,
-            count = #group.items,
+            count = pinnedCount + #group.items,
             collapsed = collapsed,
         }
 
         if not collapsed then
+            if group.pinnedItems then
+                for _, item in ipairs(group.pinnedItems) do
+                    rows[#rows + 1] = {
+                        rowType = ROW_TYPE_ITEM,
+                        item = item,
+                    }
+                end
+            end
+
             for _, item in ipairs(group.items) do
                 rows[#rows + 1] = {
                     rowType = ROW_TYPE_ITEM,

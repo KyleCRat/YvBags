@@ -33,8 +33,8 @@ Categories.labels = CATEGORY_LABELS
 
 local DEFAULT_CATEGORY_SORT_PRIORITY = 2
 local CATEGORY_SORT_PRIORITIES = {
-    openable = 0,
-    keystone = 1,
+    keystone = 0,
+    openable = 1,
 }
 
 -- Blizzard enum compatibility
@@ -72,12 +72,12 @@ SetItemClassCategory("Housing", 20, "housing")
 
 -- Public category helpers
 function Categories.GetCategoryKey(item)
-    if item.hasLoot then
-        return "openable"
-    end
-
     if item.isKeystone then
         return "keystone"
+    end
+
+    if item.hasLoot then
+        return "openable"
     end
 
     if item.isBattlePet then

@@ -15,6 +15,7 @@ local SETTING_PRIMARY_SORT_KEY = ADDON_NAME .. "_PRIMARY_SORT_KEY"
 local SETTING_PRIMARY_SORT_DIRECTION = ADDON_NAME .. "_PRIMARY_SORT_DIRECTION"
 local SETTING_SECONDARY_SORT_KEY = ADDON_NAME .. "_SECONDARY_SORT_KEY"
 local SETTING_SECONDARY_SORT_DIRECTION = ADDON_NAME .. "_SECONDARY_SORT_DIRECTION"
+local SETTING_PIN_DISPLAY_MODE = ADDON_NAME .. "_PIN_DISPLAY_MODE"
 
 -- Control values and labels
 local SCALE_MIN_PERCENT = 50
@@ -23,6 +24,10 @@ local SCALE_STEP_PERCENT = 5
 local NO_SECONDARY_SORT_LABEL = "None"
 local ASCENDING_LABEL = "Ascending"
 local DESCENDING_LABEL = "Descending"
+local PIN_DISPLAY_TOP_LABEL = "Top Rows"
+local PIN_DISPLAY_GROUP_LABEL = "Collapsible Group"
+local PIN_DISPLAY_GROUP_TOP_LABEL = "Top of Groups"
+local PIN_DISPLAY_NORMAL_LABEL = "Normal Sort Order"
 
 -- Stored values and live UI dispatch
 local function GetItemList()
@@ -186,6 +191,15 @@ local function SetGroup(groupKey)
     end
 end
 
+local function SetPinDisplayMode(displayMode)
+    NS.ItemPins.SetDisplayMode(displayMode)
+
+    local list = GetItemList()
+    if list then
+        list:RefreshDataProvider(true)
+    end
+end
+
 -- Dropdown option data
 local function CreateSortOptions()
     local container = Settings.CreateControlTextContainer()
@@ -219,6 +233,16 @@ local function CreateDirectionOptions()
     local container = Settings.CreateControlTextContainer()
     container:Add(true, ASCENDING_LABEL)
     container:Add(false, DESCENDING_LABEL)
+    return container:GetData()
+end
+
+local function CreatePinDisplayOptions()
+    local displayModes = NS.ItemPins.DisplayModes
+    local container = Settings.CreateControlTextContainer()
+    container:Add(displayModes.Top, PIN_DISPLAY_TOP_LABEL)
+    container:Add(displayModes.Group, PIN_DISPLAY_GROUP_LABEL)
+    container:Add(displayModes.TopOfGroups, PIN_DISPLAY_GROUP_TOP_LABEL)
+    container:Add(displayModes.Normal, PIN_DISPLAY_NORMAL_LABEL)
     return container:GetData()
 end
 
@@ -317,6 +341,16 @@ function AddonSettings.Register()
         SetGroup,
         CreateGroupOptions,
         "Choose how the list groups visible bag items."
+    )
+    RegisterDropdown(
+        category,
+        SETTING_PIN_DISPLAY_MODE,
+        "Pinned Items",
+        NS.defaults.global.pins.displayMode,
+        function() return NS.ItemPins.GetDisplayMode() end,
+        SetPinDisplayMode,
+        CreatePinDisplayOptions,
+        "Choose how pinned items participate in the active grouping and sort order. Pin state is retained in every mode."
     )
     RegisterDropdown(
         category,

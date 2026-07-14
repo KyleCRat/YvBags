@@ -62,7 +62,8 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - `Defaults.lua`: addon identity constants, account defaults, and character defaults.
 - `Core.lua`: `ADDON_LOADED`, LibSimpleDB construction, shared event dispatch, and initialization callbacks.
 - `Modules/Inventory/Containers.lua`: discovery and metadata for player-owned bag containers and empty slots.
-- `Modules/Inventory/ItemModel.lua`: normalized occupied-slot item data, including async fallbacks, binding, keystones, caged pets, expansion, and profession quality.
+- `Modules/Inventory/Pins.lua`: account-wide stable pin identities, pin persistence, and pinned presentation settings.
+- `Modules/Inventory/ItemModel.lua`: normalized occupied-slot item data, including async fallbacks, binding, pins, keystones, caged pets, expansion, and profession quality.
 - `Modules/Inventory/Inventory.lua`: live inventory state, targeted container refreshes, debounced reconciliation scans, pending item data, indexes, totals, and update callbacks.
 - `Modules/Inventory/Categories.lua`: built-in v1-lite category assignment and labels.
 - `Constants/Binding.lua`: binding keys and binding predicates. Use these constants instead of repeating binding strings.
@@ -108,9 +109,10 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - The visible row is the item. Hovering or clicking any part of it must behave like the item icon would in Blizzard bags.
 - Each pooled row uses a named `ContainerFrameItemButtonTemplate` button stretched across the row as a native interaction bridge.
 - The bridge owns Blizzard click, use, drag, pickup, split-stack, cursor, and tooltip semantics. Do not replace those paths with direct calls such as `UseContainerItem`, which can taint or fail in combat.
+- Middle-click is reserved for the account-wide pin toggle through the button's unregistered `OnMouseUp` path. Do not register MiddleButton with the native bridge because Blizzard routes every non-left registered click through its right-click behavior.
 - All visible pixels belong to custom row regions. Native button textures are deliberately suppressed so template art is not stretched across the row.
 - Configure protected button geometry and reusable regions during row initialization. Do not resize, re-anchor, or recreate protected row buttons during combat refreshes.
-- ScrollBox rows are pooled. Every render and reset path must clear state that could leak to the next item, including tooltip, highlight, icon, binding, lock, cooldown, and bag-hover state.
+- ScrollBox rows are pooled. Every render and reset path must clear state that could leak to the next item, including tooltip, highlight, pin marker, icon, binding, lock, cooldown, and bag-hover state.
 - Keep fast scrolling and item interaction functional in combat.
 
 ### Hover And Tooltips
@@ -130,7 +132,10 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 
 ### Sorting, Grouping, And Drops
 
-- Manual primary sort means physical bag/slot order. It forces secondary sort to `None` and disables secondary selection.
+- Manual primary sort means physical bag/slot order within each active group and pin-presentation partition. It forces secondary sort to `None` and disables secondary selection.
+- Pin state is presentation metadata and must not replace an item's base `categoryKey`; future ordered and custom category rules depend on that separation.
+- Pinned presentation applies across all grouping and sort modes. The supported modes are direct top rows, a collapsible Pinned group, pins first within their normal groups, and normal active-sort placement.
+- Mythic Keystones retain their own prioritized category unless pinned. Keystone pin identity is kind-based rather than link- or item-instance-based so it survives dungeon and level changes.
 - Bag/Slot remains an internal, disabled column and is not a user-facing sort or group option.
 - In sorted modes, a cursor-held item shows a full-list insertion overlay to avoid accidental swaps.
 - In Manual mode, rows remain available for normal item swapping and a bottom insertion area is reserved for placing an item into available bag space.
@@ -148,6 +153,7 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 
 - Use `LibSimpleDB-1.0` for all SavedVariables reads and writes.
 - `NS.db` is account-wide. `NS.charDB` is per-character and currently owns frame position, size, and scale.
+- Account-wide pins live under `pins.items`; regular item pins use item-ID identities and keystones use the stable `kind:keystone` identity.
 - Add defaults in `Defaults.lua` before reading new settings. Use `Get` and `Set`, and register callbacks when a setting must refresh live UI.
 - Expose user settings through Blizzard's standard Settings API. Profiles and column editors remain future work.
 - Preserve the frame's reported point, relative point, x, and y. `SetDontSavePosition(true)` and `SetUserPlaced(false)` prevent the client from applying a second saved position.
@@ -182,7 +188,7 @@ Use the relevant subset for small changes and the full list before release:
 - Use, drag, split, compare, and inspect items; repeat scrolling and item use in combat.
 - Confirm immediate cursor feedback and the 50 ms tooltip debounce.
 - Use an item and confirm targeted count refresh plus cooldown/GCD rendering.
-- Test search, all grouping modes, primary/secondary sorting, Manual mode, and collapsed groups.
+- Test search, all grouping modes, every pin presentation mode, primary/secondary sorting, Manual mode, and collapsed groups.
 - Swap and empty normal and reagent bags; test insufficient compatible space and concurrent empty attempts.
 - Drop cursor items in sorted and Manual modes, including stack merging and specialty-bag compatibility.
 - Check free-space totals, Blizzard cleanup, money, tracked currencies, tooltips, and currency fitting at narrow widths.

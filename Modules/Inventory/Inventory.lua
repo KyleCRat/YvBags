@@ -6,6 +6,7 @@ NS.Inventory = Inventory
 
 local Categories = NS.Categories
 local Containers = NS.Containers
+local Pins = NS.ItemPins
 local ItemModel = NS.ItemModel
 
 local SCAN_DELAY_SECONDS = 0.2
@@ -62,6 +63,7 @@ local function TrackPendingItemInfo(item, itemInfo, containerItemInfo)
         subclassID = item.subclassID,
         categoryKey = item.categoryKey,
         categoryName = item.categoryName,
+        isPinned = item.isPinned,
         bindType = item.bindType,
         bindingKey = item.bindingKey,
         isAccountBound = item.isAccountBound,
@@ -381,6 +383,33 @@ end
 
 function Inventory:GetPendingItems()
     return self.pendingItems
+end
+
+function Inventory:ToggleItemPin(item)
+    local isPinned, pinKey = Pins.Toggle(item)
+    if isPinned == nil then
+        return nil
+    end
+
+    for _, candidate in ipairs(self.items) do
+        if Pins.GetKey(candidate) == pinKey then
+            ItemModel.RefreshClassification(candidate)
+        end
+    end
+
+    for _, pendingItem in ipairs(self.pendingItems) do
+        if Pins.GetKey(pendingItem) == pinKey then
+            local currentItem = self.itemsByLocation[pendingItem.locationKey]
+            if currentItem then
+                pendingItem.isPinned = currentItem.isPinned
+                pendingItem.categoryKey = currentItem.categoryKey
+                pendingItem.categoryName = currentItem.categoryName
+            end
+        end
+    end
+
+    NotifyUpdateCallbacks()
+    return isPinned
 end
 
 function Inventory:IsPlayerContainer(containerID)

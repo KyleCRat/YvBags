@@ -9,7 +9,9 @@ YvBags is a World of Warcraft bag replacement addon that shows your current char
 - Shows bag contents in a virtualized list for fast scrolling.
 - Uses full-row item interaction for tooltips, item use, drag, pickup, and cooldown display.
 - Supports name, column, and tooltip search plus collapsible groups, primary sorting, secondary sorting, and manual bag-slot ordering.
-- Includes built-in category grouping for common inventory types, with Openable and Mythic Keystone groups prioritized at the top.
+- Supports account-wide item pinning with top-row, collapsible-group, top-of-group, or normal-sort presentation in every grouping and sort mode.
+- Keeps the Mythic Keystone in its own prioritized category unless the keystone kind is pinned.
+- Includes built-in category grouping for common inventory types, with lootable items collected in a prioritized Openable category.
 - Displays quantity, binding, rarity/icon, profession quality, name, expansion, sell value, item level, required level, type, and subtype columns.
 - Shows item rarity through name color and icon border color.
 - Shows equipped bag buttons for bag swapping and right-click emptying.
@@ -22,6 +24,10 @@ YvBags is a World of Warcraft bag replacement addon that shows your current char
 ## Usage
 
 YvBags opens from normal bag keybinds when **Replace Blizzard Bags** is enabled. You can also use `/ybags` to toggle the frame.
+
+Middle-click an item row to pin or unpin that item type. Pinning a Mythic Keystone applies to every future keystone regardless of its dungeon or level.
+
+Pinned-item presentation can place pins above the full list, in one collapsible Pinned group, at the top of their respective groups, or in normal sort order. Manual sorting preserves physical bag-slot order within each resulting section.
 
 While the YvBags frame is open and you are out of combat, press `Ctrl+F` to focus the search field. The shortcut is inactive while the frame is closed or during combat and does not change the player's saved binding.
 
@@ -45,6 +51,7 @@ Settings include:
 - Show Cooldowns In Item Names
 - Frame scale
 - Group By
+- Pinned Items presentation
 - Primary Sort and direction
 - Secondary Sort and direction
 

@@ -21,6 +21,10 @@ NS.defaults = {
             secondarySortAscending = true,
             groupKey = "category",
         },
+        pins = {
+            displayMode = "top",
+            items = {},
+        },
         display = {
             showCooldownsInName = true,
         },

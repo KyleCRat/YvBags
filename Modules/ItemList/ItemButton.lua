@@ -84,6 +84,16 @@ function ItemButton.Create(row)
     button:HookScript("OnLeave", function(self)
         self.row.highlight:Hide()
     end)
+    button:HookScript("OnMouseUp", function(self, mouseButton, upInside)
+        if mouseButton ~= "MiddleButton" or upInside == false then
+            return
+        end
+
+        local item = self.row and self.row.item
+        if item then
+            NS.Inventory:ToggleItemPin(item)
+        end
+    end)
     return button
 end
 

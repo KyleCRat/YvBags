@@ -6,6 +6,7 @@ NS.ItemModel = ItemModel
 
 local Categories = NS.Categories
 local Containers = NS.Containers
+local Pins = NS.ItemPins
 local Binding = NS.Binding
 local BindingKeys = Binding.Keys
 
@@ -272,6 +273,13 @@ local function GetCurrentBagItemLevel(bagID, slotIndex)
     return nil
 end
 
+local function RefreshClassification(item)
+    item.isPinned = Pins.IsPinned(item)
+    item.categoryKey = Categories.GetCategoryKey(item)
+    item.categoryName = Categories.GetCategoryName(item.categoryKey)
+    item.searchDocument = nil
+end
+
 -- Keystone special handling
 local function IsKeystoneItem(itemInfo)
     if C_Item and C_Item.IsItemKeystoneByID and itemInfo then
@@ -535,9 +543,12 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
         usedStaticItemInfoFallback = usedStaticFallback,
     }
 
-    item.categoryKey = Categories.GetCategoryKey(item)
-    item.categoryName = Categories.GetCategoryName(item.categoryKey)
+    RefreshClassification(item)
     item.tooltipSearchText = GetTooltipSearchText(item)
 
     return item, itemInfo
+end
+
+function ItemModel.RefreshClassification(item)
+    RefreshClassification(item)
 end
