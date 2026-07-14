@@ -4,38 +4,39 @@ local _, NS = ...
 local Categories = {}
 NS.Categories = Categories
 
--- Category labels
-local CATEGORY_LABELS = {
-    junk = "Junk",
-    keystone = "Mythic Keystone",
-    quest = "Quest",
-    openable = "Openable",
-    consumable = "Consumable",
-    container = "Container",
-    weapon = "Weapon",
-    gem = "Gem",
-    armor = "Armor",
-    reagent = "Reagent",
-    tradegoods = "Trade Goods",
-    enhancement = "Enhancement",
-    recipe = "Recipe",
-    miscellaneous = "Miscellaneous",
-    glyph = "Glyph",
-    battlepet = "Battle Pet",
-    token = "Token",
-    profession = "Profession",
-    housing = "Housing",
-    other = "Other",
-    unknown = "Unknown",
+-- Built-in category order and labels
+local CATEGORY_DEFINITIONS = {
+    { key = "openable", label = "Openable" },
+    { key = "keystone", label = "Mythic Keystone" },
+    { key = "consumable", label = "Consumable" },
+    { key = "equipment", label = "Equipment" },
+    { key = "quest", label = "Quest" },
+    { key = "enhancement", label = "Enhancement" },
+    { key = "gem", label = "Gem" },
+    { key = "recipe", label = "Recipe" },
+    { key = "reagent", label = "Reagent" },
+    { key = "tradegoods", label = "Trade Goods" },
+    { key = "profession", label = "Profession" },
+    { key = "container", label = "Container" },
+    { key = "glyph", label = "Glyph" },
+    { key = "battlepet", label = "Battle Pet" },
+    { key = "token", label = "Token" },
+    { key = "housing", label = "Housing" },
+    { key = "miscellaneous", label = "Miscellaneous" },
+    { key = "other", label = "Other" },
+    { key = "unknown", label = "Unknown" },
+    { key = "junk", label = "Junk" },
 }
+
+local CATEGORY_LABELS = {}
+local CATEGORY_SORT_PRIORITIES = {}
+
+for sortPriority, definition in ipairs(CATEGORY_DEFINITIONS) do
+    CATEGORY_LABELS[definition.key] = definition.label
+    CATEGORY_SORT_PRIORITIES[definition.key] = sortPriority
+end
 
 Categories.labels = CATEGORY_LABELS
-
-local DEFAULT_CATEGORY_SORT_PRIORITY = 2
-local CATEGORY_SORT_PRIORITIES = {
-    keystone = 0,
-    openable = 1,
-}
 
 -- Blizzard enum compatibility
 local function EnumValue(enumName, key, fallback)
@@ -55,9 +56,9 @@ end
 
 SetItemClassCategory("Consumable", 0, "consumable")
 SetItemClassCategory("Container", 1, "container")
-SetItemClassCategory("Weapon", 2, "weapon")
+SetItemClassCategory("Weapon", 2, "equipment")
 SetItemClassCategory("Gem", 3, "gem")
-SetItemClassCategory("Armor", 4, "armor")
+SetItemClassCategory("Armor", 4, "equipment")
 SetItemClassCategory("Reagent", 5, "reagent")
 SetItemClassCategory("Tradegoods", 7, "tradegoods")
 SetItemClassCategory("ItemEnhancement", 8, "enhancement")
@@ -104,7 +105,7 @@ function Categories.GetCategoryName(categoryKey)
 end
 
 function Categories.GetSortPriority(categoryKey)
-    return CATEGORY_SORT_PRIORITIES[categoryKey] or DEFAULT_CATEGORY_SORT_PRIORITY
+    return CATEGORY_SORT_PRIORITIES[categoryKey] or CATEGORY_SORT_PRIORITIES.other
 end
 
 function Categories.GetLabels()

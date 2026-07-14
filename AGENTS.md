@@ -135,6 +135,7 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - Manual primary sort means physical bag/slot order within each active group and pin-presentation partition. It forces secondary sort to `None` and disables secondary selection.
 - Pin state is presentation metadata and must not replace an item's base `categoryKey`; future ordered and custom category rules depend on that separation.
 - Pinned presentation applies across all grouping and sort modes. The supported modes are direct top rows, a collapsible Pinned group, pins first within their normal groups, and normal active-sort placement.
+- Built-in Category grouping uses the explicit order declared in `Modules/Inventory/Categories.lua`. Openable, Mythic Keystone, Consumable, and Equipment lead in that order; armor and weapons share the `equipment` category; and Junk remains last.
 - Mythic Keystones retain their own prioritized category unless pinned. Keystone pin identity is kind-based rather than link- or item-instance-based so it survives dungeon and level changes.
 - Bag/Slot remains an internal, disabled column and is not a user-facing sort or group option.
 - In sorted modes, a cursor-held item shows a full-list insertion overlay to avoid accidental swaps.
