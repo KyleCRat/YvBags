@@ -75,6 +75,7 @@ local function TrackPendingItemInfo(item, itemInfo, containerItemInfo)
         professionQuality = item.professionQuality,
         linkType = item.linkType,
         linkOptions = item.linkOptions,
+        isCosmetic = item.isCosmetic,
         isKeystone = item.isKeystone,
         keystoneLevel = item.keystoneLevel,
         keystoneMapID = item.keystoneMapID,

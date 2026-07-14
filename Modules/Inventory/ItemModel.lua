@@ -143,6 +143,14 @@ local function GetItemInfoFields(itemInfo)
     return nil
 end
 
+local function IsCosmeticItem(itemInfo)
+    if C_Item and C_Item.IsCosmeticItem and itemInfo then
+        return C_Item.IsCosmeticItem(itemInfo)
+    end
+
+    return false
+end
+
 local function GetProfessionQuality(itemInfo)
     if not itemInfo or not C_TradeSkillUI then
         return nil, nil
@@ -403,6 +411,7 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
 
     -- Apply special handling for item-like links that need extra Blizzard APIs.
     local isKeystone = IsKeystoneItem(staticItemInfo or itemInfo)
+    local isCosmetic = IsCosmeticItem(staticItemInfo or itemInfo)
     local keystoneLevel
     local keystoneMapID
     local keystoneMapName
@@ -519,6 +528,7 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
         setID = setID,
         isCraftingReagent = isCraftingReagent,
         itemDescription = itemDescription,
+        isCosmetic = isCosmetic,
         isKeystone = isKeystone,
         keystoneLevel = keystoneLevel,
         keystoneMapID = keystoneMapID,

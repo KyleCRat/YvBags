@@ -7,6 +7,7 @@ NS.Categories = Categories
 -- Built-in category order and labels
 local CATEGORY_DEFINITIONS = {
     { key = "openable", label = "Openable" },
+    { key = "cosmetic", label = "Cosmetic" },
     { key = "keystone", label = "Mythic Keystone" },
     { key = "consumable", label = "Consumable" },
     { key = "equipment", label = "Equipment" },
@@ -83,6 +84,10 @@ function Categories.GetCategoryKey(item)
 
     if item.isBattlePet then
         return "battlepet"
+    end
+
+    if item.isCosmetic then
+        return "cosmetic"
     end
 
     if ITEM_CLASS_CATEGORIES[item.classID] == "quest" then
