@@ -8,6 +8,7 @@ NS.Categories = Categories
 local CATEGORY_DEFINITIONS = {
     { key = "openable", label = "Openable" },
     { key = "cosmetic", label = "Cosmetic" },
+    { key = "collectables", label = "Collectables" },
     { key = "keystone", label = "Mythic Keystone" },
     { key = "consumable", label = "Consumable" },
     { key = "equipment", label = "Equipment" },
@@ -20,7 +21,6 @@ local CATEGORY_DEFINITIONS = {
     { key = "profession", label = "Profession" },
     { key = "container", label = "Container" },
     { key = "glyph", label = "Glyph" },
-    { key = "battlepet", label = "Battle Pet" },
     { key = "token", label = "Token" },
     { key = "housing", label = "Housing" },
     { key = "miscellaneous", label = "Miscellaneous" },
@@ -67,7 +67,6 @@ SetItemClassCategory("Recipe", 9, "recipe")
 SetItemClassCategory("Questitem", 12, "quest")
 SetItemClassCategory("Miscellaneous", 15, "miscellaneous")
 SetItemClassCategory("Glyph", 16, "glyph")
-SetItemClassCategory("Battlepet", 17, "battlepet")
 SetItemClassCategory("WoWToken", 18, "token")
 SetItemClassCategory("Profession", 19, "profession")
 SetItemClassCategory("Housing", 20, "housing")
@@ -82,8 +81,8 @@ function Categories.GetCategoryKey(item)
         return "openable"
     end
 
-    if item.isBattlePet then
-        return "battlepet"
+    if item.collectionKind then
+        return "collectables"
     end
 
     if item.isCosmetic then

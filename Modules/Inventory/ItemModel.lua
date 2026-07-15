@@ -13,6 +13,16 @@ local BindingKeys = Binding.Keys
 local UNKNOWN_ITEM_ICON = 134400
 local CAGED_BATTLE_PET_ITEM_ID = 82800
 local tooltipSearchCache = {}
+local collectionKindCache = {}
+
+local COLLECTION_KINDS = {
+    Toy = "toy",
+    Mount = "mount",
+    Pet = "pet",
+    BattlePet = "battlepet",
+}
+
+ItemModel.CollectionKinds = COLLECTION_KINDS
 
 -- Blizzard enum compatibility
 local function EnumValue(enumName, key, fallback)
@@ -149,6 +159,58 @@ local function IsCosmeticItem(itemInfo)
     end
 
     return false
+end
+
+local function GetCollectionKind(itemID, classID, subclassID, isBattlePet)
+    if isBattlePet then
+        return COLLECTION_KINDS.BattlePet
+    end
+
+    if not itemID then
+        return nil
+    end
+
+    local cachedKind = collectionKindCache[itemID]
+    if cachedKind ~= nil then
+        return cachedKind or nil
+    end
+
+    local getToyInfo = C_ToyBox and C_ToyBox.GetToyInfo
+    local getMountFromItem = C_MountJournal and C_MountJournal.GetMountFromItem
+    local getPetInfoByItemID = C_PetJournal and C_PetJournal.GetPetInfoByItemID
+    local collectionKind
+    if getToyInfo then
+        local toyItemID = getToyInfo(itemID)
+        if toyItemID then
+            collectionKind = COLLECTION_KINDS.Toy
+        end
+    end
+
+    if not collectionKind and getMountFromItem and getMountFromItem(itemID) then
+        collectionKind = COLLECTION_KINDS.Mount
+    end
+
+    if not collectionKind and getPetInfoByItemID and getPetInfoByItemID(itemID) then
+        collectionKind = COLLECTION_KINDS.Pet
+    end
+
+    if not collectionKind and classID == EnumValue("ItemClass", "Battlepet", 17) then
+        collectionKind = COLLECTION_KINDS.BattlePet
+    end
+
+    if not collectionKind and classID == EnumValue("ItemClass", "Miscellaneous", 15) then
+        if subclassID == EnumValue("ItemMiscellaneousSubclass", "CompanionPet", 2) then
+            collectionKind = COLLECTION_KINDS.Pet
+        elseif subclassID == EnumValue("ItemMiscellaneousSubclass", "Mount", 5) then
+            collectionKind = COLLECTION_KINDS.Mount
+        end
+    end
+
+    if collectionKind or (getToyInfo and getMountFromItem and getPetInfoByItemID and classID ~= nil) then
+        collectionKindCache[itemID] = collectionKind or false
+    end
+
+    return collectionKind
 end
 
 local function GetProfessionQuality(itemInfo)
@@ -448,6 +510,15 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
         fullItemSubType = "Caged Pet"
     end
 
+    local normalizedClassID = classID or instantClassID
+    local normalizedSubclassID = subClassID or instantSubClassID
+    local collectionKind = GetCollectionKind(
+        containerItemInfo.itemID or instantItemID,
+        normalizedClassID,
+        normalizedSubclassID,
+        isBattlePet
+    )
+
     -- Resolve derived fields used by columns, sorting, and diagnostics.
     local actualItemLevel
     local previewLevel
@@ -512,8 +583,8 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
         requiredLevel = requiredLevel,
         type = fullItemType or instantItemType,
         subtype = fullItemSubType or instantItemSubType,
-        classID = classID or instantClassID,
-        subclassID = subClassID or instantSubClassID,
+        classID = normalizedClassID,
+        subclassID = normalizedSubclassID,
         equipLoc = fullEquipLoc or instantEquipLoc,
         maxStack = maxStack,
         bindType = bindType,
@@ -529,6 +600,7 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
         isCraftingReagent = isCraftingReagent,
         itemDescription = itemDescription,
         isCosmetic = isCosmetic,
+        collectionKind = collectionKind,
         isKeystone = isKeystone,
         keystoneLevel = keystoneLevel,
         keystoneMapID = keystoneMapID,

@@ -63,7 +63,7 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - `Core.lua`: `ADDON_LOADED`, LibSimpleDB construction, shared event dispatch, and initialization callbacks.
 - `Modules/Inventory/Containers.lua`: discovery and metadata for player-owned bag containers and empty slots.
 - `Modules/Inventory/Pins.lua`: account-wide stable pin identities, pin persistence, and pinned presentation settings.
-- `Modules/Inventory/ItemModel.lua`: normalized occupied-slot item data, including async fallbacks, binding, pins, keystones, caged pets, expansion, and profession quality.
+- `Modules/Inventory/ItemModel.lua`: normalized occupied-slot item data, including async fallbacks, binding, pins, keystones, collection kinds, caged pets, expansion, and profession quality.
 - `Modules/Inventory/Inventory.lua`: live inventory state, targeted container refreshes, debounced reconciliation scans, pending item data, indexes, totals, and update callbacks.
 - `Modules/Inventory/Categories.lua`: built-in v1-lite category assignment and labels.
 - `Constants/Binding.lua`: binding keys and binding predicates. Use these constants instead of repeating binding strings.
@@ -136,7 +136,7 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - Manual primary sort means physical bag/slot order within each active group and pin-presentation partition. It forces secondary sort to `None` and disables secondary selection.
 - Pin state is presentation metadata and must not replace an item's base `categoryKey`; future ordered and custom category rules depend on that separation.
 - Pinned presentation applies across all grouping and sort modes. The supported modes are direct top rows, a collapsible Pinned group, pins first within their normal groups, and normal active-sort placement.
-- Built-in Category grouping uses the explicit order declared in `Modules/Inventory/Categories.lua`. Openable, Cosmetic, Mythic Keystone, Consumable, and Equipment lead in that order; armor and weapons share the `equipment` category unless Blizzard tags the item as cosmetic; and Junk remains last.
+- Built-in Category grouping uses the explicit order declared in `Modules/Inventory/Categories.lua`. Openable, Cosmetic, Collectables, Mythic Keystone, Consumable, and Equipment lead in that order; `toy`, `mount`, `pet`, and `battlepet` collection kinds share the `collectables` category; armor and weapons share the `equipment` category unless Blizzard tags the item as cosmetic; and Junk remains last.
 - Mythic Keystones retain their own prioritized category unless pinned. Keystone pin identity is kind-based rather than link- or item-instance-based so it survives dungeon and level changes.
 - Bag/Slot remains an internal, disabled column and is not a user-facing sort or group option.
 - In sorted modes, a cursor-held item shows a full-list insertion overlay to avoid accidental swaps.
