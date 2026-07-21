@@ -14,7 +14,7 @@ This file is the standing product and engineering contract for work in the YvBag
 
 - Current target: World of Warcraft: Midnight, Interface `120007` (12.0.7).
 - WoW uses Lua 5.1. Do not use `goto`, `continue`, native bitwise operators, or later-Lua features.
-- There is no local Lua interpreter in this workspace. Do not block work on `lua` or `luac`; use focused code review and in-game testing instead.
+- Lua 5.1.5 and `luac` are available for reusable-library suites and syntax checks. YvBags does not yet maintain addon-specific tests; these checks do not replace in-game testing.
 - Use four spaces, no tabs. Keep source files UTF-8 with LF endings and a final newline.
 - `.editorconfig` defines editor behavior and `.gitattributes` enforces LF normalization for repository text files. Do not introduce line-ending churn in embedded libraries while making feature changes.
 - Files load in the explicit order in `YvBags.toc`. When adding or moving a module, verify that every dependency loads before its consumer.
@@ -59,8 +59,8 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 
 ## Architecture And Ownership
 
-- `Defaults.lua`: addon identity constants, account defaults, and character defaults.
-- `Core.lua`: `ADDON_LOADED`, LibSimpleDB construction, shared event dispatch, and initialization callbacks.
+- `Defaults.lua`: addon identity constants plus addon-global, profile, and character defaults.
+- `Core.lua`: `ADDON_LOADED`, legacy account-storage adoption, LibSimpleDB/Profile-manager construction, shared event dispatch, and initialization callbacks.
 - `Modules/Inventory/Containers.lua`: discovery and metadata for player-owned bag containers and empty slots.
 - `Modules/Inventory/Pins.lua`: account-wide stable pin identities, pin persistence, and pinned presentation settings.
 - `Modules/Inventory/ItemModel.lua`: normalized occupied-slot item data, including async fallbacks, binding, pins, keystones, collection kinds, caged pets, expansion, and profession quality.
@@ -90,7 +90,7 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - `Modules/MainFrame/FooterCurrencies.lua`: tracked backpack currencies, responsive fitting, currency tooltips, and untracking.
 - `Media.lua`: centralized fonts, textures, atlases, colors, and LibSharedMedia registration.
 - `Formatting/Money.lua`: shared compact and exact money formatting.
-- `Settings.lua`: native Blizzard Settings registrations and live setting callbacks.
+- `Settings.lua`: native Blizzard Settings registrations, profile management, confirmations, and live setting callbacks.
 - `Commands.lua`: slash commands and diagnostics.
 
 ## Critical Implementation Invariants
@@ -153,11 +153,16 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 
 ### Persistence And Settings
 
-- Use `LibSimpleDB-1.0` for all SavedVariables reads and writes.
-- `NS.db` is account-wide. `NS.charDB` is per-character and currently owns frame position, size, and scale.
-- Account-wide pins live under `pins.items`; regular item pins use item-ID identities and keystones use the stable `kind:keystone` identity.
+- Use `LibSimpleDB-2.0` for all SavedVariables reads and writes.
+- `NS.db` is the stable active profile DB returned by `NS.profileManager:GetActiveDB()`. Never replace it or read profile payload tables directly.
+- `NS.globalDB` is account-wide and owns feature toggles, debug state, and pinned item identities. `NS.charDB` is per-character and owns frame position, size, and scale.
+- `YvBagsDB.profiles` is exclusively owned by `LibSimpleDBProfiles-1.0`; profile selections and payloads must be accessed through `NS.profileManager` and `NS.db`.
+- Account-wide pins live under the addon-global `pins.items`; regular item pins use item-ID identities and keystones use the stable `kind:keystone` identity. Pin presentation belongs to the active profile.
+- Profile-owned settings are list grouping/sorting, pin presentation, and cooldown-name display. Bag replacement and gray-junk selling remain addon-global.
 - Add defaults in `Defaults.lua` before reading new settings. Use `Get` and `Set`, and register callbacks when a setting must refresh live UI.
-- Expose user settings through Blizzard's standard Settings API. Profiles and column editors remain future work.
+- Expose user settings and profile management through Blizzard's standard Settings API. Column editors remain future work.
+- UI that displays profile identity listens to manager `OnProfileChanged`; features that apply effective profile data listen to active-DB `OnDataChanged`/`OnReset`. Do not refresh one feature through both paths.
+- A character without a stored selection performs the manager's one-time Character > Specialization > Class > Realm > Faction > Global search. The persisted result is not promoted later.
 - Preserve the frame's reported point, relative point, x, and y. `SetDontSavePosition(true)` and `SetUserPlaced(false)` prevent the client from applying a second saved position.
 
 ### Media And Visual Settings
@@ -176,7 +181,7 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 5. Implement the smallest coherent change and preserve extension points documented here or in `TODO.md`.
 6. Update defaults, settings, TOC load order, README, `TODO.md`, or changelog when the behavior changes their contract.
 7. Run `git diff --check` and inspect the final diff. Do not introduce unrelated formatting or metadata churn.
-8. Validate in game in proportion to risk. There is no local Lua runtime.
+8. Run applicable reusable-library suites and Lua 5.1 syntax checks, then validate in game in proportion to risk.
 9. Do not commit, tag, or push unless the user explicitly asks.
 
 ## In-Game Regression Checklist

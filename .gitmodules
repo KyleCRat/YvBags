@@ -1,0 +1,8 @@
+[submodule "Libs/LibSimpleDB-2.0"]
+	path = Libs/LibSimpleDB-2.0
+	url = git@github.com:KyleCRat/LibSimpleDB.git
+	branch = main
+[submodule "Libs/LibSimpleDBProfiles-1.0"]
+	path = Libs/LibSimpleDBProfiles-1.0
+	url = git@github.com:KyleCRat/LibSimpleDBProfiles.git
+	branch = main

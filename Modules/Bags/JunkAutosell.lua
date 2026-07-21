@@ -10,7 +10,7 @@ local merchantOpen = false
 local sellScheduled = false
 
 local function IsEnabled()
-    return NS.db:Get("features", "autosellGrayJunk") == true
+    return NS.globalDB:Get("features", "autosellGrayJunk") == true
 end
 
 local function CanSellJunk()
@@ -66,9 +66,9 @@ NS:RegisterInitCallback(function()
     NS:RegisterEventHandler("MERCHANT_UPDATE", OnMerchantUpdate)
     NS:RegisterEventHandler("MERCHANT_CLOSED", OnMerchantClosed)
 
-    NS.db:RegisterCallback("features.autosellGrayJunk", function(_, enabled)
+    NS.globalDB:RegisterCallback(function(_, enabled)
         if enabled == true then
             JunkAutosell.ScheduleSell()
         end
-    end)
+    end, "features", "autosellGrayJunk")
 end)

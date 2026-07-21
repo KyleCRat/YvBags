@@ -8,9 +8,10 @@
 ## SavedVariablesPerCharacter: YvBagsCharacterDB
 
 Libs\LibStub\LibStub.lua
+Libs\LibSimpleDB-2.0\embed.xml
+Libs\LibSimpleDBProfiles-1.0\embed.xml
 Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
 Libs\LibSharedMedia-3.0\lib.xml
-Libs\LibSimpleDB-1.0\embed.xml
 Libs\LibPopupSlider-1.0\LibPopupSlider-1.0.xml
 
 Defaults.lua

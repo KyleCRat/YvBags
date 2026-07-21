@@ -10,3 +10,7 @@
 ## Fixes
 
 - Adding a new currency to be tracked on backback doesnot show up until after reopening the backpack.
+
+## Integration
+
+- How do we make it so the librareis don't have tests and other not needed files for user's who download / use them?

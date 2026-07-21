@@ -1,6 +1,15 @@
 local ADDON_NAME, NS = ...
 
-local LibSimpleDB = LibStub("LibSimpleDB-1.0")
+local LibSimpleDB = LibStub("LibSimpleDB-2.0")
+local LibSimpleDBProfiles = LibStub("LibSimpleDBProfiles-1.0")
+
+local LEGACY_ACCOUNT_ROOT_KEYS = {
+    "debug",
+    "features",
+    "list",
+    "pins",
+    "display",
+}
 
 NS.initialized = false
 NS.eventFrame = CreateFrame("Frame")
@@ -71,12 +80,112 @@ function NS:IsInitialized()
     return NS.initialized == true
 end
 
-function NS:InitializeDatabases()
-    _G[NS.ACCOUNT_DB_NAME] = _G[NS.ACCOUNT_DB_NAME] or {}
-    _G[NS.CHARACTER_DB_NAME] = _G[NS.CHARACTER_DB_NAME] or {}
+local function CreateAccountStorage()
+    return {
+        [NS.ACCOUNT_STORAGE_METADATA_KEY] = {
+            schema = NS.ACCOUNT_STORAGE_SCHEMA_VERSION,
+        },
+        global = {},
+        profiles = {},
+    }
+end
 
-    NS.db = LibSimpleDB:New(_G[NS.ACCOUNT_DB_NAME], NS.defaults.global)
-    NS.charDB = LibSimpleDB:New(_G[NS.CHARACTER_DB_NAME], NS.defaults.character)
+local function IsLegacyAccountStorage(storage)
+    for index = 1, #LEGACY_ACCOUNT_ROOT_KEYS do
+        if storage[LEGACY_ACCOUNT_ROOT_KEYS[index]] ~= nil then
+            return true
+        end
+    end
+
+    return false
+end
+
+local function MoveLegacyRoot(legacyPayload, globalPayload, key)
+    if legacyPayload[key] ~= nil then
+        globalPayload[key] = legacyPayload[key]
+        legacyPayload[key] = nil
+    end
+end
+
+local function AdoptLegacyAccountStorage(legacyPayload)
+    local accountStorage = CreateAccountStorage()
+    local globalPayload = accountStorage.global
+
+    MoveLegacyRoot(legacyPayload, globalPayload, "debug")
+    MoveLegacyRoot(legacyPayload, globalPayload, "features")
+
+    local legacyPins = legacyPayload.pins
+    if type(legacyPins) == "table" and legacyPins.items ~= nil then
+        globalPayload.pins = {
+            items = legacyPins.items,
+        }
+        legacyPins.items = nil
+
+        if next(legacyPins) == nil then
+            legacyPayload.pins = nil
+        end
+    end
+
+    -- Retain the original flat payload by reference, but only after the new
+    -- outer container exists. This avoids a SavedVariables reference cycle.
+    accountStorage.profiles.global = legacyPayload
+    return accountStorage
+end
+
+local function NormalizeAccountStorage(storage)
+    local metadata = storage[NS.ACCOUNT_STORAGE_METADATA_KEY]
+
+    if metadata ~= nil then
+        if type(metadata) ~= "table"
+            or metadata.schema ~= NS.ACCOUNT_STORAGE_SCHEMA_VERSION then
+            error("YvBags: unsupported or corrupt account storage schema", 2)
+        end
+
+        if type(storage.global) ~= "table" or type(storage.profiles) ~= "table" then
+            error("YvBags: corrupt account storage containers", 2)
+        end
+
+        return storage
+    end
+
+    if next(storage) == nil then
+        return CreateAccountStorage()
+    end
+
+    if IsLegacyAccountStorage(storage) then
+        return AdoptLegacyAccountStorage(storage)
+    end
+
+    error("YvBags: unrecognized unversioned account storage", 2)
+end
+
+function NS:InitializeDatabases()
+    local accountStorage = _G[NS.ACCOUNT_DB_NAME]
+    if accountStorage == nil then
+        accountStorage = {}
+    elseif type(accountStorage) ~= "table" then
+        error("YvBags: account SavedVariables must be a table", 2)
+    end
+
+    accountStorage = NormalizeAccountStorage(accountStorage)
+    _G[NS.ACCOUNT_DB_NAME] = accountStorage
+
+    local characterStorage = _G[NS.CHARACTER_DB_NAME]
+    if characterStorage == nil then
+        characterStorage = {}
+        _G[NS.CHARACTER_DB_NAME] = characterStorage
+    elseif type(characterStorage) ~= "table" then
+        error("YvBags: character SavedVariables must be a table", 2)
+    end
+
+    NS.globalDB = LibSimpleDB:New(accountStorage.global, NS.defaults.global)
+    NS.charDB = LibSimpleDB:New(characterStorage, NS.defaults.character)
+    NS.profileManager = LibSimpleDBProfiles:New(
+        ADDON_NAME,
+        accountStorage.profiles,
+        NS.defaults.profile
+    )
+    NS.db = NS.profileManager:GetActiveDB()
 end
 
 function NS:Initialize()

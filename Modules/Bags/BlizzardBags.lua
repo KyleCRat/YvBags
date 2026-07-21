@@ -22,7 +22,7 @@ local wrappersInstalled = false
 local callingOriginal = false
 
 local function GetFeatureEnabled()
-    return NS.db:Get("features", "replaceBlizzardBags") ~= false
+    return NS.globalDB:Get("features", "replaceBlizzardBags") ~= false
 end
 
 local function CanOpenBags()
@@ -225,9 +225,9 @@ NS:RegisterInitCallback(function()
     WrapBagFunctions()
     BlizzardBags.HideBlizzardBags()
 
-    NS.db:RegisterCallback("features.replaceBlizzardBags", function(_, enabled)
+    NS.globalDB:RegisterCallback(function(_, enabled)
         if enabled ~= false then
             BlizzardBags.HideBlizzardBags()
         end
-    end)
+    end, "features", "replaceBlizzardBags")
 end)

@@ -21,6 +21,7 @@ YvBags is a World of Warcraft bag replacement addon that shows your current char
 - Shows current character money and tracked backpack currencies in the footer.
 - Can restore the original Blizzard bag frames from the backpack button.
 - Includes optional gray-quality junk autosell when a merchant opens.
+- Includes Character, Specialization, Class, Realm, Faction, Global, and user-created settings profiles.
 
 ## Usage
 
@@ -47,6 +48,7 @@ Open settings with `/ybags settings` or through the Blizzard AddOns settings pan
 
 Settings include:
 
+- Active profile plus create, copy, rename, reset, and delete actions
 - Replace Blizzard Bags
 - Sell Gray Junk At Vendors
 - Show Cooldowns In Item Names
@@ -56,7 +58,13 @@ Settings include:
 - Primary Sort and direction
 - Secondary Sort and direction
 
-Frame position, size, and scale are stored per character. General addon settings are stored account-wide.
+Profile settings include grouping, sorting, pinned-item presentation, and cooldown-name display. Bag replacement, gray-junk selling, and pinned item identities remain shared across the addon. Frame position, size, and scale remain stored per character.
+
+## Profiles
+
+Permanent profiles and user-created profiles appear together in the **Active Profile** selector. Permanent profiles can be selected, copied, and reset, but cannot be renamed or deleted. User profiles can also be created and renamed; inactive user profiles can be deleted.
+
+Each character remembers its selected profile. On first use, YvBags checks Character, Specialization, Class, Realm, Faction, then Global and keeps the first profile that already contains settings. Global is the fallback. Selecting Specialization follows that character's current specialization while the selection remains Specialization.
 
 ## Slash Commands
 
@@ -101,7 +109,6 @@ All required libraries are included with the addon.
 - Grid mode is not included.
 - Categories are built in for the initial release; custom category editing is not included.
 - Column visibility, resizing, and reordering are not included.
-- Profile management is not included.
 
 ## Author
 

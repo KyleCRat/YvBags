@@ -4,13 +4,25 @@ manual-changelog:
   filename: CHANGELOG.md
   markup-type: markdown
 
+externals:
+  Libs/LibSimpleDB-2.0:
+    url: https://github.com/KyleCRat/LibSimpleDB.git
+    commit: e2f88dddfa8611a64cc3103d411c60559ccedfa6
+  Libs/LibSimpleDBProfiles-1.0:
+    url: https://github.com/KyleCRat/LibSimpleDBProfiles.git
+    commit: 1b78e4eaa2779468e18e3fd1cdb0ab7ac5cff67a
+
 ignore:
   - .pkgmeta
   - .editorconfig
   - .gitattributes
   - .git
   - AGENTS.md
+  - PLAN.md
   - TODO.md
+  - "Libs/LibSimpleDB-2.0/benchmarks"
+  - "Libs/LibSimpleDB-2.0/tests"
+  - "Libs/LibSimpleDBProfiles-1.0/tests"
   - "*.afphoto"
   - "Media/Textures/*.afphoto"
   - "*.png"

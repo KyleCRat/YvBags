@@ -49,7 +49,7 @@ local function GetRegionName(region)
 end
 
 local function IsDebugEnabled()
-    return DEBUG_POSITION or NS.db:Get("debug") == true
+    return DEBUG_POSITION or NS.globalDB:Get("debug") == true
 end
 
 function Geometry.PreventClientSaving(frame)

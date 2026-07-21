@@ -49,7 +49,7 @@ end
 
 function Pins.IsPinned(item)
     local pinKey = Pins.GetKey(item)
-    return pinKey ~= nil and NS.db:Get(DB_SECTION, DB_ITEMS_KEY, pinKey) == true
+    return pinKey ~= nil and NS.globalDB:Get(DB_SECTION, DB_ITEMS_KEY, pinKey) == true
 end
 
 function Pins.Toggle(item)
@@ -58,11 +58,11 @@ function Pins.Toggle(item)
         return nil, nil
     end
 
-    local isPinned = NS.db:Get(DB_SECTION, DB_ITEMS_KEY, pinKey) ~= true
+    local isPinned = NS.globalDB:Get(DB_SECTION, DB_ITEMS_KEY, pinKey) ~= true
     if isPinned then
-        NS.db:Set(DB_SECTION, DB_ITEMS_KEY, pinKey, true)
+        NS.globalDB:Set(DB_SECTION, DB_ITEMS_KEY, pinKey, true)
     else
-        NS.db:Delete(DB_SECTION, DB_ITEMS_KEY, pinKey)
+        NS.globalDB:Delete(DB_SECTION, DB_ITEMS_KEY, pinKey)
     end
 
     return isPinned, pinKey
@@ -73,7 +73,7 @@ function Pins.NormalizeDisplayMode(displayMode)
         return displayMode
     end
 
-    return NS.defaults.global.pins.displayMode
+    return NS.defaults.profile.pins.displayMode
 end
 
 function Pins.GetDisplayMode()

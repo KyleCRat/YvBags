@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Added
+- Added profile management with Character, Specialization, Class, Realm, Faction, Global, and user-created profiles.
+- Added profile selection, creation, copying, resetting, renaming, and deletion to the Blizzard Settings panel.
 - Added `Ctrl+F` to focus bag search while the YvBags frame is open and the player is out of combat without changing the player's saved binding.
 - Expanded bag search to include tooltip text and displayed column values.
 - Added a prioritized `Openable` category for lootable container items.
@@ -14,6 +16,10 @@
 - Added an accent-colored item-tooltip action hint for middle-click pinning and unpinning.
 - Added a compact accent marker on the left edge of pinned item rows.
 - Restored Mythic Keystones to their own prioritized category and gave keystone pins a stable identity across dungeon and level changes.
+
+### Changed
+- Upgraded persistence from `LibSimpleDB-1.0` to `LibSimpleDB-2.0` and added `LibSimpleDBProfiles-1.0`.
+- Adopted existing flat settings into Global once while keeping feature toggles and pinned item identities outside profile payloads.
 
 ## [12.0.7-1] - 2026-07-11
 

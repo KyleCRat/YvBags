@@ -24,21 +24,25 @@ local EMPTY_LIST_TEXT = "No bag items"
 local ListController = {}
 ListController.__index = ListController
 
-local function CreateListState()
-    local list = setmetatable({}, ListController)
-    list.items = {}
-    list.searchText = ""
+local function ApplyStoredProfileSettings(list)
     list.sortKey = ListModel.NormalizeSortKey(NS.db:Get("list", "sortKey"))
     list.sortAscending = NS.db:Get("list", "sortAscending") ~= false
     list.secondarySortKey = ListModel.NormalizeSecondarySortKey(NS.db:Get("list", "secondarySortKey"))
     list.secondarySortAscending = NS.db:Get("list", "secondarySortAscending") ~= false
     list.groupKey = ListModel.NormalizeGroupKey(NS.db:Get("list", "groupKey"))
-    list.collapsedGroups = {}
 
     if not ListModel.IsSecondarySortEnabled(list.secondarySortKey, list.sortKey) then
         list.secondarySortKey = ListModel.GetNoSecondarySortKey()
         list.secondarySortAscending = true
     end
+end
+
+local function CreateListState()
+    local list = setmetatable({}, ListController)
+    list.items = {}
+    list.searchText = ""
+    list.collapsedGroups = {}
+    ApplyStoredProfileSettings(list)
 
     return list
 end
@@ -201,6 +205,12 @@ function ListController:RefreshVisibleCooldowns()
     end
 end
 
+function ListController:RefreshProfileSettings()
+    ApplyStoredProfileSettings(self)
+    self.collapsedGroups = {}
+    self:RefreshDataProvider(true)
+end
+
 local function CreateScrollView(list)
     local view = CreateScrollBoxListLinearView()
     view:SetElementExtentCalculator(function(_, elementData)
@@ -279,5 +289,12 @@ function ItemList.Create(parent)
 
     CursorDrop.Attach(list)
     list.emptyText = CreateEmptyText(list)
+
+    local function OnProfileDataChanged()
+        list:RefreshProfileSettings()
+    end
+
+    NS.db:RegisterLifecycleCallback("OnDataChanged", OnProfileDataChanged)
+    NS.db:RegisterLifecycleCallback("OnReset", OnProfileDataChanged)
     return list
 end
