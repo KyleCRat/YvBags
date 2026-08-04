@@ -10,7 +10,7 @@ externals:
     commit: e2f88dddfa8611a64cc3103d411c60559ccedfa6
   Libs/LibSimpleDBProfiles-1.0:
     url: https://github.com/KyleCRat/LibSimpleDBProfiles.git
-    commit: 1b78e4eaa2779468e18e3fd1cdb0ab7ac5cff67a
+    commit: ca50a20543ad8d54b9aaff3e4356f96cc02639bd
 
 ignore:
   - .pkgmeta
