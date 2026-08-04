@@ -23,6 +23,7 @@
 
 ### Fixed
 - Fixed first-login profile selection so a character can inherit an existing Specialization profile when specialization information becomes available during login.
+- Fixed item use from YvBags rows being blocked by Blizzard's protected container-action checks.
 
 ## [12.0.7-1] - 2026-07-11
 

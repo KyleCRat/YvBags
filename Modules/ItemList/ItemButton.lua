@@ -70,7 +70,7 @@ end
 
 function ItemButton.Create(row)
     buttonCount = buttonCount + 1
-    local button = CreateFrame("Button", GLOBAL_NAME_PREFIX .. buttonCount, row, BUTTON_TEMPLATE)
+    local button = CreateFrame("ItemButton", GLOBAL_NAME_PREFIX .. buttonCount, row, BUTTON_TEMPLATE)
     button.row = row
     NS.ItemTooltip.RegisterRowButton(button)
     Configure(button, row)
@@ -98,9 +98,8 @@ function ItemButton.Create(row)
 end
 
 function ItemButton.Update(button, item)
-    button:GetParent():SetID(item.bagID)
+    button:SetBagID(item.bagID)
     button:SetID(item.slotIndex)
-    button.bagID = nil
     button.bag = item.bagID
     button.slot = item.slotIndex
     button.count = item.count
@@ -110,9 +109,8 @@ end
 
 function ItemButton.Reset(button)
     NS.ItemTooltip.ResetButton(button)
-    button:GetParent():SetID(0)
+    button:SetBagID(0)
     button:SetID(0)
-    button.bagID = nil
     button.bag = nil
     button.slot = nil
     button.count = nil
