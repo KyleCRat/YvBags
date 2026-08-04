@@ -66,6 +66,8 @@ Permanent profiles and user-created profiles appear together in the **Active Pro
 
 Each character remembers its selected profile. On first use, YvBags checks Character, Specialization, Class, Realm, Faction, then Global and keeps the first profile that already contains settings. Global is the fallback. Selecting Specialization follows that character's current specialization while the selection remains Specialization.
 
+If specialization information is still loading, YvBags finishes this one-time selection during login rather than permanently falling back to a broader profile.
+
 ## Slash Commands
 
 | Command | Description |

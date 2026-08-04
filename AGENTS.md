@@ -14,7 +14,7 @@ This file is the standing product and engineering contract for work in the YvBag
 
 - Current target: World of Warcraft: Midnight, Interface `120007` (12.0.7).
 - WoW uses Lua 5.1. Do not use `goto`, `continue`, native bitwise operators, or later-Lua features.
-- Lua 5.1.5 and `luac` are available for reusable-library suites and syntax checks. YvBags does not yet maintain addon-specific tests; these checks do not replace in-game testing.
+- Lua 5.1.5 and `luac` are available for reusable-library suites and syntax checks. YvBags intentionally does not maintain an addon-specific automated test suite. Do not add one unless the user explicitly changes this policy; library tests and syntax checks do not replace in-game testing.
 - Use four spaces, no tabs. Keep source files UTF-8 with LF endings and a final newline.
 - `.editorconfig` defines editor behavior and `.gitattributes` enforces LF normalization for repository text files. Do not introduce line-ending churn in embedded libraries while making feature changes.
 - Files load in the explicit order in `YvBags.toc`. When adding or moving a module, verify that every dependency loads before its consumer.
@@ -161,8 +161,8 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - Profile-owned settings are list grouping/sorting, pin presentation, and cooldown-name display. Bag replacement and gray-junk selling remain addon-global.
 - Add defaults in `Defaults.lua` before reading new settings. Use `Get` and `Set`, and register callbacks when a setting must refresh live UI.
 - Expose user settings and profile management through Blizzard's standard Settings API. Column editors remain future work.
-- UI that displays profile identity listens to manager `OnProfileChanged`; features that apply effective profile data listen to active-DB `OnDataChanged`/`OnReset`. Do not refresh one feature through both paths.
-- A character without a stored selection performs the manager's one-time Character > Specialization > Class > Realm > Faction > Global search. The persisted result is not promoted later.
+- UI that displays active profile identity or profile descriptors listens to manager lifecycle callbacks. `OnCharacterInfoChanged` refreshes identity-backed permanent descriptors even when the active profile does not change. Features that apply effective profile data listen to active-DB `OnDataChanged`/`OnReset`; do not refresh one feature through both manager and active-DB paths.
+- A character without a stored selection performs the manager's one-time Character > Specialization > Class > Realm > Faction > Global search. If specialization identity is still loading, the manager completes that search during login without deferring construction. The persisted result is not promoted later.
 - Preserve the frame's reported point, relative point, x, and y. `SetDontSavePosition(true)` and `SetUserPlaced(false)` prevent the client from applying a second saved position.
 
 ### Media And Visual Settings
@@ -181,7 +181,7 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 5. Implement the smallest coherent change and preserve extension points documented here or in `TODO.md`.
 6. Update defaults, settings, TOC load order, README, `TODO.md`, or changelog when the behavior changes their contract.
 7. Run `git diff --check` and inspect the final diff. Do not introduce unrelated formatting or metadata churn.
-8. Run applicable reusable-library suites and Lua 5.1 syntax checks, then validate in game in proportion to risk.
+8. Run applicable reusable-library suites for library changes, run Lua 5.1 syntax checks for addon code, then validate in game in proportion to risk.
 9. Do not commit, tag, or push unless the user explicitly asks.
 
 ## In-Game Regression Checklist

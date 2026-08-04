@@ -178,6 +178,11 @@ categories = {
       refresh profile identity UI from manager lifecycle callbacks.
 - [x] Apply profile changes without rescanning bag APIs.
 
+In-game validation confirmed profile selection and CRUD operations, live profile
+switching, per-character persistence, and cross-character Specialization
+inheritance. A new Elemental Shaman selected an existing non-empty Elemental
+profile during the one-time initial search.
+
 Future category-profile work must continue using `NS.db` and must refresh from
 active-DB lifecycle callbacks rather than also listening to `OnProfileChanged`.
 
@@ -348,13 +353,13 @@ rules require approval before implementation.
 
 ### After Phase 1
 
-- [ ] Fresh load creates and selects `Global` without Lua errors.
-- [ ] Create, copy, rename, switch, reset, and delete profiles.
-- [ ] Profile selection persists per character.
-- [ ] Two characters can select different shared profiles.
-- [ ] List, display, and pin-presentation settings switch live.
-- [ ] Global pins and feature settings remain unchanged across profile switches.
-- [ ] Frame geometry remains character-specific.
+- [x] Fresh load creates and selects `Global` without Lua errors.
+- [x] Create, copy, rename, switch, reset, and delete profiles.
+- [x] Profile selection persists per character.
+- [x] Two characters can select different shared profiles.
+- [x] List, display, and pin-presentation settings switch live.
+- [x] Global pins and feature settings remain unchanged across profile switches.
+- [x] Frame geometry remains character-specific.
 
 ### After Phase 2
 
@@ -387,4 +392,4 @@ rules require approval before implementation.
 Run `git diff --check` and inspect the complete diff at the end of every phase.
 Run the reusable libraries' Lua 5.1 suites and compile every Lua file, then
 perform proportionate in-game validation before the next phase begins. YvBags
-does not yet maintain an addon-specific test suite.
+intentionally does not maintain an addon-specific automated test suite.

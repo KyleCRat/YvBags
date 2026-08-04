@@ -21,6 +21,9 @@
 - Upgraded persistence from `LibSimpleDB-1.0` to `LibSimpleDB-2.0` and added `LibSimpleDBProfiles-1.0`.
 - Adopted existing flat settings into Global once while keeping feature toggles and pinned item identities outside profile payloads.
 
+### Fixed
+- Fixed first-login profile selection so a character can inherit an existing Specialization profile when specialization information becomes available during login.
+
 ## [12.0.7-1] - 2026-07-11
 
 ### Added
