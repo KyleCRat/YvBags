@@ -12,6 +12,7 @@ YvBags is a World of Warcraft bag replacement addon that shows your current char
 - Supports account-wide item pinning with top-row, collapsible-group, top-of-group, or normal-sort presentation in every grouping and sort mode.
 - Keeps the Mythic Keystone in its own prioritized category unless the keystone kind is pinned.
 - Includes explicitly ordered built-in categories, leading with Openable, Cosmetic, Collectables, Mythic Keystone, Consumable, and Equipment while keeping Junk last.
+- Classifies Blizzard loot containers plus Utility Curio, Combat Curio, and Relic consumables as Openable.
 - Groups Blizzard-recognized Toy, Mount, learnable Pet, and caged Battle Pet items into Collectables without relying on tooltip text.
 - Displays quantity, binding, rarity/icon, profession quality, name, expansion, sell value, item level, required level, type, and subtype columns.
 - Shows item rarity through name color and icon border color.

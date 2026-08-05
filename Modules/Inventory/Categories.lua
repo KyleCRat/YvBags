@@ -48,6 +48,19 @@ local function EnumValue(enumName, key, fallback)
     return fallback
 end
 
+-- Consumable subclasses presented as openable items
+local CONSUMABLE_CLASS_ID = EnumValue("ItemClass", "Consumable", 0)
+local OPENABLE_CONSUMABLE_SUBCLASSES = {
+    [EnumValue("ItemConsumableSubclass", "UtilityCurio", 10)] = true,
+    [EnumValue("ItemConsumableSubclass", "CombatCurio", 11)] = true,
+    [EnumValue("ItemConsumableSubclass", "Relic", 12)] = true,
+}
+
+local function IsOpenableConsumable(item)
+    return item.classID == CONSUMABLE_CLASS_ID
+        and OPENABLE_CONSUMABLE_SUBCLASSES[item.subclassID] == true
+end
+
 -- Item class to default category mapping
 local ITEM_CLASS_CATEGORIES = {}
 
@@ -77,7 +90,7 @@ function Categories.GetCategoryKey(item)
         return "keystone"
     end
 
-    if item.hasLoot then
+    if item.hasLoot or IsOpenableConsumable(item) then
         return "openable"
     end
 
