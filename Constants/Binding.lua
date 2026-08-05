@@ -22,5 +22,9 @@ function Binding.IsWarboundKey(key)
 end
 
 function Binding.HasBindingIcon(key)
-    return key and key ~= Keys.None and key ~= Keys.Unknown
+    return key
+        and key ~= Keys.None
+        and key ~= Keys.Unknown
+        and key ~= Keys.Equip
+        and key ~= Keys.Use
 end

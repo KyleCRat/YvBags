@@ -23,6 +23,7 @@
 - Classified Utility Curio, Combat Curio, and Relic consumables as Openable instead of general Consumables.
 
 ### Fixed
+- Stopped showing the bound-item lock for unbound Bind on Equip and Bind on Use items.
 - Fixed first-login profile selection so a character can inherit an existing Specialization profile when specialization information becomes available during login.
 - Fixed item use from YvBags rows being blocked by Blizzard's protected container-action checks.
 
