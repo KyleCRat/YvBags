@@ -109,6 +109,7 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - The visible row is the item. Hovering or clicking any part of it must behave like the item icon would in Blizzard bags.
 - Each pooled row uses a named `ContainerFrameItemButtonTemplate` button stretched across the row as a native interaction bridge.
 - The bridge owns Blizzard click, use, drag, pickup, split-stack, cursor, and tooltip semantics. Do not replace those paths with direct calls such as `UseContainerItem`, which can taint or fail in combat.
+- Keep YvBags-owned row, hover, and routing state outside the native item-button table. Use weak-keyed side tables so pooled-button refreshes do not contaminate Blizzard's protected click path.
 - Middle-click is reserved for the account-wide pin toggle through the button's unregistered `OnMouseUp` path. Do not register MiddleButton with the native bridge because Blizzard routes every non-left registered click through its right-click behavior.
 - All visible pixels belong to custom row regions. Native button textures are deliberately suppressed so template art is not stretched across the row.
 - Configure protected button geometry and reusable regions during row initialization. Do not resize, re-anchor, or recreate protected row buttons during combat refreshes.

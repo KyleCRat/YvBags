@@ -22,6 +22,7 @@ local hooked = false
 local schedulerFrame
 local pendingButton
 local pendingElapsed = 0
+local buttonStates = setmetatable({}, { __mode = "k" })
 
 -- Tooltip positioning
 local function GetScreenSize()
@@ -159,8 +160,9 @@ end
 
 -- Immediate cursor feedback and cleanup
 local function IsRegisteredRowButton(button)
-    local row = button and button.row
-    return row and row.itemButton == button and button.usesCustomTooltipAnchor
+    local state = button and buttonStates[button]
+    local row = state and state.row
+    return row and row.itemButton == button and state or nil
 end
 
 local function CancelPendingTooltip(button)
@@ -217,7 +219,8 @@ end
 local function HideTooltip(button)
     CancelPendingTooltip(button)
 
-    if button and button.tooltipShown and button.OnLeave then
+    local state = button and buttonStates[button]
+    if state and state.tooltipShown and button.OnLeave then
         button:OnLeave()
     else
         if GameTooltip_Hide then
@@ -229,8 +232,8 @@ local function HideTooltip(button)
         ClearCursorState()
     end
 
-    if button then
-        button.tooltipShown = false
+    if state then
+        state.tooltipShown = false
     end
 end
 
@@ -245,11 +248,12 @@ local function AddPinActionLine(tooltip)
     end
 
     local button = tooltip:GetOwner()
-    if not ShouldShowTooltip(button) then
+    local state = IsRegisteredRowButton(button)
+    if not state or not ShouldShowTooltip(button) then
         return
     end
 
-    local item = button.row and button.row.item
+    local item = state.row and state.row.item
     if not item then
         return
     end
@@ -266,7 +270,8 @@ local function ShowTooltip(button)
         schedulerFrame:Hide()
     end
 
-    if not ShouldShowTooltip(button) then
+    local state = IsRegisteredRowButton(button)
+    if not state or not ShouldShowTooltip(button) then
         return
     end
 
@@ -276,7 +281,7 @@ local function ShowTooltip(button)
         button:OnEnter()
     end
 
-    button.tooltipShown = true
+    state.tooltipShown = true
 end
 
 local function EnsureSchedulerFrame()
@@ -310,7 +315,10 @@ local function ScheduleTooltip(button)
 end
 
 local function OnRowButtonEnter(button)
-    button.tooltipShown = false
+    local state = buttonStates[button]
+    if state then
+        state.tooltipShown = false
+    end
     UpdateCursorState(button)
     ScheduleTooltip(button)
 end
@@ -326,8 +334,9 @@ function ItemTooltip.Initialize()
     end
 
     hooksecurefunc("ContainerFrameItemButton_CalculateItemTooltipAnchors", function(button, tooltip)
-        if IsRegisteredRowButton(button) then
-            AnchorRowTooltip(button.row, tooltip)
+        local state = IsRegisteredRowButton(button)
+        if state then
+            AnchorRowTooltip(state.row, tooltip)
         end
     end)
     TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, AddPinActionLine)
@@ -335,19 +344,23 @@ function ItemTooltip.Initialize()
     hooked = true
 end
 
-function ItemTooltip.RegisterRowButton(button)
-    if not button then
+function ItemTooltip.RegisterRowButton(button, row)
+    if not button or not row then
         return
     end
 
-    button.usesCustomTooltipAnchor = true
+    buttonStates[button] = {
+        row = row,
+        tooltipShown = false,
+    }
     button:SetScript("OnEnter", OnRowButtonEnter)
     button:SetScript("OnLeave", OnRowButtonLeave)
     ItemTooltip.Initialize()
 end
 
 function ItemTooltip.ResetButton(button)
-    if pendingButton == button or button.tooltipShown or (button.IsMouseOver and button:IsMouseOver()) then
+    local state = button and buttonStates[button]
+    if pendingButton == button or (state and state.tooltipShown) or (button.IsMouseOver and button:IsMouseOver()) then
         HideTooltip(button)
     end
 end

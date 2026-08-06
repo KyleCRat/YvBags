@@ -9,6 +9,7 @@ local FRAME_LEVEL_OFFSET = 10
 local GLOBAL_NAME_PREFIX = NS.ITEM_BUTTON_GLOBAL_NAME_PREFIX
 
 local buttonCount = 0
+local buttonRows = setmetatable({}, { __mode = "k" })
 
 local function ClearNativeTexture(texture)
     if not texture then
@@ -31,7 +32,7 @@ end
 
 local function SuppressNativeVisuals(button)
     for _, region in pairs(button) do
-        if region ~= button.row and region ~= button:GetParent() and type(region) == "table" and region.Hide then
+        if region ~= button:GetParent() and type(region) == "table" and region.Hide then
             ClearNativeTexture(region)
         end
     end
@@ -71,25 +72,32 @@ end
 function ItemButton.Create(row)
     buttonCount = buttonCount + 1
     local button = CreateFrame("ItemButton", GLOBAL_NAME_PREFIX .. buttonCount, row, BUTTON_TEMPLATE)
-    button.row = row
-    NS.ItemTooltip.RegisterRowButton(button)
+    buttonRows[button] = row
+    NS.ItemTooltip.RegisterRowButton(button, row)
     Configure(button, row)
     button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     button:RegisterForDrag("LeftButton")
     button:Show()
     SuppressNativeVisuals(button)
     button:HookScript("OnEnter", function(self)
-        self.row.highlight:Show()
+        local buttonRow = buttonRows[self]
+        if buttonRow then
+            buttonRow.highlight:Show()
+        end
     end)
     button:HookScript("OnLeave", function(self)
-        self.row.highlight:Hide()
+        local buttonRow = buttonRows[self]
+        if buttonRow then
+            buttonRow.highlight:Hide()
+        end
     end)
     button:HookScript("OnMouseUp", function(self, mouseButton, upInside)
         if mouseButton ~= "MiddleButton" or upInside == false then
             return
         end
 
-        local item = self.row and self.row.item
+        local buttonRow = buttonRows[self]
+        local item = buttonRow and buttonRow.item
         if item then
             NS.Inventory:ToggleItemPin(item)
         end
@@ -100,9 +108,7 @@ end
 function ItemButton.Update(button, item)
     button:SetBagID(item.bagID)
     button:SetID(item.slotIndex)
-    button.bag = item.bagID
-    button.slot = item.slotIndex
-    button.count = item.count
+    SetItemButtonCount(button, item.count)
     button:SetHasItem(true)
     button:SetReadable(item.isReadable)
 end
@@ -111,10 +117,7 @@ function ItemButton.Reset(button)
     NS.ItemTooltip.ResetButton(button)
     button:SetBagID(0)
     button:SetID(0)
-    button.bag = nil
-    button.slot = nil
-    button.count = nil
-    button.tooltipShown = false
+    SetItemButtonCount(button, 0)
     button:SetHasItem(false)
     button:SetReadable(nil)
     button.Cooldown:Hide()
