@@ -135,6 +135,7 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 
 - The fresh default list view groups by Category, sorts primarily by Rarity descending, and sorts secondarily by Item Level descending.
 - Manual primary sort means physical bag/slot order within each active group and pin-presentation partition. It forces secondary sort to `None` and disables secondary selection.
+- In non-manual modes, item name and item ID break ties after the selected primary and secondary sorts so duplicate stacks remain adjacent. Within an identical item, higher-count stacks come first unless Quantity is an active sort key; physical bag/slot provides the final stable order.
 - Pin state is presentation metadata and must not replace an item's base `categoryKey`; future ordered and custom category rules depend on that separation.
 - Pinned presentation applies across all grouping and sort modes. The supported modes are direct top rows, a collapsible Pinned group, pins first within their normal groups, and normal active-sort placement.
 - Built-in Category grouping uses the explicit order declared in `Modules/Inventory/Categories.lua`. Openable, Cosmetic, Collectables, Mythic Keystone, Consumable, and Equipment lead in that order; Blizzard loot containers plus Utility Curio, Combat Curio, and Relic consumables map to `openable`; `toy`, `mount`, `pet`, and `battlepet` collection kinds share the `collectables` category; armor and weapons share the `equipment` category unless Blizzard tags the item as cosmetic; and Junk remains last.

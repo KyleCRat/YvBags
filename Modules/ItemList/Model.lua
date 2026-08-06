@@ -284,6 +284,33 @@ local function BuildSortPriorityCache(items, sortKey)
     return priorities
 end
 
+local function BuildItemIdentityCache(items)
+    local names = {}
+    local itemIDs = {}
+    for _, item in ipairs(items) do
+        names[item] = TextValue(item.name)
+        itemIDs[item] = NumberValue(item.itemID, -1)
+    end
+
+    return names, itemIDs
+end
+
+local function CompareItemIdentity(left, right, names, itemIDs)
+    local leftName = names[left]
+    local rightName = names[right]
+    if leftName ~= rightName then
+        return leftName < rightName
+    end
+
+    local leftItemID = itemIDs[left]
+    local rightItemID = itemIDs[right]
+    if leftItemID ~= rightItemID then
+        return leftItemID < rightItemID
+    end
+
+    return nil
+end
+
 local function CompareSort(left, right, values, sortAscending, priorities)
     if priorities then
         local leftPriority = priorities[left]
@@ -312,9 +339,16 @@ local function SortItems(items, sortKey, sortAscending, secondarySortKey, second
     local secondaryValues
     local primaryPriorities
     local secondaryPriorities
+    local identityNames
+    local identityItemIDs
+    local defaultQuantityValues
     if sortKey ~= MANUAL_SORT_KEY then
         primaryValues = BuildSortValueCache(items, sortKey)
         primaryPriorities = BuildSortPriorityCache(items, sortKey)
+        identityNames, identityItemIDs = BuildItemIdentityCache(items)
+        if sortKey ~= "quantity" and secondarySortKey ~= "quantity" then
+            defaultQuantityValues = BuildSortValueCache(items, "quantity")
+        end
         if secondarySortKey and secondarySortKey ~= NO_SECONDARY_SORT_KEY and secondarySortKey ~= sortKey then
             secondaryValues = BuildSortValueCache(items, secondarySortKey)
             secondaryPriorities = BuildSortPriorityCache(items, secondarySortKey)
@@ -332,6 +366,18 @@ local function SortItems(items, sortKey, sortAscending, secondarySortKey, second
                 local secondaryResult = CompareSort(left, right, secondaryValues, secondarySortAscending, secondaryPriorities)
                 if secondaryResult ~= nil then
                     return secondaryResult
+                end
+            end
+
+            local identityResult = CompareItemIdentity(left, right, identityNames, identityItemIDs)
+            if identityResult ~= nil then
+                return identityResult
+            end
+
+            if defaultQuantityValues then
+                local quantityResult = CompareSort(left, right, defaultQuantityValues, false)
+                if quantityResult ~= nil then
+                    return quantityResult
                 end
             end
         end
