@@ -269,6 +269,12 @@ function ItemRow.GetRowHeight()
     return ROW_HEIGHT
 end
 
+function ItemRow.Initialize(row)
+    if not row.rowInitialized then
+        InitializeRow(row)
+    end
+end
+
 function ItemRow.ClearCooldownCache()
     Cooldown.ClearCache()
 end
@@ -283,9 +289,7 @@ function ItemRow.SetHighlightedBagID(row, highlightedBagID)
 end
 
 function ItemRow.Render(row, item, list)
-    if not row.rowInitialized then
-        InitializeRow(row)
-    end
+    ItemRow.Initialize(row)
 
     row.item = item
     if list then

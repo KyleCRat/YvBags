@@ -15,6 +15,9 @@ local SearchBox = NS.ItemListSearchBox
 
 local SCROLL_BOX_TEMPLATE = "WowScrollBoxList"
 local SCROLL_BAR_TEMPLATE = "MinimalScrollBar"
+local ITEM_ROW_FRAME_TYPE = "Frame"
+local ITEM_ROW_PREWARM_BUFFER = 2
+local MIN_PREWARMED_ITEM_ROWS = 12
 local EMPTY_TEXT_SIZE = 16
 local EMPTY_TEXT_COLOR_R = 0.5
 local EMPTY_TEXT_COLOR_G = 0.5
@@ -228,7 +231,7 @@ local function CreateScrollView(list)
                 GroupRow.Render(row, rowData, list)
             end)
         else
-            factory("Frame", function(row, rowData)
+            factory(ITEM_ROW_FRAME_TYPE, function(row, rowData)
                 row.rightClipPadding = Layout.ScrollBarContentPadding
                 ItemRow.Render(row, rowData.item, list)
             end)
@@ -243,6 +246,31 @@ local function CreateScrollView(list)
     end)
 
     return view
+end
+
+local function PrewarmItemRows(list)
+    local visibleExtent = math.max(list.scrollBox:GetVisibleExtent(), list.frame:GetHeight())
+    local rowCount = math.max(
+        MIN_PREWARMED_ITEM_ROWS,
+        math.ceil(visibleExtent / ItemRow.GetRowHeight()) + ITEM_ROW_PREWARM_BUFFER
+    )
+    local rows = {}
+
+    for index = 1, rowCount do
+        local row = list.view.frameFactory:Create(
+            list.view:GetScrollTarget(),
+            ITEM_ROW_FRAME_TYPE,
+            list.view.frameFactoryResetter
+        )
+        row.rightClipPadding = Layout.ScrollBarContentPadding
+        ItemRow.Initialize(row)
+        ItemRow.Reset(row)
+        rows[index] = row
+    end
+
+    for index = 1, rowCount do
+        list.view.frameFactory:Release(rows[index])
+    end
 end
 
 local function CreateEmptyText(list)
@@ -286,6 +314,7 @@ function ItemList.Create(parent)
     local view = CreateScrollView(list)
     ScrollUtil.InitScrollBoxListWithScrollBar(scrollBox, scrollBar, view)
     list.view = view
+    PrewarmItemRows(list)
 
     CursorDrop.Attach(list)
     list.emptyText = CreateEmptyText(list)

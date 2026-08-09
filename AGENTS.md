@@ -113,6 +113,7 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - Middle-click is reserved for the account-wide pin toggle through the button's unregistered `OnMouseUp` path. Do not register MiddleButton with the native bridge because Blizzard routes every non-left registered click through its right-click behavior.
 - All visible pixels belong to custom row regions. Native button textures are deliberately suppressed so template art is not stretched across the row.
 - Configure protected button geometry and reusable regions during row initialization. Do not resize, re-anchor, or recreate protected row buttons during combat refreshes.
+- Before assigning the first data provider, prewarm enough fully initialized item rows for the current viewport so ScrollBox does not lazily create native interaction bridges during combat. Keep this pool viewport-sized rather than inventory-sized.
 - ScrollBox rows are pooled. Every render and reset path must clear state that could leak to the next item, including tooltip, highlight, pin marker, icon, binding, lock, cooldown, and bag-hover state.
 - Keep fast scrolling and item interaction functional in combat.
 

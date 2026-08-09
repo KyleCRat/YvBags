@@ -26,7 +26,7 @@
 - Stopped showing the bound-item lock for unbound Bind on Equip and Bind on Use items.
 - Kept duplicate item stacks adjacent when the selected sorts tie and placed higher-count stacks before partial stacks unless Quantity is explicitly selected.
 - Fixed first-login profile selection so a character can inherit an existing Specialization profile when specialization information becomes available during login.
-- Fixed intermittent item use from YvBags rows being blocked by Blizzard's protected container-action checks after other UI interactions.
+- Fixed intermittent item use from YvBags rows being blocked in combat by prewarming the virtualized native item-row pool before first use.
 
 ## [12.0.7-1] - 2026-07-11
 
