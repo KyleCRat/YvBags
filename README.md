@@ -102,7 +102,7 @@ Group keys: `none`, `category`, `type`, `quality`, `binding`, `expansion`.
 
 ## Compatibility
 
-The current release supports World of Warcraft: Midnight, interface version 12.0.7.
+The current release supports World of Warcraft: Midnight, interface version 12.1.0.
 
 All required libraries are included with the addon.
 

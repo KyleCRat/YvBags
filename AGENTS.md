@@ -12,7 +12,7 @@ This file is the standing product and engineering contract for work in the YvBag
 
 ## Environment
 
-- Current target: World of Warcraft: Midnight, Interface `120007` (12.0.7).
+- Current target: World of Warcraft: Midnight, Interface `120100` (12.1.0).
 - WoW uses Lua 5.1. Do not use `goto`, `continue`, native bitwise operators, or later-Lua features.
 - Lua 5.1.5 and `luac` are available for reusable-library suites and syntax checks. YvBags intentionally does not maintain an addon-specific automated test suite. Do not add one unless the user explicitly changes this policy; library tests and syntax checks do not replace in-game testing.
 - Use four spaces, no tabs. Keep source files UTF-8 with LF endings and a final newline.
