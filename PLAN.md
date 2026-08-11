@@ -236,6 +236,22 @@ rule precedence.
 
 ## Phase 3: Category Settings Editor
 
+### Modern Settings Migration
+
+- [ ] Pull in the reviewed `LibModernSettings-1.0` release proven by
+      ReadyCheckConsumables, pin its release tag in `.pkgmeta`, and load it
+      after LibStub but before every YvBags settings consumer.
+- [ ] Reimplement YvBags' existing settings pages and profile-management UI
+      with LibModernSettings canvas layouts, controls, and tables before adding
+      the category editor to the same modern visual system.
+- [ ] Preserve the current setting labels, profile confirmations, storage
+      ownership, defaults, and live-refresh boundaries. LibModernSettings owns
+      control construction and layout; YvBags continues to own LibSimpleDB
+      persistence, Blizzard category registration, page composition, and
+      runtime callbacks.
+- [ ] Remove superseded hand-built settings controls only after the modern
+      implementation has complete behavioral parity.
+
 Register one canvas subcategory with:
 
 ```lua
@@ -343,9 +359,12 @@ rules require approval before implementation.
 - `Modules/ItemList/List.lua`: reload list controller state after profile changes.
 - `Modules/ItemList/Model.lua`: continue consuming category priorities; no rule
   ownership belongs here.
+- `Libs/LibModernSettings-1.0`, `.pkgmeta`, and `.gitmodules`: embed and pin the
+  reviewed release already proven by ReadyCheckConsumables.
 - `Modules/Settings/CategoryEditor.lua`: canvas category editor.
-- `Settings.lua`: register profile controls and the category canvas subcategory.
-- `YvBags.toc`: load new modules before their consumers.
+- `Settings.lua`: reimplement existing settings and profile controls with
+  LibModernSettings, then register the category canvas subcategory.
+- `YvBags.toc`: load LibModernSettings and new modules before their consumers.
 - `AGENTS.md`, `README.md`, `CHANGELOG.md`, and `TODO.md`: update contracts as
   phases are completed.
 
@@ -373,6 +392,10 @@ rules require approval before implementation.
 
 ### After Phase 3
 
+- [ ] Existing settings, dependent states, profile actions, defaults, and live
+      refresh behavior retain parity after the LibModernSettings migration.
+- [ ] Every modern settings page reopens and refreshes without stale control
+      values or duplicated frames.
 - [ ] Category editor works at narrow and wide Settings panel sizes.
 - [ ] Drag reorder remains correct while the list is scrolled.
 - [ ] Add, rename, remove, reset, and profile switch update the editor live.
