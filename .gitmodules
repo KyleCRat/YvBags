@@ -6,3 +6,7 @@
 	path = Libs/LibSimpleDBProfiles-1.0
 	url = git@github.com:KyleCRat/LibSimpleDBProfiles.git
 	branch = main
+[submodule "Libs/LibModernSettings-1.0"]
+	path = Libs/LibModernSettings-1.0
+	url = git@github.com:KyleCRat/LibModernSettings.git
+	branch = main

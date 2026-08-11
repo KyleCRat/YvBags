@@ -88,9 +88,10 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - `Modules/MainFrame/Layout.lua`: geometry shared by main-frame modules.
 - `Modules/MainFrame/Footer.lua`: bag buttons, bag-space display, money, footer layout, and related tooltips.
 - `Modules/MainFrame/FooterCurrencies.lua`: tracked backpack currencies, responsive fitting, currency tooltips, and untracking.
+- `Modules/Settings/CategoryEditor.lua`: virtualized profile-backed category list, reorder interaction, category detail editor, and category canvas lifecycle.
 - `Media.lua`: centralized fonts, textures, atlases, colors, and LibSharedMedia registration.
 - `Formatting/Money.lua`: shared compact and exact money formatting.
-- `Settings.lua`: native Blizzard Settings registrations, profile management, confirmations, and live setting callbacks.
+- `Settings.lua`: LibModernSettings canvas composition, Blizzard Settings registrations, profile management, confirmations, and live setting callbacks.
 - `Commands.lua`: slash commands and diagnostics.
 
 ## Critical Implementation Invariants
@@ -162,6 +163,7 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - `YvBagsDB.profiles` is exclusively owned by `LibSimpleDBProfiles-1.0`; profile selections and payloads must be accessed through `NS.profileManager` and `NS.db`.
 - Account-wide pins live under the addon-global `pins.items`; regular item pins use item-ID identities and keystones use the stable `kind:keystone` identity. Pin presentation belongs to the active profile.
 - Profile-owned settings are list grouping/sorting, pin presentation, cooldown-name display, and the complete category registry. Bag replacement and gray-junk selling remain addon-global.
+- Keep Rename Profile and Delete Profile as selectors directly on the Settings canvas. Rename may open the name input after selection, and Delete must retain its destructive confirmation, but neither action should open an intermediate profile-selection modal.
 - Treat the profile's `categories` root as one transactional value: clone it, mutate the clone, and commit the complete root through `NS.Categories`. Category changes reclassify existing normalized inventory records and must not query bag, item, or tooltip APIs.
 - Add defaults in `Defaults.lua` before reading new settings. Use `Get` and `Set`, and register callbacks when a setting must refresh live UI.
 - Expose user settings and profile management through Blizzard's standard Settings API. Column editors remain future work.
@@ -171,6 +173,8 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 
 ### Media And Visual Settings
 
+- Use regular tertiary command buttons by default. Reserve small buttons for
+  dense rows, tables, or genuinely constrained layouts.
 - Register shared media from the structured tables in `Media.lua`; do not duplicate texture, atlas, font, binding-icon, or accent definitions in consumers.
 - Access shared assets through `NS.Media` getters.
 - The accent color is currently centralized but static. `TODO.md` tracks making it user-configurable, so new accent-colored regions should use `NS.Media.GetAccentColor()` and remain compatible with a future live refresh.

@@ -23,6 +23,7 @@ YvBags is a World of Warcraft bag replacement addon that shows your current char
 - Can restore the original Blizzard bag frames from the backpack button.
 - Includes optional gray-quality junk autosell when a merchant opens.
 - Includes Character, Specialization, Class, Realm, Faction, Global, and user-created settings profiles.
+- Includes a modern profile-backed category editor for creating, renaming, reordering, removing, and resetting categories.
 
 ## Usage
 
@@ -58,8 +59,9 @@ Settings include:
 - Pinned Items presentation
 - Primary Sort and direction
 - Secondary Sort and direction
+- Categories subpage with create, rename, reorder, remove, and reset actions
 
-Profile settings include grouping, sorting, pinned-item presentation, cooldown-name display, and category definitions and order. The category editor is planned but is not exposed in Settings yet. Bag replacement, gray-junk selling, and pinned item identities remain shared across the addon. Frame position, size, and scale remain stored per character.
+Profile settings include grouping, sorting, pinned-item presentation, cooldown-name display, and category definitions and order. Custom categories are empty until category rules are implemented. Bag replacement, gray-junk selling, and pinned item identities remain shared across the addon. Frame position, size, and scale remain stored per character.
 
 ## Profiles
 
@@ -110,7 +112,7 @@ All required libraries are included with the addon.
 
 - Player bags only; bank, warband bank, guild bank, void storage, and currency-list replacement are not included.
 - Grid mode is not included.
-- Custom category editing is not exposed in Settings yet.
+- Custom category matching rules are not included yet.
 - Column visibility, resizing, and reordering are not included.
 
 ## Author

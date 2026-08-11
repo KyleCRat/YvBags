@@ -3,22 +3,9 @@ local _, NS = ...
 local AddonSettings = {}
 NS.Settings = AddonSettings
 
+local ModernSettings = LibStub("LibModernSettings-1.0")
 local ADDON_NAME = NS.ADDON_NAME
 
--- Setting IDs
-local SETTING_REPLACE_BLIZZARD_BAGS = ADDON_NAME .. "_REPLACE_BLIZZARD_BAGS"
-local SETTING_AUTOSELL_GRAY_JUNK = ADDON_NAME .. "_AUTOSELL_GRAY_JUNK"
-local SETTING_SHOW_COOLDOWNS_IN_NAME = ADDON_NAME .. "_SHOW_COOLDOWNS_IN_NAME"
-local SETTING_FRAME_SCALE = ADDON_NAME .. "_FRAME_SCALE"
-local SETTING_GROUP_KEY = ADDON_NAME .. "_GROUP_KEY"
-local SETTING_PRIMARY_SORT_KEY = ADDON_NAME .. "_PRIMARY_SORT_KEY"
-local SETTING_PRIMARY_SORT_DIRECTION = ADDON_NAME .. "_PRIMARY_SORT_DIRECTION"
-local SETTING_SECONDARY_SORT_KEY = ADDON_NAME .. "_SECONDARY_SORT_KEY"
-local SETTING_SECONDARY_SORT_DIRECTION = ADDON_NAME .. "_SECONDARY_SORT_DIRECTION"
-local SETTING_PIN_DISPLAY_MODE = ADDON_NAME .. "_PIN_DISPLAY_MODE"
-local SETTING_ACTIVE_PROFILE = ADDON_NAME .. "_ACTIVE_PROFILE"
-
--- Control values and labels
 local SCALE_MIN_PERCENT = 50
 local SCALE_MAX_PERCENT = 150
 local SCALE_STEP_PERCENT = 5
@@ -29,7 +16,7 @@ local PIN_DISPLAY_TOP_LABEL = "Top Rows"
 local PIN_DISPLAY_GROUP_LABEL = "Collapsible Group"
 local PIN_DISPLAY_GROUP_TOP_LABEL = "Top of Groups"
 local PIN_DISPLAY_NORMAL_LABEL = "Normal Sort Order"
-local PROFILE_GLOBAL_TOKEN = "permanent:global"
+local PROFILE_ACTION_NONE_TOKEN = "profile-action:none"
 
 local PERMANENT_PROFILE_LABELS = {
     character = "Character",
@@ -38,16 +25,6 @@ local PERMANENT_PROFILE_LABELS = {
     realm = "Realm",
     faction = "Faction",
     global = "Global",
-}
-
-local PROFILE_SETTING_VARIABLES = {
-    SETTING_SHOW_COOLDOWNS_IN_NAME,
-    SETTING_GROUP_KEY,
-    SETTING_PIN_DISPLAY_MODE,
-    SETTING_PRIMARY_SORT_KEY,
-    SETTING_PRIMARY_SORT_DIRECTION,
-    SETTING_SECONDARY_SORT_KEY,
-    SETTING_SECONDARY_SORT_DIRECTION,
 }
 
 local PROFILE_DESCRIPTOR_EVENTS = {
@@ -60,32 +37,15 @@ local PROFILE_DESCRIPTOR_EVENTS = {
     "OnCharacterInfoChanged",
 }
 
+local controls = {}
 local profileDescriptors = {}
 local profileRefsByToken = {}
+local pendingSettingsCategoryID
+local controlRefreshScheduled = {}
 
--- Stored values and live UI dispatch
+-- Stored values and list updates
 local function GetItemList()
-    return NS.frame and NS.frame.itemList
-end
-
-local function NotifySettingChanged(variable)
-    if Settings and Settings.NotifyUpdate then
-        Settings.NotifyUpdate(variable)
-    end
-end
-
-local function AddSection(layout, title)
-    if layout and CreateSettingsListSectionHeaderInitializer then
-        layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(title))
-    end
-end
-
-local function GetSortLabel(sortKey)
-    return NS.ItemListColumns.GetSortLabel(sortKey)
-end
-
-local function GetGroupLabel(groupKey)
-    return NS.ItemListModel.GetGroupLabel(groupKey)
+    return NS.frame.itemList
 end
 
 local function GetBooleanSetting(database, section, key)
@@ -96,25 +56,30 @@ local function SetBooleanSetting(database, section, key, value)
     database:Set(section, key, value == true)
 end
 
-local function FormatScalePercent(value)
-    return ("%d%%"):format(math.floor((tonumber(value) or 0) + 0.5))
-end
-
 local function GetFrameScalePercent()
-    local scale = NS.charDB:Get("frame", "scale") or NS.defaults.character.frame.scale
+    local scale = NS.charDB:Get("frame", "scale")
+        or NS.defaults.character.frame.scale
 
     return math.floor((scale * 100) + 0.5)
 end
 
 local function SetFrameScalePercent(value)
-    value = math.max(SCALE_MIN_PERCENT, math.min(SCALE_MAX_PERCENT, tonumber(value) or 100))
+    value = math.max(
+        SCALE_MIN_PERCENT,
+        math.min(SCALE_MAX_PERCENT, tonumber(value) or 100)
+    )
     NS.MainFrameGeometry.SetScale(value / 100)
 end
 
 local function SetReplaceBlizzardBags(value)
-    SetBooleanSetting(NS.globalDB, "features", "replaceBlizzardBags", value)
+    SetBooleanSetting(
+        NS.globalDB,
+        "features",
+        "replaceBlizzardBags",
+        value
+    )
 
-    if value ~= false and NS.BlizzardBags then
+    if value ~= false then
         NS.BlizzardBags.HideBlizzardBags()
     end
 end
@@ -122,162 +87,116 @@ end
 local function SetAutosellGrayJunk(value)
     SetBooleanSetting(NS.globalDB, "features", "autosellGrayJunk", value)
 
-    if value == true and NS.JunkAutosell then
+    if value == true then
         NS.JunkAutosell.ScheduleSell()
     end
 end
 
 local function SetShowCooldownsInName(value)
     SetBooleanSetting(NS.db, "display", "showCooldownsInName", value)
-
-    local list = GetItemList()
-    if list and list.RefreshVisibleRows then
-        list:RefreshVisibleRows()
-    end
+    GetItemList():RefreshVisibleRows()
 end
 
 local function GetListValue(key)
     return NS.db:Get("list", key)
 end
 
--- List setting updates
-local function SetStoredPrimarySort(sortKey)
-    local ListModel = NS.ItemListModel
-    sortKey = ListModel.NormalizeSortKey(sortKey)
-    NS.db:Set("list", "sortKey", sortKey)
-
-    if sortKey == ListModel.GetManualSortKey() then
-        NS.db:Set("list", "sortAscending", true)
-        NS.db:Set("list", "secondarySortKey", ListModel.GetNoSecondarySortKey())
-        NS.db:Set("list", "secondarySortAscending", true)
-        NotifySettingChanged(SETTING_PRIMARY_SORT_DIRECTION)
-        NotifySettingChanged(SETTING_SECONDARY_SORT_KEY)
-        NotifySettingChanged(SETTING_SECONDARY_SORT_DIRECTION)
-    end
-end
-
 local function SetPrimarySort(sortKey)
-    local ListModel = NS.ItemListModel
-    sortKey = ListModel.NormalizeSortKey(sortKey)
-
-    local list = GetItemList()
-    if list and list.SetSort then
-        list:SetSort(sortKey, GetListValue("sortAscending") ~= false)
-    else
-        SetStoredPrimarySort(sortKey)
-    end
-
-    if sortKey == ListModel.GetManualSortKey() then
-        NotifySettingChanged(SETTING_PRIMARY_SORT_DIRECTION)
-        NotifySettingChanged(SETTING_SECONDARY_SORT_KEY)
-        NotifySettingChanged(SETTING_SECONDARY_SORT_DIRECTION)
-    end
+    sortKey = NS.ItemListModel.NormalizeSortKey(sortKey)
+    GetItemList():SetSort(
+        sortKey,
+        GetListValue("sortAscending") ~= false
+    )
 end
 
 local function SetPrimarySortDirection(sortAscending)
-    sortAscending = sortAscending == true
-
-    local ListModel = NS.ItemListModel
-    if ListModel.NormalizeSortKey(GetListValue("sortKey")) == ListModel.GetManualSortKey() then
-        sortAscending = true
-    end
-
-    NS.db:Set("list", "sortAscending", sortAscending)
-
-    local list = GetItemList()
-    if list and list.SetSort then
-        list:SetSort(GetListValue("sortKey"), sortAscending)
-    end
+    GetItemList():SetSort(
+        GetListValue("sortKey"),
+        sortAscending == true
+    )
 end
 
 local function SetSecondarySort(sortKey)
-    local list = GetItemList()
-    if list and list.SetSecondarySort then
-        list:SetSecondarySort(sortKey, GetListValue("secondarySortAscending") ~= false)
-        return
-    end
-
-    local ListModel = NS.ItemListModel
-    sortKey = ListModel.NormalizeSecondarySortKey(sortKey)
-    if not ListModel.IsSecondarySortEnabled(sortKey, GetListValue("sortKey")) then
-        sortKey = ListModel.GetNoSecondarySortKey()
-    end
-
-    NS.db:Set("list", "secondarySortKey", sortKey)
+    GetItemList():SetSecondarySort(
+        sortKey,
+        GetListValue("secondarySortAscending") ~= false
+    )
 end
 
 local function SetSecondarySortDirection(sortAscending)
-    sortAscending = sortAscending == true
-    NS.db:Set("list", "secondarySortAscending", sortAscending)
-
-    local list = GetItemList()
-    if list and list.SetSecondarySortDirection then
-        list:SetSecondarySortDirection(sortAscending)
-    end
+    GetItemList():SetSecondarySortDirection(sortAscending == true)
 end
 
 local function SetGroup(groupKey)
-    local list = GetItemList()
-    if list and list.SetGroup then
-        list:SetGroup(groupKey)
-    else
-        NS.db:Set("list", "groupKey", NS.ItemListModel.NormalizeGroupKey(groupKey))
-    end
+    GetItemList():SetGroup(groupKey)
 end
 
 local function SetPinDisplayMode(displayMode)
     NS.ItemPins.SetDisplayMode(displayMode)
-
-    local list = GetItemList()
-    if list then
-        list:RefreshDataProvider(true)
-    end
+    GetItemList():RefreshDataProvider(true)
 end
 
--- Dropdown option data
-local function CreateSortOptions()
-    local container = Settings.CreateControlTextContainer()
+-- Dropdown choices
+local function CreateSortChoices()
+    local choices = {}
+
     for _, sortKey in ipairs(NS.ItemListModel.GetSortKeyList()) do
-        container:Add(sortKey, GetSortLabel(sortKey))
+        choices[#choices + 1] = {
+            value = sortKey,
+            label = NS.ItemListColumns.GetSortLabel(sortKey),
+        }
     end
 
-    return container:GetData()
+    return choices
 end
 
-local function CreateSecondarySortOptions()
-    local container = Settings.CreateControlTextContainer()
+local function CreateSecondarySortChoices()
+    local choices = {}
+
     for _, sortKey in ipairs(NS.ItemListModel.GetSecondarySortKeyList()) do
-        local label = sortKey == NS.ItemListModel.GetNoSecondarySortKey() and NO_SECONDARY_SORT_LABEL or GetSortLabel(sortKey)
-        container:Add(sortKey, label)
+        choices[#choices + 1] = {
+            value = sortKey,
+            label = sortKey == NS.ItemListModel.GetNoSecondarySortKey()
+                and NO_SECONDARY_SORT_LABEL
+                or NS.ItemListColumns.GetSortLabel(sortKey),
+        }
     end
 
-    return container:GetData()
+    return choices
 end
 
-local function CreateGroupOptions()
-    local container = Settings.CreateControlTextContainer()
+local function CreateGroupChoices()
+    local choices = {}
+
     for _, groupKey in ipairs(NS.ItemListModel.GetGroupKeyList()) do
-        container:Add(groupKey, GetGroupLabel(groupKey))
+        choices[#choices + 1] = {
+            value = groupKey,
+            label = NS.ItemListModel.GetGroupLabel(groupKey),
+        }
     end
 
-    return container:GetData()
+    return choices
 end
 
-local function CreateDirectionOptions()
-    local container = Settings.CreateControlTextContainer()
-    container:Add(true, ASCENDING_LABEL)
-    container:Add(false, DESCENDING_LABEL)
-    return container:GetData()
+local function CreateDirectionChoices()
+    return {
+        { value = true, label = ASCENDING_LABEL },
+        { value = false, label = DESCENDING_LABEL },
+    }
 end
 
-local function CreatePinDisplayOptions()
+local function CreatePinDisplayChoices()
     local displayModes = NS.ItemPins.DisplayModes
-    local container = Settings.CreateControlTextContainer()
-    container:Add(displayModes.Top, PIN_DISPLAY_TOP_LABEL)
-    container:Add(displayModes.Group, PIN_DISPLAY_GROUP_LABEL)
-    container:Add(displayModes.TopOfGroups, PIN_DISPLAY_GROUP_TOP_LABEL)
-    container:Add(displayModes.Normal, PIN_DISPLAY_NORMAL_LABEL)
-    return container:GetData()
+
+    return {
+        { value = displayModes.Top, label = PIN_DISPLAY_TOP_LABEL },
+        { value = displayModes.Group, label = PIN_DISPLAY_GROUP_LABEL },
+        {
+            value = displayModes.TopOfGroups,
+            label = PIN_DISPLAY_GROUP_TOP_LABEL,
+        },
+        { value = displayModes.Normal, label = PIN_DISPLAY_NORMAL_LABEL },
+    }
 end
 
 -- Profile descriptors and operations
@@ -292,7 +211,8 @@ end
 local function GetProfileLabel(descriptor)
     if descriptor.permanent then
         local profileType = descriptor.profileRef.profile
-        local label = PERMANENT_PROFILE_LABELS[profileType] or descriptor.displayName
+        local label = PERMANENT_PROFILE_LABELS[profileType]
+            or descriptor.displayName
 
         if profileType == "global" then
             return label
@@ -314,7 +234,9 @@ local function RefreshProfileDescriptors()
 
     for index = 1, #profileDescriptors do
         local descriptor = profileDescriptors[index]
-        profileRefsByToken[GetProfileToken(descriptor.profileRef)] = descriptor.profileRef
+
+        profileRefsByToken[GetProfileToken(descriptor.profileRef)] =
+            descriptor.profileRef
     end
 end
 
@@ -328,8 +250,6 @@ local function FindProfileDescriptor(profileRef)
             return descriptor
         end
     end
-
-    return nil
 end
 
 local function ReportProfileError(action, errorCode)
@@ -339,11 +259,17 @@ local function ReportProfileError(action, errorCode)
         PROFILE_NOT_FOUND = "That profile no longer exists.",
         ACTIVE_PROFILE = "The active profile cannot be deleted.",
     }
-    NS:Print(("%s failed: %s"):format(action, messages[errorCode] or tostring(errorCode)))
+
+    NS:Print(("%s failed: %s"):format(
+        action,
+        messages[errorCode] or tostring(errorCode)
+    ))
 end
 
 local function GetActiveProfileToken()
-    return GetProfileToken(NS.profileManager:GetActiveProfile().profileRef)
+    local activeProfile = NS.profileManager:GetActiveProfile()
+
+    return GetProfileToken(activeProfile.profileRef)
 end
 
 local function SetActiveProfileToken(token)
@@ -360,21 +286,69 @@ local function SetActiveProfileToken(token)
     end
 
     local descriptor, errorCode = NS.profileManager:SetProfile(profileRef)
+
     if not descriptor then
         ReportProfileError("Selecting profile", errorCode)
     end
 end
 
-local function CreateProfileOptions()
-    RefreshProfileDescriptors()
-    local container = Settings.CreateControlTextContainer()
+local function CreateProfileChoices()
+    local choices = {}
 
     for index = 1, #profileDescriptors do
         local descriptor = profileDescriptors[index]
-        container:Add(GetProfileToken(descriptor.profileRef), GetProfileLabel(descriptor))
+
+        choices[#choices + 1] = {
+            value = GetProfileToken(descriptor.profileRef),
+            label = GetProfileLabel(descriptor),
+        }
     end
 
-    return container:GetData()
+    return choices
+end
+
+local function CreateRenameProfileChoices()
+    local choices = {
+        {
+            value = PROFILE_ACTION_NONE_TOKEN,
+            label = "Choose a profile...",
+        },
+    }
+
+    for index = 1, #profileDescriptors do
+        local descriptor = profileDescriptors[index]
+
+        if descriptor.canRename then
+            choices[#choices + 1] = {
+                value = GetProfileToken(descriptor.profileRef),
+                label = GetProfileLabel(descriptor),
+            }
+        end
+    end
+
+    return choices
+end
+
+local function CreateDeleteProfileChoices()
+    local choices = {
+        {
+            value = PROFILE_ACTION_NONE_TOKEN,
+            label = "Choose a profile...",
+        },
+    }
+
+    for index = 1, #profileDescriptors do
+        local descriptor = profileDescriptors[index]
+
+        if descriptor.canDelete then
+            choices[#choices + 1] = {
+                value = GetProfileToken(descriptor.profileRef),
+                label = GetProfileLabel(descriptor),
+            }
+        end
+    end
+
+    return choices
 end
 
 local function ShowProfileNameInput(text, textArgument, acceptText, callback)
@@ -393,14 +367,17 @@ local function CreateProfile()
         nil,
         "Create",
         function(name)
-            local profileRef, errorCode = NS.profileManager:CreateProfile(name)
+            local profileRef, errorCode =
+                NS.profileManager:CreateProfile(name)
 
             if not profileRef then
                 ReportProfileError("Creating profile", errorCode)
                 return
             end
 
-            local descriptor, selectionError = NS.profileManager:SetProfile(profileRef)
+            local descriptor, selectionError =
+                NS.profileManager:SetProfile(profileRef)
+
             if not descriptor then
                 ReportProfileError("Selecting profile", selectionError)
             end
@@ -410,6 +387,7 @@ end
 
 local function CopyIntoActiveProfile()
     RefreshProfileDescriptors()
+
     local activeProfile = NS.profileManager:GetActiveProfile()
     local options = {}
 
@@ -461,7 +439,8 @@ local function ResetActiveProfile()
         acceptText = "Reset",
         showAlert = true,
         callback = function()
-            local descriptor, errorCode = NS.profileManager:ResetProfile(activeProfile.profileRef)
+            local descriptor, errorCode =
+                NS.profileManager:ResetProfile(activeProfile.profileRef)
 
             if not descriptor then
                 ReportProfileError("Resetting profile", errorCode)
@@ -470,51 +449,87 @@ local function ResetActiveProfile()
     })
 end
 
-local function RenameActiveProfile()
-    local activeProfile = NS.profileManager:GetActiveProfile()
+local function RenameProfile(profileRef)
+    RefreshProfileDescriptors()
 
-    if not activeProfile.canRename then
+    local descriptor = FindProfileDescriptor(profileRef)
+
+    if not descriptor or not descriptor.canRename then
         NS:Print("Only user-created profiles can be renamed.")
         return
     end
 
     ShowProfileNameInput(
         "Enter a new name for %s.",
-        GetProfileLabel(activeProfile),
+        GetProfileLabel(descriptor),
         "Rename",
         function(name)
-            local descriptor, errorCode = NS.profileManager:RenameProfile(
-                activeProfile.profileRef,
-                name
-            )
+            local renamedDescriptor, errorCode =
+                NS.profileManager:RenameProfile(
+                    descriptor.profileRef,
+                    name
+                )
 
-            if not descriptor then
+            if not renamedDescriptor then
                 ReportProfileError("Renaming profile", errorCode)
             end
         end
     )
 end
 
-local function ConfirmDeleteProfile(profileRef)
-    RefreshProfileDescriptors()
-    local descriptor = FindProfileDescriptor(profileRef)
+local function ResetProfileActionDropdown(controlKey)
+    C_Timer.After(0, function()
+        controls[controlKey]:SetValue(PROFILE_ACTION_NONE_TOKEN)
+    end)
+end
 
-    if not descriptor or not descriptor.canDelete then
-        ReportProfileError("Deleting profile", descriptor and "ACTIVE_PROFILE" or "PROFILE_NOT_FOUND")
+local function SelectRenameProfileToken(token)
+    if token == PROFILE_ACTION_NONE_TOKEN then
         return
     end
 
-    local usage, errorCode = NS.profileManager:GetProfileUsage(descriptor.profileRef)
+    ResetProfileActionDropdown("renameProfile")
+
+    local profileRef = profileRefsByToken[token]
+
+    if not profileRef then
+        RefreshProfileDescriptors()
+        profileRef = profileRefsByToken[token]
+    end
+
+    if not profileRef then
+        ReportProfileError("Renaming profile", "PROFILE_NOT_FOUND")
+        return
+    end
+
+    RenameProfile(profileRef)
+end
+
+local function ConfirmDeleteProfile(profileRef)
+    RefreshProfileDescriptors()
+
+    local descriptor = FindProfileDescriptor(profileRef)
+
+    if not descriptor or not descriptor.canDelete then
+        ReportProfileError(
+            "Deleting profile",
+            descriptor and "ACTIVE_PROFILE" or "PROFILE_NOT_FOUND"
+        )
+        return
+    end
+
+    local usage, errorCode =
+        NS.profileManager:GetProfileUsage(descriptor.profileRef)
+
     if not usage then
         ReportProfileError("Deleting profile", errorCode)
         return
     end
 
-    local confirmationText
+    local confirmationText = "Delete %s?"
+
     if usage.selectionCount > 0 then
         confirmationText = "Delete %s? %d character(s) will no longer have this profile selected."
-    else
-        confirmationText = "Delete %s?"
     end
 
     StaticPopup_ShowCustomGenericConfirmation({
@@ -524,7 +539,8 @@ local function ConfirmDeleteProfile(profileRef)
         acceptText = "Delete",
         showAlert = true,
         callback = function()
-            local deleted, deleteError = NS.profileManager:DeleteProfile(descriptor.profileRef)
+            local deleted, deleteError =
+                NS.profileManager:DeleteProfile(descriptor.profileRef)
 
             if not deleted then
                 ReportProfileError("Deleting profile", deleteError)
@@ -533,269 +549,472 @@ local function ConfirmDeleteProfile(profileRef)
     })
 end
 
-local function DeleteProfile()
+local function SelectDeleteProfileToken(token)
+    if token == PROFILE_ACTION_NONE_TOKEN then
+        return
+    end
+
+    ResetProfileActionDropdown("deleteProfile")
+
+    local profileRef = profileRefsByToken[token]
+
+    if not profileRef then
+        RefreshProfileDescriptors()
+        profileRef = profileRefsByToken[token]
+    end
+
+    if not profileRef then
+        ReportProfileError("Deleting profile", "PROFILE_NOT_FOUND")
+        return
+    end
+
+    ConfirmDeleteProfile(profileRef)
+end
+
+-- Canvas synchronization
+local function MainFrameIsShown()
+    return AddonSettings.frame and AddonSettings.frame:IsShown()
+end
+
+local function RefreshProfileControls()
     RefreshProfileDescriptors()
-    local options = {}
+
+    local activeProfile = NS.profileManager:GetActiveProfile()
+    local canCopy = #profileDescriptors > 1
+    local canRename = false
+    local canDelete = false
 
     for index = 1, #profileDescriptors do
         local descriptor = profileDescriptors[index]
 
+        if descriptor.canRename then
+            canRename = true
+        end
+
         if descriptor.canDelete then
-            options[#options + 1] = {
-                text = GetProfileLabel(descriptor),
-                value = descriptor.profileRef,
-            }
+            canDelete = true
         end
     end
 
-    if #options == 0 then
-        NS:Print("There is no inactive user profile to delete.")
+    controls.activeProfile:SetChoices(CreateProfileChoices())
+    controls.activeProfile:SetValue(GetActiveProfileToken())
+    controls.renameProfile:SetChoices(CreateRenameProfileChoices())
+    controls.renameProfile:SetValue(PROFILE_ACTION_NONE_TOKEN)
+    controls.deleteProfile:SetChoices(CreateDeleteProfileChoices())
+    controls.deleteProfile:SetValue(PROFILE_ACTION_NONE_TOKEN)
+    controls.copyProfile:SetControlEnabled(
+        canCopy,
+        "There is no other profile to copy."
+    )
+    controls.renameProfile:SetControlEnabled(
+        canRename,
+        "There is no user-created profile to rename."
+    )
+    controls.resetProfile:SetControlEnabled(activeProfile.canReset)
+    controls.deleteProfile:SetControlEnabled(
+        canDelete,
+        "There is no inactive user profile to delete."
+    )
+end
+
+local function RefreshGlobalAndCharacterControls()
+    controls.replaceBlizzardBags:SetValue(
+        NS.globalDB:Get("features", "replaceBlizzardBags") ~= false
+    )
+    controls.autosellGrayJunk:SetValue(
+        GetBooleanSetting(NS.globalDB, "features", "autosellGrayJunk")
+    )
+    controls.frameScale:SetValue(GetFrameScalePercent())
+end
+
+local function RefreshProfileSettingControls()
+    local ListModel = NS.ItemListModel
+    local primarySortKey =
+        ListModel.NormalizeSortKey(GetListValue("sortKey"))
+    local secondarySortKey = ListModel.NormalizeSecondarySortKey(
+        GetListValue("secondarySortKey")
+    )
+    local manual = ListModel.IsManualSortKey(primarySortKey)
+    local secondaryEnabled = not manual
+        and secondarySortKey ~= ListModel.GetNoSecondarySortKey()
+
+    controls.showCooldownsInName:SetValue(
+        NS.db:Get("display", "showCooldownsInName") ~= false
+    )
+    controls.groupKey:SetValue(
+        ListModel.NormalizeGroupKey(GetListValue("groupKey"))
+    )
+    controls.pinDisplayMode:SetValue(NS.ItemPins.GetDisplayMode())
+    controls.primarySortKey:SetValue(primarySortKey)
+    controls.primarySortDirection:SetValue(
+        GetListValue("sortAscending") ~= false
+    )
+    controls.secondarySortKey:SetValue(secondarySortKey)
+    controls.secondarySortDirection:SetValue(
+        GetListValue("secondarySortAscending") ~= false
+    )
+
+    controls.primarySortDirection:SetControlEnabled(
+        not manual,
+        "Manual sorting always follows bag and slot order."
+    )
+    controls.secondarySortKey:SetControlEnabled(
+        not manual,
+        "Manual primary sorting disables secondary sorting."
+    )
+    controls.secondarySortDirection:SetControlEnabled(
+        secondaryEnabled,
+        manual
+            and "Manual primary sorting disables secondary sorting."
+            or "Choose a secondary sort before setting its direction."
+    )
+end
+
+local function RefreshMainFrame()
+    RefreshProfileControls()
+    RefreshGlobalAndCharacterControls()
+    RefreshProfileSettingControls()
+end
+
+local function ScheduleControlRefresh(key, callback)
+    if not MainFrameIsShown() or controlRefreshScheduled[key] then
         return
     end
 
-    StaticPopup_ShowGenericDropdown(
-        "Choose a profile to delete.",
-        ConfirmDeleteProfile,
-        options,
-        false
+    controlRefreshScheduled[key] = true
+    C_Timer.After(0, function()
+        controlRefreshScheduled[key] = nil
+
+        if MainFrameIsShown() then
+            callback()
+        end
+    end)
+end
+
+local function RefreshProfileControlsIfShown()
+    ScheduleControlRefresh("profiles", RefreshProfileControls)
+end
+
+local function RefreshGlobalAndCharacterControlsIfShown()
+    ScheduleControlRefresh(
+        "globalAndCharacter",
+        RefreshGlobalAndCharacterControls
     )
 end
 
-local function NotifyProfileSettingControls()
-    for index = 1, #PROFILE_SETTING_VARIABLES do
-        NotifySettingChanged(PROFILE_SETTING_VARIABLES[index])
-    end
+local function RefreshProfileSettingControlsIfShown()
+    ScheduleControlRefresh("profileSettings", RefreshProfileSettingControls)
 end
 
-local function NotifyProfileDescriptorControls()
-    RefreshProfileDescriptors()
-    NotifySettingChanged(SETTING_ACTIVE_PROFILE)
-end
+local function ResetMainSettings()
+    local globalDefaults = NS.defaults.global.features
+    local profileDefaults = NS.defaults.profile
+    local listDefaults = profileDefaults.list
 
--- Blizzard Settings control registration
-local function RegisterCheckbox(category, variable, name, defaultValue, getValue, setValue, tooltip)
-    local setting = Settings.RegisterProxySetting(category, variable, Settings.VarType.Boolean, name, defaultValue, getValue, setValue)
-    Settings.CreateCheckbox(category, setting, tooltip)
-    return setting
-end
-
-local function RegisterDropdown(category, variable, name, defaultValue, getValue, setValue, getOptions, tooltip, variableType)
-    local setting = Settings.RegisterProxySetting(category, variable, variableType or Settings.VarType.String, name, defaultValue, getValue, setValue)
-    local initializer = Settings.CreateDropdown(category, setting, getOptions, tooltip)
-    return setting, initializer
-end
-
-local function RegisterSlider(category, variable, name, defaultValue, getValue, setValue, minValue, maxValue, step, tooltip)
-    local setting = Settings.RegisterProxySetting(category, variable, Settings.VarType.Number, name, defaultValue, getValue, setValue)
-    local options = Settings.CreateSliderOptions(minValue, maxValue, step)
-
-    if options.SetLabelFormatter and MinimalSliderWithSteppersMixin and MinimalSliderWithSteppersMixin.Label and MinimalSliderWithSteppersMixin.Label.Right then
-        options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, FormatScalePercent)
-    end
-
-    Settings.CreateSlider(category, setting, options, tooltip)
-    return setting
-end
-
-local function RegisterButton(layout, name, buttonText, callback, tooltip)
-    local initializer = CreateSettingsButtonInitializer(
-        name,
-        buttonText,
-        callback,
-        tooltip,
-        true
+    SetReplaceBlizzardBags(globalDefaults.replaceBlizzardBags)
+    SetAutosellGrayJunk(globalDefaults.autosellGrayJunk)
+    SetShowCooldownsInName(
+        profileDefaults.display.showCooldownsInName
     )
-    layout:AddInitializer(initializer)
-    return initializer
+    SetFrameScalePercent(NS.defaults.character.frame.scale * 100)
+    SetGroup(listDefaults.groupKey)
+    SetPinDisplayMode(profileDefaults.pins.displayMode)
+    SetPrimarySort(listDefaults.sortKey)
+    SetPrimarySortDirection(listDefaults.sortAscending)
+    SetSecondarySort(listDefaults.secondarySortKey)
+    SetSecondarySortDirection(listDefaults.secondarySortAscending)
 end
 
--- Public settings contract
-function AddonSettings.Open()
-    if Settings and Settings.OpenToCategory and AddonSettings.category then
-        Settings.OpenToCategory(AddonSettings.category:GetID())
+-- Main page composition
+local function CreateProfileButtonRow(parent)
+    local buttonDefinitions = {
+        {
+            key = "createProfile",
+            text = "New Profile",
+            tooltip = "Create and select a new profile.",
+            onClick = CreateProfile,
+        },
+        {
+            key = "copyProfile",
+            text = "Copy Into Active",
+            tooltip = "Replace the active profile's settings with settings from another profile.",
+            onClick = CopyIntoActiveProfile,
+        },
+        {
+            key = "resetProfile",
+            text = "Reset Active",
+            tooltip = "Reset the active profile to YvBags defaults.",
+            onClick = ResetActiveProfile,
+        },
+    }
+    local gap = 8
+    local width = (parent:GetWidth() - (gap * 2)) / 3
+    local previousButton
+
+    for index = 1, #buttonDefinitions do
+        local definition = buttonDefinitions[index]
+        local button = ModernSettings:CreateButton(parent, {
+            text = definition.text,
+            width = width,
+            tooltip = definition.tooltip,
+            onClick = definition.onClick,
+        })
+
+        if previousButton then
+            button:SetPoint("LEFT", previousButton, "RIGHT", gap, 0)
+        else
+            button:SetPoint("LEFT", parent, "LEFT", 0, 0)
+        end
+
+        controls[definition.key] = button
+        previousButton = button
     end
+end
+
+local function BuildMainSettingsFrame(frame, measurementFrame)
+    local layout = ModernSettings:CreateCanvasLayout(frame, {
+        measurementFrame = measurementFrame,
+        scrollable = true,
+    })
+    local root = layout:GetRootFlow()
+
+    layout:AddHeader(
+        ADDON_NAME,
+        "Configure profiles, bag behavior, appearance, and list organization."
+    )
+    root:AddSection("Profiles", { marginTop = 0 })
+
+    controls.activeProfile = root:AddControl("dropdown", {
+        label = "Active Profile",
+        getChoices = CreateProfileChoices,
+        tooltip = "Choose the settings profile used by this character.",
+        onChanged = SetActiveProfileToken,
+    })
+
+    local profileButtons = root:AddCustom(34, {
+        marginTop = 4,
+        marginBottom = 4,
+    })
+
+    CreateProfileButtonRow(profileButtons)
+
+    local profileSelectors = root:BeginColumns()
+
+    controls.renameProfile = profileSelectors.left:AddControl(
+        "dropdown",
+        {
+            label = "Rename Profile",
+            choices = CreateRenameProfileChoices(),
+            value = PROFILE_ACTION_NONE_TOKEN,
+            tooltip = "Choose a user-created profile to rename.",
+            onChanged = SelectRenameProfileToken,
+        }
+    )
+    controls.deleteProfile = profileSelectors.right:AddControl(
+        "dropdown",
+        {
+            label = "Delete Profile",
+            choices = CreateDeleteProfileChoices(),
+            value = PROFILE_ACTION_NONE_TOKEN,
+            tooltip = "Choose an inactive user-created profile to delete.",
+            onChanged = SelectDeleteProfileToken,
+        }
+    )
+    profileSelectors:Finish({ marginBottom = 12 })
+
+    local columns = root:BeginColumns()
+
+    columns.left:AddSection("General", { marginTop = 0 })
+    controls.replaceBlizzardBags = columns.left:AddControl("checkbox", {
+        label = "Replace Blizzard Bags",
+        tooltip = ("Use %s for standard player bag open, close, and toggle actions."):format(
+            ADDON_NAME
+        ),
+        onChanged = SetReplaceBlizzardBags,
+    })
+    controls.autosellGrayJunk = columns.left:AddControl("checkbox", {
+        label = "Sell Gray Junk At Vendors",
+        tooltip = "Automatically sell Blizzard gray-quality junk items when a merchant opens.",
+        onChanged = SetAutosellGrayJunk,
+    })
+    controls.showCooldownsInName = columns.left:AddControl("checkbox", {
+        label = "Show Cooldowns In Item Names",
+        tooltip = "Prefix item cooldown timers in the item name column.",
+        onChanged = SetShowCooldownsInName,
+    })
+    controls.frameScale = columns.left:AddControl("slider", {
+        label = "Scale",
+        minValue = SCALE_MIN_PERCENT,
+        maxValue = SCALE_MAX_PERCENT,
+        step = SCALE_STEP_PERCENT,
+        suffix = "%",
+        tooltip = ("Resize the %s frame."):format(ADDON_NAME),
+        onChanged = SetFrameScalePercent,
+    })
+
+    columns.right:AddSection("List", { marginTop = 0 })
+    controls.groupKey = columns.right:AddControl("dropdown", {
+        label = "Group By",
+        choices = CreateGroupChoices(),
+        tooltip = "Choose how the list groups visible bag items.",
+        onChanged = SetGroup,
+    })
+    controls.pinDisplayMode = columns.right:AddControl("dropdown", {
+        label = "Pinned Items",
+        choices = CreatePinDisplayChoices(),
+        tooltip = "Choose how pinned items participate in the active grouping and sort order. Pin state is retained in every mode.",
+        onChanged = SetPinDisplayMode,
+    })
+    controls.primarySortKey = columns.right:AddControl("dropdown", {
+        label = "Primary Sort",
+        choices = CreateSortChoices(),
+        tooltip = "Choose the primary item sort order.",
+        onChanged = SetPrimarySort,
+    })
+    controls.primarySortDirection = columns.right:AddControl("dropdown", {
+        label = "Primary Sort Direction",
+        choices = CreateDirectionChoices(),
+        tooltip = "Choose the primary sort direction.",
+        onChanged = SetPrimarySortDirection,
+    })
+    controls.secondarySortKey = columns.right:AddControl("dropdown", {
+        label = "Secondary Sort",
+        choices = CreateSecondarySortChoices(),
+        tooltip = "Choose the secondary item sort order.",
+        onChanged = SetSecondarySort,
+    })
+    controls.secondarySortDirection = columns.right:AddControl("dropdown", {
+        label = "Secondary Sort Direction",
+        choices = CreateDirectionChoices(),
+        tooltip = "Choose the secondary sort direction.",
+        onChanged = SetSecondarySortDirection,
+    })
+
+    columns:Finish()
+    layout:Finalize()
+    frame.layout = layout
+end
+
+-- Settings registration and public contract
+local function OpenSettingsCategory(categoryID)
+    pendingSettingsCategoryID = nil
+    Settings.OpenToCategory(categoryID)
+end
+
+local function OnPlayerRegenEnabled()
+    if InCombatLockdown() or not pendingSettingsCategoryID then
+        return
+    end
+
+    local categoryID = pendingSettingsCategoryID
+
+    C_Timer.After(0, function()
+        NS:UnregisterEventHandler(
+            "PLAYER_REGEN_ENABLED",
+            OnPlayerRegenEnabled
+        )
+    end)
+    OpenSettingsCategory(categoryID)
+end
+
+function AddonSettings.Open(categoryID)
+    categoryID = categoryID
+        or (AddonSettings.category and AddonSettings.category:GetID())
+
+    if not categoryID then
+        return false
+    end
+
+    if InCombatLockdown() then
+        if not pendingSettingsCategoryID then
+            NS:RegisterEventHandler(
+                "PLAYER_REGEN_ENABLED",
+                OnPlayerRegenEnabled
+            )
+        end
+
+        pendingSettingsCategoryID = categoryID
+        NS:Print("Can't open settings in combat. They will open when combat ends.")
+        return false
+    end
+
+    OpenSettingsCategory(categoryID)
+    return true
 end
 
 function AddonSettings.NotifyFrameScaleChanged()
-    NotifySettingChanged(SETTING_FRAME_SCALE)
+    local value = GetFrameScalePercent()
+
+    if controls.frameScale and controls.frameScale:GetValue() ~= value then
+        controls.frameScale:SetValue(value)
+    end
 end
 
 function AddonSettings.Register()
-    if AddonSettings.registered or not Settings or not Settings.RegisterVerticalLayoutCategory then
+    if AddonSettings.registered then
         return
     end
 
-    local category, layout = Settings.RegisterVerticalLayoutCategory(ADDON_NAME)
-    AddonSettings.category = category
+    local measurementFrame = SettingsPanel:GetSettingsCanvas()
+    local mainFrame = CreateFrame("Frame")
 
-    AddSection(layout, "Profiles")
-    RefreshProfileDescriptors()
-    local _, profileInitializer = RegisterDropdown(
-        category,
-        SETTING_ACTIVE_PROFILE,
-        "Active Profile",
-        PROFILE_GLOBAL_TOKEN,
-        GetActiveProfileToken,
-        SetActiveProfileToken,
-        CreateProfileOptions,
-        "Choose the settings profile used by this character."
-    )
-    profileInitializer.reinitializeOnValueChanged = true
-    RegisterButton(
-        layout,
-        "New Profile",
-        "Create",
-        CreateProfile,
-        "Create and select a new profile."
-    )
-    RegisterButton(
-        layout,
-        "Copy Into Active",
-        "Choose",
-        CopyIntoActiveProfile,
-        "Replace the active profile's settings with settings from another profile."
-    )
-    RegisterButton(
-        layout,
-        "Rename Active",
-        "Rename",
-        RenameActiveProfile,
-        "Rename the active user-created profile. Permanent profiles cannot be renamed."
-    )
-    RegisterButton(
-        layout,
-        "Reset Active",
-        "Reset",
-        ResetActiveProfile,
-        "Reset the active profile to YvBags defaults."
-    )
-    RegisterButton(
-        layout,
-        "Delete Profile",
-        "Choose",
-        DeleteProfile,
-        "Delete an inactive user-created profile."
-    )
+    BuildMainSettingsFrame(mainFrame, measurementFrame)
 
-    AddSection(layout, "General")
-    RegisterCheckbox(
-        category,
-        SETTING_REPLACE_BLIZZARD_BAGS,
-        "Replace Blizzard Bags",
-        true,
-        function() return NS.globalDB:Get("features", "replaceBlizzardBags") ~= false end,
-        SetReplaceBlizzardBags,
-        ("Use %s for standard player bag open, close, and toggle actions."):format(ADDON_NAME)
-    )
-    RegisterCheckbox(
-        category,
-        SETTING_AUTOSELL_GRAY_JUNK,
-        "Sell Gray Junk At Vendors",
-        false,
-        function() return GetBooleanSetting(NS.globalDB, "features", "autosellGrayJunk") end,
-        SetAutosellGrayJunk,
-        "Automatically sell Blizzard gray-quality junk items when a merchant opens."
-    )
-    RegisterCheckbox(
-        category,
-        SETTING_SHOW_COOLDOWNS_IN_NAME,
-        "Show Cooldowns In Item Names",
-        true,
-        function() return NS.db:Get("display", "showCooldownsInName") ~= false end,
-        SetShowCooldownsInName,
-        "Prefix item cooldown timers in the item name column."
-    )
-    RegisterSlider(
-        category,
-        SETTING_FRAME_SCALE,
-        "Scale",
-        NS.defaults.character.frame.scale * 100,
-        GetFrameScalePercent,
-        SetFrameScalePercent,
-        SCALE_MIN_PERCENT,
-        SCALE_MAX_PERCENT,
-        SCALE_STEP_PERCENT,
-        ("Resize the %s frame."):format(ADDON_NAME)
-    )
+    mainFrame.OnRefresh = RefreshMainFrame
+    mainFrame.OnDefault = ResetMainSettings
 
-    AddSection(layout, "List")
-    RegisterDropdown(
-        category,
-        SETTING_GROUP_KEY,
-        "Group By",
-        NS.defaults.profile.list.groupKey,
-        function() return NS.ItemListModel.NormalizeGroupKey(GetListValue("groupKey")) end,
-        SetGroup,
-        CreateGroupOptions,
-        "Choose how the list groups visible bag items."
+    local category = Settings.RegisterCanvasLayoutCategory(
+        mainFrame,
+        ADDON_NAME
     )
-    RegisterDropdown(
+    local categoriesFrame = NS.CategoryEditor.CreateFrame(measurementFrame)
+    local categoriesCategory = Settings.RegisterCanvasLayoutSubcategory(
         category,
-        SETTING_PIN_DISPLAY_MODE,
-        "Pinned Items",
-        NS.defaults.profile.pins.displayMode,
-        function() return NS.ItemPins.GetDisplayMode() end,
-        SetPinDisplayMode,
-        CreatePinDisplayOptions,
-        "Choose how pinned items participate in the active grouping and sort order. Pin state is retained in every mode."
-    )
-    RegisterDropdown(
-        category,
-        SETTING_PRIMARY_SORT_KEY,
-        "Primary Sort",
-        NS.defaults.profile.list.sortKey,
-        function() return NS.ItemListModel.NormalizeSortKey(GetListValue("sortKey")) end,
-        SetPrimarySort,
-        CreateSortOptions,
-        "Choose the primary item sort order."
-    )
-    RegisterDropdown(
-        category,
-        SETTING_PRIMARY_SORT_DIRECTION,
-        "Primary Sort Direction",
-        NS.defaults.profile.list.sortAscending,
-        function() return GetListValue("sortAscending") ~= false end,
-        SetPrimarySortDirection,
-        CreateDirectionOptions,
-        "Choose the primary sort direction.",
-        Settings.VarType.Boolean
-    )
-    RegisterDropdown(
-        category,
-        SETTING_SECONDARY_SORT_KEY,
-        "Secondary Sort",
-        NS.defaults.profile.list.secondarySortKey,
-        function() return NS.ItemListModel.NormalizeSecondarySortKey(GetListValue("secondarySortKey")) end,
-        SetSecondarySort,
-        CreateSecondarySortOptions,
-        "Choose the secondary item sort order. Manual primary sorting disables secondary sorting."
-    )
-    RegisterDropdown(
-        category,
-        SETTING_SECONDARY_SORT_DIRECTION,
-        "Secondary Sort Direction",
-        NS.defaults.profile.list.secondarySortAscending,
-        function() return GetListValue("secondarySortAscending") ~= false end,
-        SetSecondarySortDirection,
-        CreateDirectionOptions,
-        "Choose the secondary sort direction.",
-        Settings.VarType.Boolean
+        categoriesFrame,
+        "Categories"
     )
 
     Settings.RegisterAddOnCategory(category)
 
+    AddonSettings.frame = mainFrame
+    AddonSettings.category = category
+    AddonSettings.categoriesFrame = categoriesFrame
+    AddonSettings.categoriesCategory = categoriesCategory
+
     for index = 1, #PROFILE_DESCRIPTOR_EVENTS do
         NS.profileManager:RegisterLifecycleCallback(
             PROFILE_DESCRIPTOR_EVENTS[index],
-            NotifyProfileDescriptorControls
+            RefreshProfileControlsIfShown
         )
     end
 
-    NS.db:RegisterLifecycleCallback("OnDataChanged", NotifyProfileSettingControls)
-    NS.db:RegisterLifecycleCallback("OnReset", NotifyProfileSettingControls)
+    NS.globalDB:RegisterTreeCallback(
+        RefreshGlobalAndCharacterControlsIfShown,
+        "features"
+    )
+    NS.db:RegisterTreeCallback(
+        RefreshProfileSettingControlsIfShown,
+        "display"
+    )
+    NS.db:RegisterTreeCallback(
+        RefreshProfileSettingControlsIfShown,
+        "list"
+    )
+    NS.db:RegisterTreeCallback(
+        RefreshProfileSettingControlsIfShown,
+        "pins"
+    )
+    NS.db:RegisterLifecycleCallback(
+        "OnDataChanged",
+        RefreshProfileSettingControlsIfShown
+    )
+    NS.db:RegisterLifecycleCallback(
+        "OnReset",
+        RefreshProfileSettingControlsIfShown
+    )
+
     AddonSettings.registered = true
+    RefreshMainFrame()
 end
 
-NS:RegisterInitCallback(function()
-    AddonSettings.Register()
-end)
+NS:RegisterInitCallback(AddonSettings.Register)

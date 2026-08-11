@@ -5,4 +5,6 @@
 *.yml text eol=lf
 *.yaml text eol=lf
 .pkgmeta text eol=lf
+.gitmodules text eol=lf
+.gitattributes text eol=lf
 LICENSE text eol=lf

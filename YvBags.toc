@@ -8,6 +8,7 @@
 ## SavedVariablesPerCharacter: YvBagsCharacterDB
 
 Libs\LibStub\LibStub.lua
+Libs\LibModernSettings-1.0\embed.xml
 Libs\LibSimpleDB-2.0\embed.xml
 Libs\LibSimpleDBProfiles-1.0\embed.xml
 Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
@@ -45,5 +46,6 @@ Modules\MainFrame\Layout.lua
 Modules\MainFrame\Geometry.lua
 Modules\MainFrame\Controls.lua
 Modules\MainFrame\MainFrame.lua
+Modules\Settings\CategoryEditor.lua
 Settings.lua
 Commands.lua

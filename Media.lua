@@ -35,6 +35,8 @@ local Textures = {
 
 local Atlases = {
     warboundBindingIcon = "GM-icon-assist-hover",
+    categoryAdd = "common-icon-plus",
+    categoryMove = "common-icon-move",
 }
 
 local Colors = {
@@ -82,6 +84,14 @@ end
 
 function Media.GetWarboundBindingIconAtlas()
     return Atlases.warboundBindingIcon
+end
+
+function Media.GetCategoryAddAtlas()
+    return Atlases.categoryAdd
+end
+
+function Media.GetCategoryMoveAtlas()
+    return Atlases.categoryMove
 end
 
 function Media.GetDividerTexture()

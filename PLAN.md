@@ -1,7 +1,8 @@
 # Profile And Category Customization Plan
 
 Status: Phase 1 complete; Phase 2 category domain implementation complete with
-in-game validation pending; Phase 3 settings editor not started.
+in-game validation pending; Phase 3 settings editor implementation complete
+with in-game validation pending.
 
 This document is the implementation contract for profile support, category
 customization, and the later category rule editor. Complete the phases in order.
@@ -243,18 +244,18 @@ rule precedence.
 
 ### Modern Settings Migration
 
-- [ ] Pull in the reviewed `LibModernSettings-1.0` release proven by
+- [x] Pull in the reviewed `LibModernSettings-1.0` release proven by
       ReadyCheckConsumables, pin its release tag in `.pkgmeta`, and load it
       after LibStub but before every YvBags settings consumer.
-- [ ] Reimplement YvBags' existing settings pages and profile-management UI
+- [x] Reimplement YvBags' existing settings pages and profile-management UI
       with LibModernSettings canvas layouts, controls, and tables before adding
       the category editor to the same modern visual system.
-- [ ] Preserve the current setting labels, profile confirmations, storage
+- [x] Preserve the current setting labels, profile confirmations, storage
       ownership, defaults, and live-refresh boundaries. LibModernSettings owns
       control construction and layout; YvBags continues to own LibSimpleDB
       persistence, Blizzard category registration, page composition, and
       runtime callbacks.
-- [ ] Remove superseded hand-built settings controls only after the modern
+- [x] Remove superseded hand-built settings controls only after the modern
       implementation has complete behavioral parity.
 
 Register one canvas subcategory with:
@@ -267,6 +268,10 @@ Do not create a Blizzard Settings subcategory for each category. Blizzard
 category registrations are static and do not fit dynamically created or renamed
 categories.
 
+The unbounded category list uses a consumer-owned Blizzard `ScrollBox` rather
+than LibModernSettings' fixed settings-table scaffold so the list remains
+virtualized. The detail editor uses the library's public text-input control.
+
 ### Layout
 
 Use a dense master-detail layout rather than cards:
@@ -278,30 +283,32 @@ Use a dense master-detail layout rather than cards:
 
 ### Category List
 
-- [ ] Show every active category, including empty custom categories.
-- [ ] Provide a dedicated reorder handle and insertion indicator.
-- [ ] Limit drag polling to an active drag and stop it immediately afterward.
-- [ ] Preserve selection after reorder and settings refresh.
-- [ ] Add a category with an icon-and-text command.
-- [ ] Select and focus the new category's name after creation.
-- [ ] Use pooled rows so custom category counts can grow safely.
+- [x] Show every active category, including empty custom categories.
+- [x] Use alternating row shading and Blizzard's native move icon to keep the
+      reorder affordance clear at every UI scale.
+- [x] Provide a dedicated reorder handle and insertion indicator.
+- [x] Limit drag polling to an active drag and stop it immediately afterward.
+- [x] Preserve selection after reorder and settings refresh.
+- [x] Add a category with an icon-and-text command.
+- [x] Select and focus the new category's name after creation.
+- [x] Use pooled rows so custom category counts can grow safely.
 
 ### Category Detail
 
-- [ ] Edit and validate the category name.
-- [ ] Commit on Enter or focus loss; Escape restores the previous value.
-- [ ] Provide a Remove action with confirmation.
-- [ ] Disable Remove for `Other` with a tooltip explaining that it is the
+- [x] Edit and validate the category name.
+- [x] Commit on Enter or focus loss; Escape restores the previous value.
+- [x] Provide a Remove action with confirmation.
+- [x] Disable Remove for `Other` with a tooltip explaining that it is the
       required fallback.
-- [ ] Reserve layout ownership below the name editor for future rules without
+- [x] Reserve layout ownership below the name editor for future rules without
       displaying placeholder instructional text.
 
 ### Canvas Lifecycle
 
-- [ ] `OnRefresh` rebuilds the data provider and restores a valid selection.
-- [ ] `OnDefault` restores default categories for the active profile.
-- [ ] Profile changes refresh the canvas if Settings is open.
-- [ ] Category changes apply live to an open bag list.
+- [x] `OnRefresh` rebuilds the data provider and restores a valid selection.
+- [x] `OnDefault` restores default categories for the active profile.
+- [x] Profile changes refresh the canvas if Settings is open.
+- [x] Category changes apply live to an open bag list.
 
 ## Phase 4: Category Rules
 
