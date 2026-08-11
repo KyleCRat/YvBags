@@ -21,9 +21,11 @@ local function ApplyBaseFrameTheme(frame)
     end
 end
 
-local function Refresh(frame)
+local function Refresh(frame, reason)
     frame.itemList:SetItems(NS.Inventory:GetItems())
-    NS.Footer.Refresh(frame)
+    if reason ~= NS.Inventory.UpdateReasons.Categories then
+        NS.Footer.Refresh(frame)
+    end
 end
 
 local function CreateContent(frame)
@@ -51,9 +53,9 @@ local function CreateResizeButton(frame)
 end
 
 local function RegisterCallbacks(frame)
-    NS.Inventory:RegisterUpdateCallback(function()
+    NS.Inventory:RegisterUpdateCallback(function(_, reason)
         if NS.frame then
-            Refresh(NS.frame)
+            Refresh(NS.frame, reason)
         end
     end)
 

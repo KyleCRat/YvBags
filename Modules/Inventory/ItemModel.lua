@@ -343,11 +343,35 @@ local function GetCurrentBagItemLevel(bagID, slotIndex)
     return nil
 end
 
-local function RefreshClassification(item)
+local function RefreshPin(item)
+    local wasPinned = item.isPinned
     item.isPinned = Pins.IsPinned(item)
+
+    if item.isPinned ~= wasPinned then
+        item.searchDocument = nil
+        return true
+    end
+
+    return false
+end
+
+local function RefreshCategory(item)
+    local previousCategoryKey = item.categoryKey
+    local previousCategoryName = item.categoryName
     item.categoryKey = Categories.GetCategoryKey(item)
     item.categoryName = Categories.GetCategoryName(item.categoryKey)
-    item.searchDocument = nil
+
+    if item.categoryKey ~= previousCategoryKey or item.categoryName ~= previousCategoryName then
+        item.searchDocument = nil
+        return true
+    end
+
+    return false
+end
+
+local function RefreshClassification(item)
+    RefreshPin(item)
+    RefreshCategory(item)
 end
 
 -- Keystone special handling
@@ -633,4 +657,12 @@ end
 
 function ItemModel.RefreshClassification(item)
     RefreshClassification(item)
+end
+
+function ItemModel.RefreshPin(item)
+    return RefreshPin(item)
+end
+
+function ItemModel.RefreshCategory(item)
+    return RefreshCategory(item)
 end

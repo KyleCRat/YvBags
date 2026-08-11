@@ -11,6 +11,10 @@ local ItemModel = NS.ItemModel
 
 local SCAN_DELAY_SECONDS = 0.2
 
+Inventory.UpdateReasons = {
+    Categories = "categories",
+}
+
 -- Inventory state
 Inventory.containers = {}
 Inventory.containerByID = {}
@@ -21,7 +25,6 @@ Inventory.pendingItemIDs = {}
 Inventory.pendingItems = {}
 Inventory.stats = {}
 Inventory.updateCallbacks = {}
-Inventory.categoryLabels = Categories.GetLabels()
 
 -- Pending item diagnostics
 local function RequestPendingItemLoad(itemID, itemInfo)
@@ -121,9 +124,9 @@ local function RemovePendingItemsForContainer(containerID)
 end
 
 -- Scanner update notifications
-local function NotifyUpdateCallbacks()
+local function NotifyUpdateCallbacks(reason)
     for _, callback in ipairs(Inventory.updateCallbacks) do
-        callback(Inventory)
+        callback(Inventory, reason)
     end
 end
 
@@ -387,6 +390,46 @@ function Inventory:GetPendingItems()
     return self.pendingItems
 end
 
+function Inventory:RefreshCategories(changeType, categoryID)
+    if changeType == Categories.ChangeTypes.Created then
+        return
+    end
+
+    if changeType == Categories.ChangeTypes.Moved then
+        NotifyUpdateCallbacks(Inventory.UpdateReasons.Categories)
+        return
+    end
+
+    local refreshAll = changeType == Categories.ChangeTypes.Reset
+        or changeType == Categories.ChangeTypes.Changed
+        or changeType == Categories.ChangeTypes.ProfileChanged
+        or changeType == Categories.ChangeTypes.ProfileReset
+    local refreshedItem = false
+
+    for _, item in ipairs(self.items) do
+        if refreshAll or item.categoryKey == categoryID then
+            ItemModel.RefreshCategory(item)
+            refreshedItem = true
+        end
+    end
+
+    for _, pendingItem in ipairs(self.pendingItems) do
+        if refreshAll or pendingItem.categoryKey == categoryID then
+            local item = self.itemsByLocation[pendingItem.locationKey]
+            if item then
+                pendingItem.categoryKey = item.categoryKey
+                pendingItem.categoryName = item.categoryName
+            end
+        end
+    end
+
+    if (refreshAll or refreshedItem)
+        and changeType ~= Categories.ChangeTypes.ProfileChanged
+        and changeType ~= Categories.ChangeTypes.ProfileReset then
+        NotifyUpdateCallbacks(Inventory.UpdateReasons.Categories)
+    end
+end
+
 function Inventory:ToggleItemPin(item)
     local isPinned, pinKey = Pins.Toggle(item)
     if isPinned == nil then
@@ -395,7 +438,7 @@ function Inventory:ToggleItemPin(item)
 
     for _, candidate in ipairs(self.items) do
         if Pins.GetKey(candidate) == pinKey then
-            ItemModel.RefreshClassification(candidate)
+            ItemModel.RefreshPin(candidate)
         end
     end
 
@@ -404,8 +447,6 @@ function Inventory:ToggleItemPin(item)
             local currentItem = self.itemsByLocation[pendingItem.locationKey]
             if currentItem then
                 pendingItem.isPinned = currentItem.isPinned
-                pendingItem.categoryKey = currentItem.categoryKey
-                pendingItem.categoryName = currentItem.categoryName
             end
         end
     end
@@ -432,6 +473,10 @@ function Inventory:Initialize()
     NS:RegisterEventHandler("BAG_UPDATE_DELAYED", OnBagUpdateDelayed)
     NS:RegisterEventHandler("ITEM_LOCK_CHANGED", OnItemLockChanged)
     NS:RegisterEventHandler("GET_ITEM_INFO_RECEIVED", OnItemInfoReceived)
+
+    Categories.RegisterCallback(function(_, changeType, categoryID)
+        self:RefreshCategories(changeType, categoryID)
+    end)
 
     self:ScheduleScan("init")
 end

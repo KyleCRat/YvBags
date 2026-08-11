@@ -20,6 +20,7 @@
 ### Changed
 - Upgraded persistence from `LibSimpleDB-1.0` to `LibSimpleDB-2.0` and added `LibSimpleDBProfiles-1.0`.
 - Adopted existing flat settings into Global once while keeping feature toggles and pinned item identities outside profile payloads.
+- Moved category definitions and ordering into the active profile with stable IDs and live, API-free reclassification support for the upcoming category editor.
 - Classified Utility Curio, Combat Curio, and Relic consumables as Openable instead of general Consumables.
 
 ### Fixed

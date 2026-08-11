@@ -1,6 +1,7 @@
 # Profile And Category Customization Plan
 
-Status: Phase 1 profile foundation complete; category customization not started.
+Status: Phase 1 complete; Phase 2 category domain implementation complete with
+in-game validation pending; Phase 3 settings editor not started.
 
 This document is the implementation contract for profile support, category
 customization, and the later category rule editor. Complete the phases in order.
@@ -158,7 +159,10 @@ categories = {
   stored root represent intentional removal and must not be backfilled.
 - Resetting categories deletes the stored category root and rebuilds from
   profile defaults.
-- Names must be trimmed, nonempty, length-limited, and case-insensitively unique.
+- Names must be valid UTF-8, trimmed, nonempty, free of ASCII controls, and
+  case-insensitively unique through Blizzard's UTF-8 comparison. The category
+  domain has no arbitrary length limit; UI consumers must clip or truncate
+  unusually long display names without changing their stored values.
 
 ## Phase 1: Profile Foundation (Complete)
 
@@ -193,35 +197,36 @@ until the rule schema is designed.
 
 ### Runtime Registry
 
-- [ ] Read the active profile's category root and normalize it once.
-- [ ] Build ordered definitions, definitions-by-ID, labels-by-ID, and
+- [x] Read the active profile's category root and normalize it once.
+- [x] Build ordered definitions, definitions-by-ID, labels-by-ID, and
       priorities-by-ID caches.
-- [ ] Preserve the existing `GetCategoryKey`, `GetCategoryName`, and
+- [x] Preserve the existing `GetCategoryKey`, `GetCategoryName`, and
       `GetSortPriority` consumer APIs.
-- [ ] Add `GetOrderedDefinitions()` and `GetDefinition(categoryID)`.
-- [ ] Add a category-change callback contract with change type and affected ID.
-- [ ] Rebuild caches on category mutations and profile switches.
-- [ ] Keep built-in IDs stable even when their categories are renamed.
+- [x] Add `GetOrderedDefinitions()` and `GetDefinition(categoryID)`.
+- [x] Add a category-change callback contract with change type and affected ID.
+- [x] Rebuild caches on category mutations and profile switches.
+- [x] Keep built-in IDs stable even when their categories are renamed.
 
 ### Category Mutation API
 
-- [ ] `CreateCategory(name)`
-- [ ] `RenameCategory(categoryID, name)`
-- [ ] `MoveCategory(categoryID, targetIndex)`
-- [ ] `RemoveCategory(categoryID)`
-- [ ] `ResetCategories()`
-- [ ] Reject removal of `Other`.
-- [ ] Confirm that removed built-in categories do not reappear on reload.
+- [x] `CreateCategory(name)`
+- [x] `RenameCategory(categoryID, name)`
+- [x] `MoveCategory(categoryID, targetIndex)`
+- [x] `RemoveCategory(categoryID)`
+- [x] `ResetCategories()`
+- [x] Reject removal of `Other`.
+- [x] Confirm in the storage design that removed built-in categories are not
+      backfilled on reload; in-game persistence remains a validation gate.
 
 ### Classification Refresh Boundary
 
-- [ ] Split `ItemModel.RefreshClassification` into category and pin refresh
+- [x] Split `ItemModel.RefreshClassification` into category and pin refresh
       paths.
-- [ ] Add an inventory method that reclassifies existing normalized items
+- [x] Add an inventory method that reclassifies existing normalized items
       without item, tooltip, or bag API queries.
-- [ ] Clear cached search documents when a category name or assignment changes.
-- [ ] Refresh pending-item diagnostics when assignments change.
-- [ ] Remove the unused `Inventory.categoryLabels` reference.
+- [x] Clear cached search documents when a category name or assignment changes.
+- [x] Refresh pending-item diagnostics when assignments change.
+- [x] Remove the unused `Inventory.categoryLabels` reference.
 
 Use the smallest valid refresh:
 

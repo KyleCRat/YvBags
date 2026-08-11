@@ -214,6 +214,22 @@ function ListController:RefreshProfileSettings()
     self:RefreshDataProvider(true)
 end
 
+function ListController:ScheduleProfileSettingsRefresh()
+    if self.profileSettingsRefreshScheduled then
+        return
+    end
+
+    self.profileSettingsRefreshScheduled = true
+    C_Timer.After(0, function()
+        if not self.profileSettingsRefreshScheduled then
+            return
+        end
+
+        self.profileSettingsRefreshScheduled = false
+        self:RefreshProfileSettings()
+    end)
+end
+
 local function CreateScrollView(list)
     local view = CreateScrollBoxListLinearView()
     view:SetElementExtentCalculator(function(_, elementData)
@@ -320,7 +336,9 @@ function ItemList.Create(parent)
     list.emptyText = CreateEmptyText(list)
 
     local function OnProfileDataChanged()
-        list:RefreshProfileSettings()
+        -- Coalesce lifecycle callbacks after every profile-backed module has
+        -- rebuilt its caches; LibSimpleDB does not promise callback-map order.
+        list:ScheduleProfileSettingsRefresh()
     end
 
     NS.db:RegisterLifecycleCallback("OnDataChanged", OnProfileDataChanged)

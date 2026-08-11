@@ -59,7 +59,7 @@ Settings include:
 - Primary Sort and direction
 - Secondary Sort and direction
 
-Profile settings include grouping, sorting, pinned-item presentation, and cooldown-name display. Bag replacement, gray-junk selling, and pinned item identities remain shared across the addon. Frame position, size, and scale remain stored per character.
+Profile settings include grouping, sorting, pinned-item presentation, cooldown-name display, and category definitions and order. The category editor is planned but is not exposed in Settings yet. Bag replacement, gray-junk selling, and pinned item identities remain shared across the addon. Frame position, size, and scale remain stored per character.
 
 ## Profiles
 
@@ -110,7 +110,7 @@ All required libraries are included with the addon.
 
 - Player bags only; bank, warband bank, guild bank, void storage, and currency-list replacement are not included.
 - Grid mode is not included.
-- Categories are built in for the initial release; custom category editing is not included.
+- Custom category editing is not exposed in Settings yet.
 - Column visibility, resizing, and reordering are not included.
 
 ## Author
