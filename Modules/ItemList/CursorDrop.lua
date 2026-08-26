@@ -1,9 +1,10 @@
 local _, NS = ...
 
--- Cursor-drop contract for sorted insertion and Manual-mode placement.
+-- Native empty-slot drop target for sorted insertion and Manual-mode placement.
 local CursorDrop = {}
 NS.ItemListCursorDrop = CursorDrop
 
+local ItemButton = NS.ItemRowButton
 local Layout = NS.ItemListLayout
 local ListModel = NS.ItemListModel
 local ACCENT_COLOR_R, ACCENT_COLOR_G, ACCENT_COLOR_B = NS.Media.GetAccentColor()
@@ -29,24 +30,7 @@ local GLOW_PULSE_DURATION = 0.85
 local MODE_FULL = "full"
 local MODE_MANUAL = "manual"
 
-local function TryPlaceCursorItem()
-    if CursorHasItem and CursorHasItem() then
-        return NS.BagManagement.PlaceCursorItemInInventory()
-    end
-
-    return false
-end
-
-local function GetDropText()
-    if not GetCursorInfo then
-        return nil
-    end
-
-    local cursorType, itemID, itemLink = GetCursorInfo()
-    if cursorType ~= "item" then
-        return nil
-    end
-
+local function GetDropText(itemID, itemLink)
     local itemName = itemLink
     if not itemName and itemID then
         if C_Item and C_Item.GetItemInfo then
@@ -59,25 +43,20 @@ local function GetDropText()
     return TEXT_FORMAT:format(itemName or FALLBACK_ITEM_NAME)
 end
 
-local function OnDropTargetMouseUp(_, button)
-    if button == "LeftButton" then
-        TryPlaceCursorItem()
-    end
-end
-
-local function OnDropTargetReceiveDrag()
-    TryPlaceCursorItem()
-end
-
-function CursorDrop.HookTarget(frame)
-    if not frame or frame.cursorDropHooked then
-        return
+local function GetCursorItemData()
+    local cursorType, itemID, itemLink = GetCursorInfo()
+    if cursorType ~= "item" then
+        return nil
     end
 
-    frame:EnableMouse(true)
-    frame:HookScript("OnMouseUp", OnDropTargetMouseUp)
-    frame:HookScript("OnReceiveDrag", OnDropTargetReceiveDrag)
-    frame.cursorDropHooked = true
+    local sourceContainerID
+    local sourceSlotIndex
+    local cursorItemLocation = C_Cursor.GetCursorItem()
+    if cursorItemLocation then
+        sourceContainerID, sourceSlotIndex = cursorItemLocation:GetBagAndSlot()
+    end
+
+    return itemID, itemLink, sourceContainerID, sourceSlotIndex
 end
 
 local function SetHovered(overlay, hovered)
@@ -172,26 +151,8 @@ local function CreateGlow(parent)
 end
 
 local function CreateOverlay(parent)
-    local overlay = CreateFrame("Button", nil, parent)
-    overlay:RegisterForClicks("LeftButtonUp")
-    overlay:EnableMouse(true)
+    local overlay = CreateFrame("Frame", nil, parent)
     overlay:SetFrameLevel(parent:GetFrameLevel() + OVERLAY_FRAME_LEVEL_OFFSET)
-    overlay:SetScript("OnClick", function(self, button)
-        if button == "LeftButton" and TryPlaceCursorItem() then
-            self:Hide()
-        end
-    end)
-    overlay:SetScript("OnReceiveDrag", function(self)
-        if TryPlaceCursorItem() then
-            self:Hide()
-        end
-    end)
-    overlay:SetScript("OnEnter", function(self)
-        SetHovered(self, true)
-    end)
-    overlay:SetScript("OnLeave", function(self)
-        SetHovered(self, false)
-    end)
     overlay:SetScript("OnShow", StartGlow)
     overlay:SetScript("OnHide", StopGlow)
 
@@ -218,6 +179,9 @@ local function CreateOverlay(parent)
     text:SetJustifyV("MIDDLE")
     text:SetWordWrap(false)
     overlay.text = text
+
+    overlay.emptySlotTarget = ItemButton.CreateEmptySlotTarget(overlay)
+    overlay.dropTargetDirty = true
 
     overlay:Hide()
     return overlay
@@ -263,7 +227,7 @@ local function SetOverlayMode(list, mode)
 end
 
 local function IsCursorOverDropArea(list)
-    if list.cursorDropOverlay:IsMouseOver() then
+    if list.cursorDropOverlay.emptySlotTarget:IsMouseOver() then
         return true
     end
 
@@ -274,43 +238,110 @@ local function IsCursorOverDropArea(list)
     return not list.header:IsMouseOver()
 end
 
-function CursorDrop.Update(list)
+local function HasCursorItemChanged(overlay, itemID, itemLink, sourceContainerID, sourceSlotIndex)
+    return overlay.cursorItemID ~= itemID
+        or overlay.cursorItemLink ~= itemLink
+        or overlay.sourceContainerID ~= sourceContainerID
+        or overlay.sourceSlotIndex ~= sourceSlotIndex
+end
+
+local function SetCursorItem(overlay, itemID, itemLink, sourceContainerID, sourceSlotIndex)
+    overlay.cursorItemID = itemID
+    overlay.cursorItemLink = itemLink
+    overlay.sourceContainerID = sourceContainerID
+    overlay.sourceSlotIndex = sourceSlotIndex
+    overlay.dropTargetDirty = true
+end
+
+local function ClearCursorItem(overlay)
+    overlay.cursorItemID = nil
+    overlay.cursorItemLink = nil
+    overlay.sourceContainerID = nil
+    overlay.sourceSlotIndex = nil
+    overlay.targetBagID = nil
+    overlay.targetSlotIndex = nil
+    overlay.dropTargetDirty = true
+end
+
+local function RefreshEmptySlotTarget(overlay)
+    if overlay.targetBagID
+        and not NS.BagManagement.IsPlayerContainerSlotEmpty(
+            overlay.targetBagID,
+            overlay.targetSlotIndex
+        ) then
+        overlay.dropTargetDirty = true
+    end
+
+    if overlay.dropTargetDirty then
+        local bagID, slotIndex = NS.BagManagement.FindCursorItemEmptySlot(
+            overlay.cursorItemID,
+            overlay.cursorItemLink,
+            overlay.sourceContainerID,
+            overlay.sourceSlotIndex
+        )
+        overlay.targetBagID = bagID
+        overlay.targetSlotIndex = slotIndex
+        overlay.dropTargetDirty = false
+
+        if bagID then
+            ItemButton.SetEmptySlotTarget(overlay.emptySlotTarget, bagID, slotIndex)
+        end
+    end
+
+    return overlay.targetBagID ~= nil
+end
+
+local function HideOverlay(list)
     local overlay = list.cursorDropOverlay
-    local dropText
-
-    if CursorHasItem and CursorHasItem() and IsCursorOverDropArea(list) then
-        dropText = GetDropText()
-    end
-
-    if dropText then
-        if ListModel.IsManualSortKey(list.sortKey) then
-            SetOverlayMode(list, MODE_MANUAL)
-            SetManualDropActive(list, true)
-        else
-            SetManualDropActive(list, false)
-            SetOverlayMode(list, MODE_FULL)
-        end
-
-        if overlay.dropText ~= dropText then
-            overlay.text:SetText(dropText)
-            overlay.dropText = dropText
-        end
-
-        overlay:Show()
-        SetHovered(overlay, overlay:IsMouseOver())
-        return
-    end
-
     overlay.dropText = nil
     SetManualDropActive(list, false)
     SetHovered(overlay, false)
     overlay:Hide()
 end
 
+function CursorDrop.Update(list)
+    local overlay = list.cursorDropOverlay
+    local itemID, itemLink, sourceContainerID, sourceSlotIndex = GetCursorItemData()
+
+    if not itemID and not itemLink then
+        ClearCursorItem(overlay)
+        HideOverlay(list)
+        return
+    end
+
+    if HasCursorItemChanged(overlay, itemID, itemLink, sourceContainerID, sourceSlotIndex) then
+        SetCursorItem(overlay, itemID, itemLink, sourceContainerID, sourceSlotIndex)
+    end
+
+    if not IsCursorOverDropArea(list) or not RefreshEmptySlotTarget(overlay) then
+        HideOverlay(list)
+        return
+    end
+
+    if ListModel.IsManualSortKey(list.sortKey) then
+        SetOverlayMode(list, MODE_MANUAL)
+        SetManualDropActive(list, true)
+    else
+        SetManualDropActive(list, false)
+        SetOverlayMode(list, MODE_FULL)
+    end
+
+    local dropText = GetDropText(itemID, itemLink)
+    if overlay.dropText ~= dropText then
+        overlay.text:SetText(dropText)
+        overlay.dropText = dropText
+    end
+
+    overlay:Show()
+    SetHovered(overlay, overlay.emptySlotTarget:IsMouseOver())
+end
+
 function CursorDrop.Attach(list)
-    CursorDrop.HookTarget(list.frame)
-    CursorDrop.HookTarget(list.scrollBox)
     list.cursorDropOverlay = CreateOverlay(list.frame)
+
+    NS.Inventory:RegisterUpdateCallback(function()
+        list.cursorDropOverlay.dropTargetDirty = true
+    end)
 
     local elapsedSinceUpdate = 0
     list.frame:SetScript("OnUpdate", function(_, elapsed)

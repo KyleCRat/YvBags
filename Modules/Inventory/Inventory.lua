@@ -13,6 +13,8 @@ local SCAN_DELAY_SECONDS = 0.2
 
 Inventory.UpdateReasons = {
     Categories = "categories",
+    Locks = "locks",
+    Pins = "pins",
 }
 
 -- Inventory state
@@ -124,9 +126,9 @@ local function RemovePendingItemsForContainer(containerID)
 end
 
 -- Scanner update notifications
-local function NotifyUpdateCallbacks(reason)
+local function NotifyUpdateCallbacks(reason, ...)
     for _, callback in ipairs(Inventory.updateCallbacks) do
-        callback(Inventory, reason)
+        callback(Inventory, reason, ...)
     end
 end
 
@@ -251,9 +253,15 @@ local function OnBagUpdateDelayed()
 end
 
 local function OnItemLockChanged(_, bagOrSlotIndex, slotIndex)
-    if slotIndex and Containers.IsPlayerContainerID(bagOrSlotIndex) then
-        Inventory:ScheduleScan("ITEM_LOCK_CHANGED")
+    if not Containers.IsPlayerContainerID(bagOrSlotIndex) then
+        return
     end
+
+    if slotIndex then
+        Inventory:RefreshItemLockNow(bagOrSlotIndex, slotIndex)
+    end
+
+    Inventory:ScheduleScan("ITEM_LOCK_CHANGED")
 end
 
 local function OnItemInfoReceived(_, itemID, success)
@@ -370,6 +378,33 @@ function Inventory:GetItemByLocation(bagID, slotIndex)
     return self.itemsByLocation[Containers.MakeLocationKey(bagID, slotIndex)]
 end
 
+function Inventory:HasLockedItems()
+    for _, item in ipairs(self.items) do
+        if item.isLocked then
+            return true
+        end
+    end
+
+    return false
+end
+
+function Inventory:RefreshItemLockNow(bagID, slotIndex)
+    local item = self:GetItemByLocation(bagID, slotIndex)
+    local containerItemInfo = C_Container.GetContainerItemInfo(bagID, slotIndex)
+    if not item or not containerItemInfo or item.itemID ~= containerItemInfo.itemID then
+        return false
+    end
+
+    item.isLocked = containerItemInfo.isLocked == true
+    NotifyUpdateCallbacks(
+        Inventory.UpdateReasons.Locks,
+        bagID,
+        slotIndex,
+        item.isLocked
+    )
+    return true
+end
+
 function Inventory:GetContainers()
     return self.containers
 end
@@ -451,7 +486,7 @@ function Inventory:ToggleItemPin(item)
         end
     end
 
-    NotifyUpdateCallbacks()
+    NotifyUpdateCallbacks(Inventory.UpdateReasons.Pins)
     return isPinned
 end
 

@@ -283,6 +283,12 @@ function ItemRow.RefreshCooldown(row)
     Cooldown.Refresh(row)
 end
 
+function ItemRow.RefreshLock(row, isLocked)
+    if row.item then
+        row.icon:SetDesaturated(isLocked == true)
+    end
+end
+
 function ItemRow.SetHighlightedBagID(row, highlightedBagID)
     row.highlightedBagID = highlightedBagID
     UpdateContainerHighlight(row)

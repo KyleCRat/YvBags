@@ -21,10 +21,82 @@ local function ApplyBaseFrameTheme(frame)
     end
 end
 
-local function Refresh(frame, reason)
+local function ApplyInventoryRefresh(frame, refreshFooter)
     frame.itemList:SetItems(NS.Inventory:GetItems())
-    if reason ~= NS.Inventory.UpdateReasons.Categories then
+
+    if refreshFooter ~= false then
         NS.Footer.Refresh(frame)
+    end
+end
+
+local function CancelScheduledInventoryRefresh(frame)
+    if frame.inventoryRefreshTimer then
+        frame.inventoryRefreshTimer:Cancel()
+        frame.inventoryRefreshTimer = nil
+    end
+
+    frame.inventoryRefreshPending = false
+    frame.inventoryRefreshNeedsFooter = false
+end
+
+local function RefreshImmediately(frame, refreshFooter)
+    CancelScheduledInventoryRefresh(frame)
+    ApplyInventoryRefresh(frame, refreshFooter)
+end
+
+local function IsPresentationOnlyUpdate(reason)
+    return reason == NS.Inventory.UpdateReasons.Categories
+        or reason == NS.Inventory.UpdateReasons.Pins
+end
+
+-- Provider replacement trails native input and remains parked through item locks.
+local function QueueInventoryRefreshAttempt(frame)
+    if frame.inventoryRefreshTimer or not frame.inventoryRefreshPending then
+        return
+    end
+
+    local timer
+    timer = C_Timer.NewTimer(0, function()
+        if frame.inventoryRefreshTimer ~= timer then
+            return
+        end
+
+        frame.inventoryRefreshTimer = nil
+        if NS.frame ~= frame then
+            frame.inventoryRefreshPending = false
+            frame.inventoryRefreshNeedsFooter = false
+            return
+        end
+
+        if not frame.inventoryRefreshPending
+            or not frame:IsShown()
+            or NS.Inventory:HasLockedItems() then
+            return
+        end
+
+        local refreshFooter = frame.inventoryRefreshNeedsFooter == true
+        frame.inventoryRefreshPending = false
+        frame.inventoryRefreshNeedsFooter = false
+        ApplyInventoryRefresh(frame, refreshFooter)
+    end)
+    frame.inventoryRefreshTimer = timer
+end
+
+local function RequestInventoryRefresh(frame, reason)
+    frame.inventoryRefreshPending = true
+    frame.inventoryRefreshNeedsFooter =
+        frame.inventoryRefreshNeedsFooter
+        or not IsPresentationOnlyUpdate(reason)
+
+    QueueInventoryRefreshAttempt(frame)
+end
+
+local function RefreshItemLock(frame, bagID, slotIndex, isLocked)
+    -- This synchronous event may update custom art, but must not recycle rows.
+    frame.itemList:RefreshItemLock(bagID, slotIndex, isLocked)
+
+    if frame.inventoryRefreshPending and not NS.Inventory:HasLockedItems() then
+        QueueInventoryRefreshAttempt(frame)
     end
 end
 
@@ -53,9 +125,15 @@ local function CreateResizeButton(frame)
 end
 
 local function RegisterCallbacks(frame)
-    NS.Inventory:RegisterUpdateCallback(function(_, reason)
-        if NS.frame then
-            Refresh(NS.frame, reason)
+    NS.Inventory:RegisterUpdateCallback(function(_, reason, bagID, slotIndex, isLocked)
+        if NS.frame ~= frame then
+            return
+        end
+
+        if reason == NS.Inventory.UpdateReasons.Locks then
+            RefreshItemLock(frame, bagID, slotIndex, isLocked)
+        else
+            RequestInventoryRefresh(frame, reason)
         end
     end)
 
@@ -134,12 +212,12 @@ function MainFrame.Create()
             NS.Inventory:ScanNow("frame-show")
         end
 
-        Refresh(self)
+        RequestInventoryRefresh(self)
     end)
     Controls.RegisterSearchShortcut(frame)
 
     NS.frame = frame
-    Refresh(frame)
+    RefreshImmediately(frame)
     Geometry.PrintDebug(frame, "addon-load")
     return frame
 end

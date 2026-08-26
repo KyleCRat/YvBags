@@ -10,6 +10,7 @@ local GLOBAL_NAME_PREFIX = NS.ITEM_BUTTON_GLOBAL_NAME_PREFIX
 
 local buttonCount = 0
 local buttonRows = setmetatable({}, { __mode = "k" })
+local emptySlotTargets = setmetatable({}, { __mode = "k" })
 
 local function ClearNativeTexture(texture)
     if not texture then
@@ -69,16 +70,21 @@ local function Configure(button, row)
     SuppressNativeVisuals(button)
 end
 
-function ItemButton.Create(row)
+local function CreateNativeButton(parent)
     buttonCount = buttonCount + 1
-    local button = CreateFrame("ItemButton", GLOBAL_NAME_PREFIX .. buttonCount, row, BUTTON_TEMPLATE)
-    buttonRows[button] = row
-    NS.ItemTooltip.RegisterRowButton(button, row)
-    Configure(button, row)
-    button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-    button:RegisterForDrag("LeftButton")
+    local button = CreateFrame("ItemButton", GLOBAL_NAME_PREFIX .. buttonCount, parent, BUTTON_TEMPLATE)
+    Configure(button, parent)
     button:Show()
     SuppressNativeVisuals(button)
+    return button
+end
+
+function ItemButton.Create(row)
+    local button = CreateNativeButton(row)
+    buttonRows[button] = row
+    NS.ItemTooltip.RegisterRowButton(button, row)
+    button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    button:RegisterForDrag("LeftButton")
     button:HookScript("OnEnter", function(self)
         local buttonRow = buttonRows[self]
         if buttonRow then
@@ -103,6 +109,35 @@ function ItemButton.Create(row)
         end
     end)
     return button
+end
+
+function ItemButton.CreateEmptySlotTarget(parent)
+    local button = CreateNativeButton(parent)
+    emptySlotTargets[button] = {}
+    button:RegisterForClicks("LeftButtonUp")
+    button:RegisterForDrag("LeftButton")
+    SetItemButtonCount(button, 0)
+    button:SetHasItem(false)
+    button:SetReadable(nil)
+    button.Cooldown:Hide()
+    return button
+end
+
+function ItemButton.SetEmptySlotTarget(button, bagID, slotIndex)
+    local target = emptySlotTargets[button]
+    if target.bagID == bagID and target.slotIndex == slotIndex then
+        return false
+    end
+
+    button:SetBagID(bagID)
+    button:SetID(slotIndex)
+    SetItemButtonCount(button, 0)
+    button:SetHasItem(false)
+    button:SetReadable(nil)
+    button.Cooldown:Hide()
+    target.bagID = bagID
+    target.slotIndex = slotIndex
+    return true
 end
 
 function ItemButton.Update(button, item)

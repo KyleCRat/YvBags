@@ -115,9 +115,10 @@ local function IsFamilyCompatible(itemFamily, containerFamily)
     return itemFamily == containerFamily
 end
 
-local function GetCursorItemFamily(itemLink)
-    if itemLink and GetItemFamily then
-        return GetItemFamily(itemLink) or 0
+local function GetCursorItemFamily(itemLink, itemID)
+    local itemInfo = itemLink or itemID
+    if itemInfo and GetItemFamily then
+        return GetItemFamily(itemInfo) or 0
     end
 
     return 0
@@ -228,6 +229,24 @@ local function TryCursorIntoEmptySlots(containerIDs, itemFamily, excludedContain
     end
 
     return not CursorHasItem()
+end
+
+local function FindCompatibleEmptySlot(itemFamily, sourceContainerID, sourceSlotIndex)
+    local excludedContainerID = BagManagement.cursorSourceContainerID
+
+    for _, containerID in ipairs(GetPlayerContainerIDs()) do
+        if IsDestinationAllowed(containerID, excludedContainerID, itemFamily) then
+            for slotIndex = 1, GetContainerNumSlots(containerID) do
+                local isSourceSlot = containerID == sourceContainerID
+                    and slotIndex == sourceSlotIndex
+                if not isSourceSlot and not GetContainerItemInfo(containerID, slotIndex) then
+                    return containerID, slotIndex
+                end
+            end
+        end
+    end
+
+    return nil, nil
 end
 
 local function GetBagSlotIcon(containerID, inventoryID)
@@ -394,6 +413,12 @@ local function OnBagStateChanged(_, bagID)
     end
 end
 
+local function OnCursorChanged()
+    if not CursorHasItem() then
+        BagManagement.cursorSourceContainerID = nil
+    end
+end
+
 -- Public bag interaction contract
 function BagManagement.GetBagSlots()
     local slots = {}
@@ -487,6 +512,22 @@ function BagManagement.HandleBagButtonClick(containerID)
     return BagManagement.PickupBag(containerID)
 end
 
+function BagManagement.FindCursorItemEmptySlot(itemID, itemLink, sourceContainerID, sourceSlotIndex)
+    local itemFamily = GetCursorItemFamily(itemLink, itemID)
+    return FindCompatibleEmptySlot(itemFamily, sourceContainerID, sourceSlotIndex)
+end
+
+function BagManagement.IsPlayerContainerSlotEmpty(containerID, slotIndex)
+    if not Containers.IsPlayerContainerID(containerID)
+        or type(slotIndex) ~= "number"
+        or slotIndex < 1
+        or slotIndex > GetContainerNumSlots(containerID) then
+        return false
+    end
+
+    return GetContainerItemInfo(containerID, slotIndex) == nil
+end
+
 function BagManagement.PlaceCursorItemInInventory(excludedContainerID, suppressError)
     local cursorType, cursorItemID, cursorItemLink = GetCursorInfo()
     if cursorType ~= "item" or not CursorHasItem or not CursorHasItem() then
@@ -498,7 +539,7 @@ function BagManagement.PlaceCursorItemInInventory(excludedContainerID, suppressE
 
     excludedContainerID = excludedContainerID or BagManagement.cursorSourceContainerID
 
-    local itemFamily = GetCursorItemFamily(cursorItemLink)
+    local itemFamily = GetCursorItemFamily(cursorItemLink, cursorItemID)
     local containerIDs = GetPlayerContainerIDs()
 
     if TryCursorIntoMatchingStacks(containerIDs, cursorItemID, cursorItemLink, itemFamily, excludedContainerID) then
@@ -632,5 +673,6 @@ end
 NS:RegisterInitCallback(function()
     NS:RegisterEventHandler("BAG_UPDATE", OnBagStateChanged)
     NS:RegisterEventHandler("BAG_UPDATE_DELAYED", OnBagStateChanged)
+    NS:RegisterEventHandler("CURSOR_CHANGED", OnCursorChanged)
     NS:RegisterEventHandler("ITEM_LOCK_CHANGED", OnBagStateChanged)
 end)

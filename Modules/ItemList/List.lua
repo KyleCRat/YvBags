@@ -208,6 +208,16 @@ function ListController:RefreshVisibleCooldowns()
     end
 end
 
+function ListController:RefreshItemLock(bagID, slotIndex, isLocked)
+    for _, row in ipairs(self.view:GetFrames()) do
+        local item = row.item
+        if item and item.bagID == bagID and item.slotIndex == slotIndex then
+            ItemRow.RefreshLock(row, isLocked)
+            return
+        end
+    end
+end
+
 function ListController:RefreshProfileSettings()
     ApplyStoredProfileSettings(self)
     self.collapsedGroups = {}
@@ -243,7 +253,6 @@ local function CreateScrollView(list)
         if elementData.rowType == ListModel.GetRowTypeGroup() then
             factory("Button", function(row, rowData)
                 row.rightClipPadding = Layout.ScrollBarContentPadding
-                CursorDrop.HookTarget(row)
                 GroupRow.Render(row, rowData, list)
             end)
         else

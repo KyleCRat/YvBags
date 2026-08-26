@@ -116,6 +116,8 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - Configure protected button geometry and reusable regions during row initialization. Do not resize, re-anchor, or recreate protected row buttons during combat refreshes.
 - Before assigning the first data provider, prewarm enough fully initialized item rows for the current viewport so ScrollBox does not lazily create native interaction bridges during combat. Keep this pool viewport-sized rather than inventory-sized.
 - ScrollBox rows are pooled. Every render and reset path must clear state that could leak to the next item, including tooltip, highlight, pin marker, icon, binding, lock, cooldown, and bag-hover state.
+- Never reassign the item-list data provider while a native item-button input handler is still on the stack or a normalized player item is locked. Coalesce inventory-driven rebuilds into an owned next-frame timer, retain pending work through lock transitions, and resume after unlock without polling.
+- `ITEM_LOCK_CHANGED` updates only the affected normalized lock state and visible custom desaturation immediately. Do not replace the data provider or rebind the native interaction bridge from that synchronous event handler.
 - Keep fast scrolling and item interaction functional in combat.
 
 ### Hover And Tooltips
@@ -143,8 +145,9 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - Default Category grouping uses the explicit profile-backed order declared in `Defaults.lua`. Openable, Cosmetic, Collectables, Mythic Keystone, Consumable, and Equipment lead in that order; Blizzard loot containers plus Utility Curio, Combat Curio, and Relic consumables map to `openable`; `toy`, `mount`, `pet`, and `battlepet` collection kinds share the `collectables` category; armor and weapons share the `equipment` category unless Blizzard tags the item as cosmetic; and Junk remains last. Removed built-in classifications fall back to `other` without recreating the removed definition.
 - Mythic Keystones retain their own prioritized category unless pinned. Keystone pin identity is kind-based rather than link- or item-instance-based so it survives dungeon and level changes.
 - Bag/Slot remains an internal, disabled column and is not a user-facing sort or group option.
-- In sorted modes, a cursor-held item shows a full-list insertion overlay to avoid accidental swaps.
-- In Manual mode, rows remain available for normal item swapping and a bottom insertion area is reserved for placing an item into available bag space.
+- In sorted modes, a cursor-held item shows a full-list insertion overlay backed by a native container item button bound to one actual compatible empty slot.
+- In Manual mode, rows remain available for normal item swapping and a bottom insertion area exposes that same native empty-slot target.
+- Cursor-drop visuals never call `PickupContainerItem` or distribute a cursor stack through custom Lua. Blizzard's native item-button scripts own the single physical-slot drop in and out of combat.
 - Header context menus intentionally stay open and return refresh responses when choices change.
 
 ### Bag Management

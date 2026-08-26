@@ -34,6 +34,8 @@
 - Kept duplicate item stacks adjacent when the selected sorts tie and placed higher-count stacks before partial stacks unless Quantity is explicitly selected.
 - Fixed first-login profile selection so a character can inherit an existing Specialization profile when specialization information becomes available during login.
 - Fixed intermittent item use from YvBags rows being blocked in combat by prewarming the virtualized native item-row pool before first use.
+- Prevented inventory and pin updates from recycling native item rows during mouse dispatch or item locks, avoiding protected-action blocks and stale inert rows.
+- Replaced cursor-overlay auto-placement with a native item button bound to an actual compatible empty slot, allowing safe combat drops without protected-action errors or cascading item locks.
 
 ## [12.0.7-1] - 2026-07-11
 
