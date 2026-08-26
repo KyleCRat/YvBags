@@ -1,8 +1,8 @@
 # Profile And Category Customization Plan
 
 Status: Phase 1 complete; Phase 2 category domain implementation complete with
-in-game validation pending; Phase 3 settings editor implementation complete
-with in-game validation pending.
+in-game validation pending; Phase 3 settings editor implementation and in-game
+validation complete.
 
 This document is the implementation contract for profile support, category
 customization, and the later category rule editor. Complete the phases in order.
@@ -240,7 +240,7 @@ Use the smallest valid refresh:
 Once rules exist, reorder must also reclassify all items because order controls
 rule precedence.
 
-## Phase 3: Category Settings Editor
+## Phase 3: Category Settings Editor (Complete)
 
 ### Modern Settings Migration
 
@@ -404,15 +404,15 @@ rules require approval before implementation.
 
 ### After Phase 3
 
-- [ ] Existing settings, dependent states, profile actions, defaults, and live
+- [x] Existing settings, dependent states, profile actions, defaults, and live
       refresh behavior retain parity after the LibModernSettings migration.
-- [ ] Every modern settings page reopens and refreshes without stale control
+- [x] Every modern settings page reopens and refreshes without stale control
       values or duplicated frames.
-- [ ] Category editor works at narrow and wide Settings panel sizes.
-- [ ] Drag reorder remains correct while the list is scrolled.
-- [ ] Add, rename, remove, reset, and profile switch update the editor live.
-- [ ] Long names validate and fit without overlapping controls.
-- [ ] Repeated opening and closing does not leak rows or drag state.
+- [x] Category editor works at narrow and wide Settings panel sizes.
+- [x] Drag reorder remains correct while the list is scrolled.
+- [x] Add, rename, remove, reset, and profile switch update the editor live.
+- [x] Long names validate and fit without overlapping controls.
+- [x] Repeated opening and closing does not leak rows or drag state.
 
 ### After Phase 4
 
