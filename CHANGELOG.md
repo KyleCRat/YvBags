@@ -28,9 +28,11 @@
 - Restored Mythic Keystones to their own prioritized category and gave keystone pins a stable identity across dungeon and level changes.
 
 ### Changed
+- Removed the unused `Unknown` default category; unmatched items continue to
+  use the required `Other` fallback.
 - Use regular tertiary buttons for profile actions and Add Category; reserve
   small buttons for constrained UI.
-- Updated the embedded `LibModernSettings-1.0` release pin to `1.2.0`.
+- Updated the embedded `LibModernSettings-1.0` release pin to `1.3.0`.
 - Upgraded persistence from `LibSimpleDB-1.0` to `LibSimpleDB-2.0` and added `LibSimpleDBProfiles-1.0`.
 - Reimplemented the addon settings and profile controls with `LibModernSettings-1.0` canvas layouts.
 - Adopted existing flat settings into Global once while keeping feature toggles and pinned item identities outside profile payloads.

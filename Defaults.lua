@@ -79,7 +79,6 @@ NS.defaults = {
                 "housing",
                 "miscellaneous",
                 "other",
-                "unknown",
                 "junk",
             },
             definitions = {
@@ -102,7 +101,6 @@ NS.defaults = {
                 housing = CreateDefaultCategoryDefinition("housing", "Housing"),
                 miscellaneous = CreateDefaultCategoryDefinition("miscellaneous", "Miscellaneous"),
                 other = { name = "Other" },
-                unknown = CreateDefaultCategoryDefinition("unknown", "Unknown"),
                 junk = CreateDefaultCategoryDefinition("junk", "Junk"),
             },
         },
