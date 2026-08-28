@@ -24,7 +24,6 @@ local REMOVE_WIDTH = 65
 local HANDLE_WIDTH = 26
 local MOVER_ICON_SIZE = 18
 local TEXT_ACTION_SIZE = 34
-local TEXT_ACTION_ICON_SIZE = 16
 local BOOLEAN_IS_WIDTH = 16
 local MODE_DROPDOWN_WIDTH = 170
 local HEADER_CONTROL_GAP = 8
@@ -48,69 +47,9 @@ local function ReportRuleError(action, errorCode)
     ))
 end
 
-local function SetDropdownWidth(dropdown, width)
-    dropdown:SetWidth(width)
-    dropdown.label:SetWidth(width)
-    dropdown.dropdown:SetWidth(math.max(1, width - 16))
-end
-
-local function ConfigureCompactDropdown(dropdown)
-    dropdown:SetHeight(CONTROL_HEIGHT)
-    dropdown.label:Hide()
-    dropdown.dropdown:ClearAllPoints()
-    dropdown.dropdown:SetPoint("LEFT", dropdown, "LEFT", 8, 0)
-end
-
-local function CreateAtlasTexture(parent, layer, atlas)
-    local texture = parent:CreateTexture(nil, layer)
-
-    texture:SetAllPoints(parent)
-    texture:SetAtlas(atlas, false)
-    return texture
-end
-
-local function CreateSquareIconButton(parent, iconAtlas, tooltip, onClick)
-    local button = CreateFrame("Button", nil, parent)
-    local normalAtlas
-    local pressedAtlas
-    local disabledAtlas
-
-    normalAtlas, pressedAtlas, disabledAtlas =
-        Media.GetTertiarySquareButtonAtlases()
-
-    button:SetSize(TEXT_ACTION_SIZE, TEXT_ACTION_SIZE)
+local function UseVirtualizedRowClickTiming(button)
     -- Focus loss can rebuild a virtualized row before mouse-up.
     button:RegisterForClicks("LeftButtonDown")
-    button:SetNormalTexture(CreateAtlasTexture(
-        button,
-        "BACKGROUND",
-        normalAtlas
-    ))
-    button:SetPushedTexture(CreateAtlasTexture(
-        button,
-        "BACKGROUND",
-        pressedAtlas
-    ))
-    button:SetDisabledTexture(CreateAtlasTexture(
-        button,
-        "BACKGROUND",
-        disabledAtlas
-    ))
-
-    local highlight = CreateAtlasTexture(button, "HIGHLIGHT", normalAtlas)
-
-    highlight:SetBlendMode("ADD")
-    button:SetHighlightTexture(highlight)
-
-    local icon = button:CreateTexture(nil, "OVERLAY")
-
-    icon:SetAtlas(iconAtlas, true)
-    icon:SetSize(TEXT_ACTION_ICON_SIZE, TEXT_ACTION_ICON_SIZE)
-    icon:SetPoint("CENTER")
-    button.icon = icon
-    button:SetScript("OnClick", onClick)
-    ModernSettings:SetTooltip(button, { text = tooltip })
-    return button
 end
 
 local function RuleUsesValueRow(rule)
@@ -195,9 +134,9 @@ local function LayoutRuleRow(row)
             - (CONTROL_GAP * 2)
     )
 
-    SetDropdownWidth(row.fieldDropdown, fieldWidth)
-    SetDropdownWidth(row.operatorDropdown, operatorWidth)
-    SetDropdownWidth(row.valueDropdown, scalarValueWidth)
+    row.fieldDropdown:SetControlWidth(fieldWidth)
+    row.operatorDropdown:SetControlWidth(operatorWidth)
+    row.valueDropdown:SetControlWidth(scalarValueWidth)
     row.scalarValueEdit:SetWidth(scalarValueWidth)
 
     for _, control in ipairs(row.textValueControls) do
@@ -367,11 +306,12 @@ local function CreateTextValueControl(row)
             ReportRuleError("Updating rule value", errorCode)
         end,
     })
-    control.removeButton = CreateSquareIconButton(
-        row,
-        Media.GetRemoveAtlas(),
-        "Remove this text match.",
-        function()
+    control.removeButton = ModernSettings:CreateButton(row, {
+        variant = "square",
+        width = TEXT_ACTION_SIZE,
+        iconAtlas = Media.GetRemoveAtlas(),
+        tooltip = "Remove this text match.",
+        onClick = function()
             if row.owner
                 and row.categoryID
                 and row.ruleID
@@ -382,8 +322,9 @@ local function CreateTextValueControl(row)
                     control.valueIndex
                 )
             end
-        end
-    )
+        end,
+    })
+    UseVirtualizedRowClickTiming(control.removeButton)
     control.input:Hide()
     control.removeButton:Hide()
     row.textValueControls[#row.textValueControls + 1] = control
@@ -455,6 +396,7 @@ local function InitializeRuleRow(row)
 
     row.fieldDropdown = ModernSettings:CreateDropdown(row, {
         label = "Field",
+        showLabel = false,
         choices = Rules.GetFieldChoices(),
         onChanged = function(fieldID)
             if row.owner and row.categoryID and row.ruleID then
@@ -466,10 +408,10 @@ local function InitializeRuleRow(row)
             end
         end,
     })
-    ConfigureCompactDropdown(row.fieldDropdown)
 
     row.operatorDropdown = ModernSettings:CreateDropdown(row, {
         label = "Operator",
+        showLabel = false,
         choices = {},
         onChanged = function(operatorID)
             if row.owner and row.categoryID and row.ruleID then
@@ -481,10 +423,10 @@ local function InitializeRuleRow(row)
             end
         end,
     })
-    ConfigureCompactDropdown(row.operatorDropdown)
 
     row.valueDropdown = ModernSettings:CreateDropdown(row, {
         label = "Value",
+        showLabel = false,
         choices = {},
         onChanged = function(value)
             if row.owner and row.categoryID and row.ruleID then
@@ -496,7 +438,6 @@ local function InitializeRuleRow(row)
             end
         end,
     })
-    ConfigureCompactDropdown(row.valueDropdown)
 
     row.scalarValueEdit = ModernSettings:CreateTextInput(row, {
         onCommit = function(value)
@@ -516,17 +457,19 @@ local function InitializeRuleRow(row)
     })
 
     row.textValueControls = {}
-    row.addTextValueButton = CreateSquareIconButton(
-        row,
-        Media.GetAddAtlas(),
-        "Add another text alternative. Positive operators match any "
+    row.addTextValueButton = ModernSettings:CreateButton(row, {
+        variant = "square",
+        width = TEXT_ACTION_SIZE,
+        iconAtlas = Media.GetAddAtlas(),
+        tooltip = "Add another text alternative. Positive operators match any "
             .. "alternative; negative operators require none to match.",
-        function()
+        onClick = function()
             if row.owner and row.categoryID and row.ruleID then
                 row.owner:AddRuleTextValue(row.categoryID, row.ruleID)
             end
-        end
-    )
+        end,
+    })
+    UseVirtualizedRowClickTiming(row.addTextValueButton)
     row.addTextValueButton:Hide()
 
     row.booleanIsText = ModernSettings:CreateText(row, {
@@ -1145,6 +1088,7 @@ local function CreateHeader(editor)
 
     local modeDropdown = ModernSettings:CreateDropdown(header, {
         label = "Match",
+        showLabel = false,
         width = MODE_DROPDOWN_WIDTH,
         choices = Rules.GetModeChoices(),
         tooltip = "Require all rules or any one rule to match.",
@@ -1152,7 +1096,6 @@ local function CreateHeader(editor)
             editor:ChangeMode(mode)
         end,
     })
-    ConfigureCompactDropdown(modeDropdown)
     modeDropdown:SetPoint(
         "LEFT",
         matchLabel,

@@ -38,11 +38,6 @@ local Atlases = {
     warboundBindingIcon = "GM-icon-assist-hover",
     add = "common-icon-plus",
     remove = "common-icon-minus",
-    tertiarySquareButton = {
-        normal = "common-button-tertiary-square-normal",
-        pressed = "common-button-tertiary-square-pressed",
-        disabled = "common-button-tertiary-square-disabled",
-    },
 }
 
 local Colors = {
@@ -106,11 +101,6 @@ end
 
 function Media.GetRemoveAtlas()
     return Atlases.remove
-end
-
-function Media.GetTertiarySquareButtonAtlases()
-    local atlases = Atlases.tertiarySquareButton
-    return atlases.normal, atlases.pressed, atlases.disabled
 end
 
 function Media.GetDividerTexture()
