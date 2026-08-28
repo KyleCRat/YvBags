@@ -1,8 +1,9 @@
-# Profile And Category Customization Plan
+w# Profile And Category Customization Plan
 
 Status: Phase 1 complete; Phase 2 category domain implementation complete with
 in-game validation pending; Phase 3 settings editor implementation and in-game
-validation complete.
+validation complete; Phase 4 category-rule implementation complete with in-game
+validation pending.
 
 This document is the implementation contract for profile support, category
 customization, and the later category rule editor. Complete the phases in order.
@@ -19,6 +20,28 @@ boundaries are stable.
 - Keep category and profile changes live without rescanning bag APIs.
 - Preserve pinning, virtualized rows, native item interaction, Manual sorting,
   and all current grouping modes.
+
+## Terminology
+
+- A **Category** is a persistent classification target with a stable ID, name,
+  order, and Rule Set. Every item is assigned to exactly one Category. The first
+  matching Category in configured order wins, with `Other` as the final
+  fallback.
+- A **Rule Set** is the single flat collection of Rules owned by a Category. Its
+  mode is either `all` (every Rule must match) or `any` (at least one Rule must
+  match).
+- A **Rule** is one atomic predicate containing a stable rule ID, field,
+  operator, and value. Examples include `Quality is at least Rare` and
+  `Collection Type equals Mount`.
+- A **Display Group** is a presentation section produced by the active Group By
+  setting. Category grouping normally creates one Display Group per populated
+  Category, but a Display Group does not own classification Rules and is not
+  persisted as part of the category registry.
+
+Do not introduce a separate `Condition` concept; it would only be another name
+for a Rule. Phase 4 deliberately uses one flat Rule Set per Category. Nested
+rule groups and draggable rule ordering are out of scope because `all` and `any`
+provide the currently required behavior without additional hierarchy.
 
 ## Agreed Product Decisions
 
@@ -37,7 +60,8 @@ boundaries are stable.
   derived from display names.
 - Toy, Mount, Pet, and Battle Pet are distinct stable rule values even though
   the default configuration groups all four into `Collectables`.
-- New custom categories are empty until category rules are implemented.
+- New custom categories begin with an empty Rule Set and match nothing until a
+  Rule is added.
 - Account-wide pin identities remain global and do not change with profiles.
 - Pin presentation belongs to the active profile.
 - Existing flat SavedVariables are adopted into Global exactly once. Addon-global
@@ -60,7 +84,7 @@ Expose global settings through `NS.globalDB`.
 - Grouping, primary sort, secondary sort, and directions
 - Pin presentation mode
 - Cooldown-name display
-- Category definitions, order, names, and future rules
+- Category definitions, order, names, and Rule Sets
 - Future column and appearance configuration
 
 Expose the stable active profile database through `NS.db`, obtained from
@@ -136,6 +160,18 @@ categories = {
     definitions = {
         openable = {
             name = "Openable",
+            rules = {
+                mode = "all",
+                nextRuleID = 2,
+                entries = {
+                    {
+                        id = "rule:1",
+                        field = "defaultCategory",
+                        operator = "equals",
+                        value = "openable",
+                    },
+                },
+            },
         },
         equipment = {
             name = "Equipment",
@@ -164,6 +200,14 @@ categories = {
   case-insensitively unique through Blizzard's UTF-8 comparison. The category
   domain has no arbitrary length limit; UI consumers must clip or truncate
   unusually long display names without changing their stored values.
+- Rule IDs are monotonic within their owning Category (`rule:1`, `rule:2`, and
+  so on) and are not derived from their field or displayed value.
+- `Other` owns no Rule Set and remains the unconditional final fallback.
+- Incomplete Rules are ignored while they are being configured. A Rule Set
+  with no complete Rules matches nothing.
+- Phase 4 does not migrate prerelease category test data. Profiles with a stored
+  category root from Phases 2 or 3 must use Reset Categories to receive the new
+  built-in Rule Sets; untouched profiles continue to inherit current defaults.
 
 ## Phase 1: Profile Foundation (Complete)
 
@@ -193,8 +237,8 @@ active-DB lifecycle callbacks rather than also listening to `OnProfileChanged`.
 
 ## Phase 2: Category Domain Refactor
 
-Keep `NS.Categories` as the public facade. A separate rules module is not needed
-until the rule schema is designed.
+Keep `NS.Categories` as the public facade. Phase 2 deferred the separate rules
+module until the Phase 4 schema was approved.
 
 ### Runtime Registry
 
@@ -290,6 +334,7 @@ Use a dense master-detail layout rather than cards:
 - [x] Limit drag polling to an active drag and stop it immediately afterward.
 - [x] Preserve selection after reorder and settings refresh.
 - [x] Add a category with an icon-and-text command.
+- [x] Provide a confirmed Reset Categories action beside the list header.
 - [x] Select and focus the new category's name after creation.
 - [x] Use pooled rows so custom category counts can grow safely.
 
@@ -300,8 +345,8 @@ Use a dense master-detail layout rather than cards:
 - [x] Provide a Remove action with confirmation.
 - [x] Disable Remove for `Other` with a tooltip explaining that it is the
       required fallback.
-- [x] Reserve layout ownership below the name editor for future rules without
-      displaying placeholder instructional text.
+- [x] Reserve layout ownership below the name editor for the Phase 4 Rule Set
+      editor without displaying placeholder instructional text early.
 
 ### Canvas Lifecycle
 
@@ -312,37 +357,73 @@ Use a dense master-detail layout rather than cards:
 
 ## Phase 4: Category Rules
 
-Start this phase with a separate rule-schema design review. Do not store or
-execute arbitrary Lua expressions.
+The terminology, schema, field registry, operator registry, and flat evaluation
+model are approved. Do not store or execute arbitrary Lua expressions.
 
-### Rule Direction
+### Approved Rule Model
 
-- Rules are structured records with stable field and operator IDs.
-- The normalized `collectionKind` field exposes the stable values `toy`,
-  `mount`, `pet`, and `battlepet` for independent selection. `pet` identifies
-  ordinary items that learn a pet; `battlepet` identifies caged battle-pet
-  links.
-- Category definitions own ordered rule data.
-- Category order determines cross-category precedence.
-- A category may eventually support `all` and `any` combinations.
-- Rule fields read normalized item data only.
-- New rule-required item fields belong in `ItemModel.lua`.
-- Rule evaluation must handle asynchronous item data and secret values safely.
-- Rule changes reclassify normalized items without rescanning bag APIs.
-- Multi-control rule editing should debounce reclassification.
+- [x] Each Category except `Other` owns exactly one flat Rule Set.
+- [x] Rule Set mode is `all` or `any`; nested rule groups are not supported.
+- [x] Rules use stable IDs and structured field/operator/value records.
+- [x] Category order determines cross-category precedence; the first matching
+      Category wins.
+- [x] `Other` is skipped during normal evaluation and applied only after every
+      other configured Category fails to match.
+- [x] Rule order has no semantic effect in a flat Rule Set, so Phase 4 does not
+      add rule dragging.
+- [x] Incomplete Rules are ignored while editing. Missing, pending, or secret
+      item data makes a complete Rule evaluate false rather than match
+      accidentally.
+- [x] The built-in classifier is retained as normalized
+      `defaultCategoryID` data. Each built-in Category's default Rule Set
+      matches its corresponding default classification, preserving existing
+      behavior and ensuring items from a removed built-in Category fall through
+      to `Other`.
 
-Illustrative shape only:
+### Approved Field Registry
 
-```lua
-{
-    field = "quality",
-    operator = "greaterOrEqual",
-    value = 3,
-}
-```
+- Default Classification
+- Item Name, Tooltip Text, and Item ID
+- Quality
+- Item Level and Required Level
+- Item Type and Item Subtype
+- Equipment Slot
+- Binding
+- Expansion
+- Profession Quality
+- Collection Type (`toy`, `mount`, `pet`, and `battlepet` remain distinct)
+- Crafting Reagent, Cosmetic, Keystone, Contains Loot, Readable, and Bound
 
-The final field registry, operators, grouping semantics, and built-in default
-rules require approval before implementation.
+Physical location, bag/slot, lock state, cursor state, stack quantity, and
+prices are intentionally excluded from the initial registry. They are transient
+inventory or presentation state rather than stable classification attributes.
+
+### Approved Operators
+
+- Text: Equals, Does Not Equal, Contains, Does Not Contain
+- Enum and Item ID: Equals, Does Not Equal
+- Ordered numbers and ordered enums: Equals, Does Not Equal, At Least, At Most
+- Boolean: Is True, Is False
+
+Text matching is literal and case-insensitive. Negative operators still fail
+closed when item data is missing or secret.
+
+### Implementation
+
+- [x] Add the normalized default classification, cached tooltip text, and other
+      rule-required item fields in `ItemModel.lua`.
+- [x] Add a rule registry/compiler/evaluator that consumes normalized item data
+      only.
+- [x] Add transactional Rule Set mutation APIs to `NS.Categories`.
+- [x] Reclassify all normalized items after precedence or rule changes without
+      querying bag, item, or tooltip APIs.
+- [x] Debounce multi-control rule edits and coalesce the resulting live list
+      refresh.
+- [x] Extend the Category detail pane with the `all`/`any` selector and a
+      virtualized Rule list.
+- [x] Support adding, editing, and removing Rules through structured controls.
+- [x] Explain in the `Other` editor that it is the unconditional fallback and
+      therefore has no Rule Set.
 
 ## Performance Requirements
 
@@ -364,6 +445,8 @@ rules require approval before implementation.
 - `LibSimpleDBProfiles-1.0`: profile storage, CRUD, switching, and callbacks.
 - `Modules/Inventory/Pins.lua`: split global pin identity and profile
   presentation storage.
+- `Modules/Inventory/CategoryRules.lua`: structured field/operator registry,
+  built-in default classification, compilation, and normalized-item evaluation.
 - `Modules/Inventory/Categories.lua`: profile-backed registry and classification
   facade.
 - `Modules/Inventory/ItemModel.lua`: separate pin and category refreshes.
@@ -374,6 +457,7 @@ rules require approval before implementation.
 - `Libs/LibModernSettings-1.0`, `.pkgmeta`, and `.gitmodules`: embed and pin the
   reviewed release already proven by ReadyCheckConsumables.
 - `Modules/Settings/CategoryEditor.lua`: canvas category editor.
+- `Modules/Settings/CategoryRuleEditor.lua`: virtualized flat Rule Set editor.
 - `Settings.lua`: reimplement existing settings and profile controls with
   LibModernSettings, then register the category canvas subcategory.
 - `YvBags.toc`: load LibModernSettings and new modules before their consumers.

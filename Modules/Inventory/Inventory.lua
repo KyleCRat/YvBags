@@ -10,6 +10,7 @@ local Pins = NS.ItemPins
 local ItemModel = NS.ItemModel
 
 local SCAN_DELAY_SECONDS = 0.2
+local CATEGORY_RULE_REFRESH_DELAY_SECONDS = 0.1
 
 Inventory.UpdateReasons = {
     Categories = "categories",
@@ -59,6 +60,7 @@ local function TrackPendingItemInfo(item, itemInfo, containerItemInfo)
         bagSlotText = item.bagSlotText,
         itemID = item.itemID,
         name = item.name,
+        ruleName = item.ruleName,
         link = item.link,
         count = item.count,
         quality = item.quality,
@@ -66,6 +68,8 @@ local function TrackPendingItemInfo(item, itemInfo, containerItemInfo)
         subtype = item.subtype,
         classID = item.classID,
         subclassID = item.subclassID,
+        classSubclassKey = item.classSubclassKey,
+        defaultCategoryID = item.defaultCategoryID,
         categoryKey = item.categoryKey,
         categoryName = item.categoryName,
         isPinned = item.isPinned,
@@ -425,20 +429,48 @@ function Inventory:GetPendingItems()
     return self.pendingItems
 end
 
+function Inventory:CancelCategoryRuleRefresh()
+    if self.categoryRuleRefreshTimer then
+        self.categoryRuleRefreshTimer:Cancel()
+        self.categoryRuleRefreshTimer = nil
+    end
+end
+
+function Inventory:ScheduleCategoryRuleRefresh()
+    self:CancelCategoryRuleRefresh()
+    self.categoryRuleRefreshTimer = C_Timer.NewTimer(
+        CATEGORY_RULE_REFRESH_DELAY_SECONDS,
+        function()
+            Inventory.categoryRuleRefreshTimer = nil
+            Inventory:RefreshCategories(Categories.ChangeTypes.Changed)
+        end
+    )
+end
+
 function Inventory:RefreshCategories(changeType, categoryID)
-    if changeType == Categories.ChangeTypes.Created then
+    if changeType == Categories.ChangeTypes.RuleMoved then
         return
     end
 
-    if changeType == Categories.ChangeTypes.Moved then
-        NotifyUpdateCallbacks(Inventory.UpdateReasons.Categories)
+    if changeType == Categories.ChangeTypes.RulesChanged then
+        self:ScheduleCategoryRuleRefresh()
+        return
+    end
+
+    if changeType == Categories.ChangeTypes.Created then
         return
     end
 
     local refreshAll = changeType == Categories.ChangeTypes.Reset
         or changeType == Categories.ChangeTypes.Changed
+        or changeType == Categories.ChangeTypes.Moved
         or changeType == Categories.ChangeTypes.ProfileChanged
         or changeType == Categories.ChangeTypes.ProfileReset
+
+    if refreshAll then
+        self:CancelCategoryRuleRefresh()
+    end
+
     local refreshedItem = false
 
     for _, item in ipairs(self.items) do

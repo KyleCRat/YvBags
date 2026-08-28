@@ -28,6 +28,7 @@ local Fonts = {
 local Textures = {
     sortArrow = ADDON_MEDIA_PATH .. "Textures\\Vertex-Arrow.tga",
     circle = ADDON_MEDIA_PATH .. "Textures\\Vertex-Circle.tga",
+    mover = ADDON_MEDIA_PATH .. "Textures\\Vertex-Mover.tga",
     pinned = ADDON_MEDIA_PATH .. "Textures\\Vertex-Pinned.tga",
     soulboundBindingIcon = ADDON_MEDIA_PATH .. "Textures\\Vertex-Lock.tga",
     divider = "Interface\\Common\\UI-TooltipDivider",
@@ -35,8 +36,13 @@ local Textures = {
 
 local Atlases = {
     warboundBindingIcon = "GM-icon-assist-hover",
-    categoryAdd = "common-icon-plus",
-    categoryMove = "common-icon-move",
+    add = "common-icon-plus",
+    remove = "common-icon-minus",
+    tertiarySquareButton = {
+        normal = "common-button-tertiary-square-normal",
+        pressed = "common-button-tertiary-square-pressed",
+        disabled = "common-button-tertiary-square-disabled",
+    },
 }
 
 local Colors = {
@@ -74,6 +80,14 @@ function Media.GetCircleTexture()
     return Textures.circle
 end
 
+function Media.GetMoverTexture()
+    return Textures.mover
+end
+
+function Media.GetMoverColor()
+    return NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b
+end
+
 function Media.GetPinnedTexture()
     return Textures.pinned
 end
@@ -86,12 +100,17 @@ function Media.GetWarboundBindingIconAtlas()
     return Atlases.warboundBindingIcon
 end
 
-function Media.GetCategoryAddAtlas()
-    return Atlases.categoryAdd
+function Media.GetAddAtlas()
+    return Atlases.add
 end
 
-function Media.GetCategoryMoveAtlas()
-    return Atlases.categoryMove
+function Media.GetRemoveAtlas()
+    return Atlases.remove
+end
+
+function Media.GetTertiarySquareButtonAtlases()
+    local atlases = Atlases.tertiarySquareButton
+    return atlases.normal, atlases.pressed, atlases.disabled
 end
 
 function Media.GetDividerTexture()

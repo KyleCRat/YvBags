@@ -191,15 +191,15 @@ end
 
 local function GetQualityName(quality)
     if quality == nil then
-        return UNKNOWN or "Unknown"
+        return UNKNOWN
     end
 
-    return _G["ITEM_QUALITY" .. tostring(quality) .. "_DESC"] or ("Quality " .. tostring(quality))
+    return _G["ITEM_QUALITY" .. tostring(quality) .. "_DESC"]
 end
 
 local function GetExpansionName(expansionID)
     if expansionID == nil then
-        return UNKNOWN or "Unknown"
+        return UNKNOWN
     end
 
     if GetExpansionDisplayInfo then

@@ -20,6 +20,7 @@ Core.lua
 Media.lua
 Constants\Binding.lua
 Formatting\Money.lua
+Modules\Inventory\CategoryRules.lua
 Modules\Inventory\Categories.lua
 Modules\Inventory\Containers.lua
 Modules\Inventory\Pins.lua
@@ -46,6 +47,7 @@ Modules\MainFrame\Layout.lua
 Modules\MainFrame\Geometry.lua
 Modules\MainFrame\Controls.lua
 Modules\MainFrame\MainFrame.lua
+Modules\Settings\CategoryRuleEditor.lua
 Modules\Settings\CategoryEditor.lua
 Settings.lua
 Commands.lua

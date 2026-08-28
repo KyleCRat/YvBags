@@ -23,7 +23,8 @@ YvBags is a World of Warcraft bag replacement addon that shows your current char
 - Can restore the original Blizzard bag frames from the backpack button.
 - Includes optional gray-quality junk autosell when a merchant opens.
 - Includes Character, Specialization, Class, Realm, Faction, Global, and user-created settings profiles.
-- Includes a modern profile-backed category editor for creating, renaming, reordering, removing, and resetting categories.
+- Includes a modern profile-backed category and rule editor for creating,
+  ordering, and defining custom item classifications.
 
 ## Usage
 
@@ -59,9 +60,35 @@ Settings include:
 - Pinned Items presentation
 - Primary Sort and direction
 - Secondary Sort and direction
-- Categories subpage with create, rename, reorder, remove, and reset actions
+- Categories subpage with category and Rule Set management
 
-Profile settings include grouping, sorting, pinned-item presentation, cooldown-name display, and category definitions and order. Custom categories are empty until category rules are implemented. Bag replacement, gray-junk selling, and pinned item identities remain shared across the addon. Frame position, size, and scale remain stored per character.
+Profile settings include grouping, sorting, pinned-item presentation,
+cooldown-name display, and the complete category registry. Bag replacement,
+gray-junk selling, and pinned item identities remain shared across the addon.
+Frame position, size, and scale remain stored per character.
+
+## Categories And Rules
+
+Each category except **Other** owns one flat Rule Set. Choose **All Rules** to
+require every rule or **Any Rule** to require at least one matching rule.
+Categories are evaluated from top to bottom, and each item is assigned to the
+first matching category. **Other** receives everything that remains unmatched
+and therefore has no rules of its own.
+
+Rules can be reordered for readability. Their order does not affect matching;
+the Rule Set's **All Rules** or **Any Rule** mode determines how they combine.
+
+Item Name and Tooltip Text rules can contain multiple text alternatives.
+**Equals** and **Contains** match any entered alternative, while their negative
+operators match only when none of the alternatives match. Use separate text
+rules with **All Rules** when multiple text matches must all be present.
+
+Rules can match normalized item properties such as YvBags' built-in category,
+name, tooltip text, item ID, quality, levels, type, subtype, equipment slot,
+binding, expansion, profession quality, collection type, and supported boolean
+item flags. New categories begin with no rules and therefore remain empty until
+a complete rule is added. Incomplete rules are ignored while they are being
+configured.
 
 ## Profiles
 
@@ -112,7 +139,6 @@ All required libraries are included with the addon.
 
 - Player bags only; bank, warband bank, guild bank, void storage, and currency-list replacement are not included.
 - Grid mode is not included.
-- Custom category matching rules are not included yet.
 - Column visibility, resizing, and reordering are not included.
 
 ## Author

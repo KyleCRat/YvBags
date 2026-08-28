@@ -1,9 +1,10 @@
 local _, NS = ...
 
--- Profile-backed category registry, mutation API, and built-in classification.
+-- Profile-backed category registry, mutation API, and rule evaluation facade.
 local Categories = {}
 NS.Categories = Categories
 
+local Rules = NS.CategoryRules
 local DB_KEY = "categories"
 local CATEGORY_SCHEMA_VERSION = 1
 local OTHER_CATEGORY_ID = "other"
@@ -16,6 +17,8 @@ Categories.ChangeTypes = {
     Moved = "moved",
     Removed = "removed",
     Reset = "reset",
+    RulesChanged = "rulesChanged",
+    RuleMoved = "ruleMoved",
     Changed = "changed",
     ProfileChanged = "profileChanged",
     ProfileReset = "profileReset",
@@ -27,6 +30,13 @@ Categories.ErrorCodes = {
     MissingCategory = "missing-category",
     RequiredCategory = "required-category",
     InvalidIndex = "invalid-index",
+    InvalidRuleMode = "invalid-rule-mode",
+    InvalidRuleField = "invalid-rule-field",
+    InvalidRuleOperator = "invalid-rule-operator",
+    InvalidRuleValue = "invalid-rule-value",
+    InvalidRuleValueIndex = "invalid-rule-value-index",
+    MissingRule = "missing-rule",
+    RulesNotAllowed = "rules-not-allowed",
 }
 
 local activeRoot
@@ -34,21 +44,13 @@ local orderedDefinitions = {}
 local definitionsByID = {}
 local categoryLabels = {}
 local categorySortPriorities = {}
+local compiledRuleSets = {}
 local callbacks = {}
 local callbackLookup = {}
 local pendingChangeType
 local pendingCategoryID
 
 Categories.labels = categoryLabels
-
--- Blizzard enum compatibility
-local function EnumValue(enumName, key, fallback)
-    if Enum and Enum[enumName] and Enum[enumName][key] ~= nil then
-        return Enum[enumName][key]
-    end
-
-    return fallback
-end
 
 -- Category storage normalization
 local function HasASCIIControl(value)
@@ -132,6 +134,13 @@ local function NormalizeRoot(root)
         if type(categoryID) == "string" and categoryID ~= "" and type(definition) == "table" then
             local normalizedDefinition = CopyTable(definition)
             normalizedDefinition.name = GetStoredName(categoryID, normalizedDefinition)
+            if categoryID == OTHER_CATEGORY_ID then
+                normalizedDefinition.rules = nil
+            else
+                normalizedDefinition.rules = Rules.NormalizeRuleSet(
+                    normalizedDefinition.rules
+                )
+            end
             definitions[categoryID] = normalizedDefinition
         end
     end
@@ -177,6 +186,7 @@ local function RebuildCaches(root)
     wipe(definitionsByID)
     wipe(categoryLabels)
     wipe(categorySortPriorities)
+    wipe(compiledRuleSets)
 
     for sortPriority, categoryID in ipairs(activeRoot.order) do
         local definition = activeRoot.definitions[categoryID]
@@ -187,6 +197,11 @@ local function RebuildCaches(root)
             definitionsByID[categoryID] = cachedDefinition
             categoryLabels[categoryID] = cachedDefinition.name
             categorySortPriorities[categoryID] = sortPriority
+            if categoryID ~= OTHER_CATEGORY_ID then
+                compiledRuleSets[categoryID] = Rules.CompileRuleSet(
+                    cachedDefinition.rules
+                )
+            end
         end
     end
 end
@@ -271,79 +286,83 @@ local function FindCategoryIndex(root, categoryID)
     return nil
 end
 
--- Consumable subclasses presented as openable items
-local CONSUMABLE_CLASS_ID = EnumValue("ItemClass", "Consumable", 0)
-local OPENABLE_CONSUMABLE_SUBCLASSES = {
-    [EnumValue("ItemConsumableSubclass", "UtilityCurio", 10)] = true,
-    [EnumValue("ItemConsumableSubclass", "CombatCurio", 11)] = true,
-    [EnumValue("ItemConsumableSubclass", "Relic", 12)] = true,
-}
+local function GetMutableRuleSet(root, categoryID)
+    if categoryID == OTHER_CATEGORY_ID then
+        return nil, Categories.ErrorCodes.RulesNotAllowed
+    end
 
-local function IsOpenableConsumable(item)
-    return item.classID == CONSUMABLE_CLASS_ID
-        and OPENABLE_CONSUMABLE_SUBCLASSES[item.subclassID] == true
+    local definition = root.definitions[categoryID]
+    if not definition then
+        return nil, Categories.ErrorCodes.MissingCategory
+    end
+
+    definition.rules = Rules.NormalizeRuleSet(definition.rules)
+    return definition.rules
 end
 
--- Item class to default category mapping
-local ITEM_CLASS_CATEGORIES = {}
+local function GetMutableTextRule(root, categoryID, ruleID)
+    local ruleSet, errorCode = GetMutableRuleSet(root, categoryID)
+    if not ruleSet then
+        return nil, errorCode
+    end
 
-local function SetItemClassCategory(enumKey, fallback, categoryKey)
-    ITEM_CLASS_CATEGORIES[EnumValue("ItemClass", enumKey, fallback)] = categoryKey
+    local rule = Rules.FindRule(ruleSet, ruleID)
+    if not rule then
+        return nil, Categories.ErrorCodes.MissingRule
+    end
+
+    if Rules.GetFieldValueKind(rule.field) ~= Rules.ValueKinds.Text
+        or not Rules.OperatorNeedsValue(rule.operator) then
+        return nil, Categories.ErrorCodes.InvalidRuleValue
+    end
+
+    return rule
 end
 
-SetItemClassCategory("Consumable", 0, "consumable")
-SetItemClassCategory("Container", 1, "container")
-SetItemClassCategory("Weapon", 2, "equipment")
-SetItemClassCategory("Gem", 3, "gem")
-SetItemClassCategory("Armor", 4, "equipment")
-SetItemClassCategory("Reagent", 5, "reagent")
-SetItemClassCategory("Tradegoods", 7, "tradegoods")
-SetItemClassCategory("ItemEnhancement", 8, "enhancement")
-SetItemClassCategory("Recipe", 9, "recipe")
-SetItemClassCategory("Questitem", 12, "quest")
-SetItemClassCategory("Miscellaneous", 15, "miscellaneous")
-SetItemClassCategory("Glyph", 16, "glyph")
-SetItemClassCategory("WoWToken", 18, "token")
-SetItemClassCategory("Profession", 19, "profession")
-SetItemClassCategory("Housing", 20, "housing")
-
-local function GetBuiltInCategoryKey(item)
-    if item.isKeystone then
-        return "keystone"
+local function NormalizeTextValueIndex(values, valueIndex)
+    if type(valueIndex) ~= "number"
+        or valueIndex % 1 ~= 0
+        or valueIndex < 1
+        or valueIndex > math.max(1, #values) then
+        return nil
     end
 
-    if item.hasLoot or IsOpenableConsumable(item) then
-        return "openable"
+    return valueIndex
+end
+
+local function SetTextRuleValue(rule, valueIndex, value)
+    local values = Rules.GetRuleTextValues(rule)
+
+    valueIndex = NormalizeTextValueIndex(values, valueIndex)
+    if not valueIndex then
+        return nil, nil, Categories.ErrorCodes.InvalidRuleValueIndex
     end
 
-    if item.collectionKind then
-        return "collectables"
+    local normalizedValue
+    local isValid
+
+    normalizedValue, isValid = Rules.NormalizeInputValue(rule.field, value)
+    if not isValid then
+        return nil, nil, Categories.ErrorCodes.InvalidRuleValue
     end
 
-    if item.isCosmetic then
-        return "cosmetic"
+    if #values > 0 and values[valueIndex] == normalizedValue then
+        return normalizedValue, false
     end
 
-    if ITEM_CLASS_CATEGORIES[item.classID] == "quest" then
-        return "quest"
-    end
-
-    if item.quality == EnumValue("ItemQuality", "Poor", 0) and (item.sellValue or 0) > 0 then
-        return "junk"
-    end
-
-    if item.isCraftingReagent then
-        return "reagent"
-    end
-
-    return ITEM_CLASS_CATEGORIES[item.classID] or "other"
+    values[valueIndex] = normalizedValue
+    rule.value = values
+    return normalizedValue, true
 end
 
 -- Public category registry
 function Categories.GetCategoryKey(item)
-    local categoryID = GetBuiltInCategoryKey(item)
-    if definitionsByID[categoryID] then
-        return categoryID
+    for _, definition in ipairs(orderedDefinitions) do
+        local categoryID = definition.id
+        if categoryID ~= OTHER_CATEGORY_ID
+            and Rules.Matches(compiledRuleSets[categoryID], item) then
+            return categoryID
+        end
     end
 
     return OTHER_CATEGORY_ID
@@ -421,6 +440,7 @@ function Categories.CreateCategory(name)
     root.nextCustomID = numericID + 1
     root.definitions[categoryID] = {
         name = validatedName,
+        rules = Rules.CreateEmptyRuleSet(),
     }
     root.order[#root.order + 1] = categoryID
     CommitRoot(root, Categories.ChangeTypes.Created, categoryID)
@@ -487,6 +507,266 @@ function Categories.RemoveCategory(categoryID)
     end
     root.definitions[categoryID] = nil
     CommitRoot(root, Categories.ChangeTypes.Removed, categoryID)
+    return true
+end
+
+-- Public Rule Set mutations
+function Categories.SetRuleMode(categoryID, mode)
+    if not Rules.IsModeValid(mode) then
+        return nil, Categories.ErrorCodes.InvalidRuleMode
+    end
+
+    local root = CopyTable(activeRoot)
+    local ruleSet, errorCode = GetMutableRuleSet(root, categoryID)
+    if not ruleSet then
+        return nil, errorCode
+    end
+
+    if ruleSet.mode == mode then
+        return mode
+    end
+
+    ruleSet.mode = mode
+    CommitRoot(root, Categories.ChangeTypes.RulesChanged, categoryID)
+    return mode
+end
+
+function Categories.CreateRule(categoryID)
+    local root = CopyTable(activeRoot)
+    local ruleSet, errorCode = GetMutableRuleSet(root, categoryID)
+    if not ruleSet then
+        return nil, errorCode
+    end
+
+    local ruleID = Rules.AllocateRule(ruleSet)
+    CommitRoot(root, Categories.ChangeTypes.RulesChanged, categoryID)
+    return ruleID
+end
+
+function Categories.MoveRule(categoryID, ruleID, targetIndex)
+    local root = CopyTable(activeRoot)
+    local ruleSet, errorCode = GetMutableRuleSet(root, categoryID)
+    if not ruleSet then
+        return nil, errorCode
+    end
+
+    local _, currentIndex = Rules.FindRule(ruleSet, ruleID)
+    if not currentIndex then
+        return nil, Categories.ErrorCodes.MissingRule
+    end
+
+    if type(targetIndex) ~= "number"
+        or targetIndex % 1 ~= 0
+        or targetIndex < 1
+        or targetIndex > #ruleSet.entries then
+        return nil, Categories.ErrorCodes.InvalidIndex
+    end
+
+    if currentIndex == targetIndex then
+        return targetIndex
+    end
+
+    local rule = table.remove(ruleSet.entries, currentIndex)
+    table.insert(ruleSet.entries, targetIndex, rule)
+    CommitRoot(root, Categories.ChangeTypes.RuleMoved, categoryID)
+    return targetIndex
+end
+
+function Categories.UpdateRuleField(categoryID, ruleID, fieldID)
+    if not Rules.IsFieldValid(fieldID) then
+        return nil, Categories.ErrorCodes.InvalidRuleField
+    end
+
+    local root = CopyTable(activeRoot)
+    local ruleSet, errorCode = GetMutableRuleSet(root, categoryID)
+    if not ruleSet then
+        return nil, errorCode
+    end
+
+    local rule = Rules.FindRule(ruleSet, ruleID)
+    if not rule then
+        return nil, Categories.ErrorCodes.MissingRule
+    end
+
+    if rule.field == fieldID
+        and Rules.IsOperatorValid(fieldID, rule.operator) then
+        return fieldID
+    end
+
+    rule.field = fieldID
+    rule.operator = Rules.GetDefaultOperator(fieldID)
+    rule.value = nil
+    CommitRoot(root, Categories.ChangeTypes.RulesChanged, categoryID)
+    return fieldID
+end
+
+function Categories.UpdateRuleOperator(categoryID, ruleID, operatorID)
+    local root = CopyTable(activeRoot)
+    local ruleSet, errorCode = GetMutableRuleSet(root, categoryID)
+    if not ruleSet then
+        return nil, errorCode
+    end
+
+    local rule = Rules.FindRule(ruleSet, ruleID)
+    if not rule then
+        return nil, Categories.ErrorCodes.MissingRule
+    end
+
+    if not Rules.IsOperatorValid(rule.field, operatorID) then
+        return nil, Categories.ErrorCodes.InvalidRuleOperator
+    end
+
+    if rule.operator == operatorID then
+        return operatorID
+    end
+
+    rule.operator = operatorID
+    if not Rules.OperatorNeedsValue(operatorID) then
+        rule.value = nil
+    end
+
+    CommitRoot(root, Categories.ChangeTypes.RulesChanged, categoryID)
+    return operatorID
+end
+
+function Categories.UpdateRuleValue(categoryID, ruleID, value)
+    local root = CopyTable(activeRoot)
+    local ruleSet, errorCode = GetMutableRuleSet(root, categoryID)
+    if not ruleSet then
+        return nil, errorCode
+    end
+
+    local rule = Rules.FindRule(ruleSet, ruleID)
+    if not rule then
+        return nil, Categories.ErrorCodes.MissingRule
+    end
+
+    if not Rules.OperatorNeedsValue(rule.operator) then
+        return nil, Categories.ErrorCodes.InvalidRuleValue
+    end
+
+    if Rules.GetFieldValueKind(rule.field) == Rules.ValueKinds.Text then
+        local normalizedValue
+        local changed
+
+        normalizedValue, changed, errorCode = SetTextRuleValue(
+            rule,
+            1,
+            value
+        )
+        if normalizedValue == nil then
+            return nil, errorCode
+        end
+
+        if not changed then
+            return normalizedValue
+        end
+
+        CommitRoot(root, Categories.ChangeTypes.RulesChanged, categoryID)
+        return normalizedValue
+    end
+
+    local normalizedValue
+    local isValid
+    normalizedValue, isValid = Rules.NormalizeInputValue(rule.field, value)
+    if not isValid then
+        return nil, Categories.ErrorCodes.InvalidRuleValue
+    end
+
+    if rule.value == normalizedValue then
+        return normalizedValue
+    end
+
+    rule.value = normalizedValue
+    CommitRoot(root, Categories.ChangeTypes.RulesChanged, categoryID)
+    return normalizedValue
+end
+
+function Categories.UpdateRuleTextValue(
+    categoryID,
+    ruleID,
+    valueIndex,
+    value
+)
+    local root = CopyTable(activeRoot)
+    local rule, errorCode = GetMutableTextRule(root, categoryID, ruleID)
+    if not rule then
+        return nil, errorCode
+    end
+
+    local normalizedValue
+    local changed
+
+    normalizedValue, changed, errorCode = SetTextRuleValue(
+        rule,
+        valueIndex,
+        value
+    )
+    if normalizedValue == nil then
+        return nil, errorCode
+    end
+
+    if not changed then
+        return normalizedValue
+    end
+
+    CommitRoot(root, Categories.ChangeTypes.RulesChanged, categoryID)
+    return normalizedValue
+end
+
+function Categories.AddRuleTextValue(categoryID, ruleID)
+    local root = CopyTable(activeRoot)
+    local rule, errorCode = GetMutableTextRule(root, categoryID, ruleID)
+    if not rule then
+        return nil, errorCode
+    end
+
+    local values = Rules.GetRuleTextValues(rule)
+    if #values == 0 then
+        values[1] = ""
+    end
+
+    values[#values + 1] = ""
+    rule.value = values
+    CommitRoot(root, Categories.ChangeTypes.RulesChanged, categoryID)
+    return #values
+end
+
+function Categories.RemoveRuleTextValue(categoryID, ruleID, valueIndex)
+    local root = CopyTable(activeRoot)
+    local rule, errorCode = GetMutableTextRule(root, categoryID, ruleID)
+    if not rule then
+        return nil, errorCode
+    end
+
+    local values = Rules.GetRuleTextValues(rule)
+    if type(valueIndex) ~= "number"
+        or valueIndex % 1 ~= 0
+        or valueIndex < 1
+        or valueIndex > #values then
+        return nil, Categories.ErrorCodes.InvalidRuleValueIndex
+    end
+
+    table.remove(values, valueIndex)
+    rule.value = #values > 0 and values or nil
+    CommitRoot(root, Categories.ChangeTypes.RulesChanged, categoryID)
+    return true
+end
+
+function Categories.RemoveRule(categoryID, ruleID)
+    local root = CopyTable(activeRoot)
+    local ruleSet, errorCode = GetMutableRuleSet(root, categoryID)
+    if not ruleSet then
+        return nil, errorCode
+    end
+
+    local _, ruleIndex = Rules.FindRule(ruleSet, ruleID)
+    if not ruleIndex then
+        return nil, Categories.ErrorCodes.MissingRule
+    end
+
+    table.remove(ruleSet.entries, ruleIndex)
+    CommitRoot(root, Categories.ChangeTypes.RulesChanged, categoryID)
     return true
 end
 

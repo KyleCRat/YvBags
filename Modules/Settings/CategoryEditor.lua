@@ -18,6 +18,9 @@ local LIST_ROW_HEIGHT = 34
 local LIST_SCROLLBAR_GAP = 6
 local LIST_SCROLLBAR_WIDTH = 17
 local HANDLE_WIDTH = 26
+local MOVER_ICON_SIZE = 18
+local DETAIL_DIVIDER_GAP = 10
+local DETAIL_RULES_GAP = 8
 
 local CATEGORY_ERROR_MESSAGES = {
     [Categories.ErrorCodes.InvalidName] = "The category name must contain valid UTF-8 text and no ASCII control characters.",
@@ -44,6 +47,7 @@ local function SetRowSelected(row, selected)
 end
 
 local function InitializeCategoryRow(row)
+    -- ScrollBox calls the element initializer again when it reacquires a row.
     if row.categoryRowInitialized then
         return
     end
@@ -74,13 +78,19 @@ local function InitializeCategoryRow(row)
     row.handle:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 0, 0)
     row.handle:SetWidth(HANDLE_WIDTH)
 
+    local moverR, moverG, moverB = Media.GetMoverColor()
+
     row.handle.icon = row.handle:CreateTexture(nil, "ARTWORK")
-    row.handle.icon:SetAtlas(Media.GetCategoryMoveAtlas(), true)
+    row.handle.icon:SetTexture(Media.GetMoverTexture())
+    row.handle.icon:SetSize(MOVER_ICON_SIZE, MOVER_ICON_SIZE)
     row.handle.icon:SetPoint("CENTER")
+    row.handle.icon:SetVertexColor(moverR, moverG, moverB)
 
     row.handle.hoverIcon = row.handle:CreateTexture(nil, "OVERLAY")
-    row.handle.hoverIcon:SetAtlas(Media.GetCategoryMoveAtlas(), true)
+    row.handle.hoverIcon:SetTexture(Media.GetMoverTexture())
+    row.handle.hoverIcon:SetSize(MOVER_ICON_SIZE, MOVER_ICON_SIZE)
     row.handle.hoverIcon:SetPoint("CENTER")
+    row.handle.hoverIcon:SetVertexColor(moverR, moverG, moverB)
     row.handle.hoverIcon:SetBlendMode("ADD")
     row.handle.hoverIcon:SetAlpha(0.4)
     row.handle.hoverIcon:Hide()
@@ -164,7 +174,7 @@ end
 local function CreateAddCategoryButton(parent, editor)
     local button = ModernSettings:CreateButton(parent, {
         text = "Add Category",
-        iconAtlas = Media.GetCategoryAddAtlas(),
+        iconAtlas = Media.GetAddAtlas(),
         fitToContent = true,
         tooltip = "Create an empty category in the active profile.",
         onClick = function()
@@ -206,6 +216,7 @@ local function RefreshCategoryDetail(editor)
         editor.nameEdit:SetValue("")
         editor.nameEdit:SetControlEnabled(false)
         editor.removeButton:SetControlEnabled(false)
+        editor.ruleEditor:SetDefinition(nil)
         return
     end
 
@@ -221,14 +232,11 @@ local function RefreshCategoryDetail(editor)
             text = "Other is the required fallback and cannot be removed.",
         }
     )
+    editor.ruleEditor:SetDefinition(definition)
 end
 
 local function CommitCategoryNameEdit(editor)
-    local editBox = editor.nameEdit
-
-    if editBox then
-        editBox:CommitAndClearFocus()
-    end
+    editor.nameEdit:CommitAndClearFocus()
 end
 
 local function SelectCategory(editor, categoryID)
@@ -237,6 +245,7 @@ local function SelectCategory(editor, categoryID)
     end
 
     if categoryID ~= editor.selectedCategoryID then
+        editor.ruleEditor:CommitFocusedValue()
         CommitCategoryNameEdit(editor)
     end
 
@@ -248,6 +257,13 @@ local function SelectCategory(editor, categoryID)
 end
 
 local function RefreshCategories(editor, retainScroll, focusName)
+    editor.ruleEditor:CancelPendingRefresh()
+
+    if editor.categoryRefreshTimer then
+        editor.categoryRefreshTimer:Cancel()
+        editor.categoryRefreshTimer = nil
+    end
+
     editor:CancelCategoryDrag()
     editor.definitions = Categories.GetOrderedDefinitions()
 
@@ -289,6 +305,23 @@ local function RefreshCategories(editor, retainScroll, focusName)
     end
 end
 
+local function CancelScheduledRefresh(editor)
+    if editor.categoryRefreshTimer then
+        editor.categoryRefreshTimer:Cancel()
+        editor.categoryRefreshTimer = nil
+    end
+end
+
+local function ScheduleCategoryRefresh(editor)
+    CancelScheduledRefresh(editor)
+    editor.categoryRefreshTimer = C_Timer.NewTimer(0, function()
+        editor.categoryRefreshTimer = nil
+        if editor:IsShown() then
+            editor:RefreshCategories(true)
+        end
+    end)
+end
+
 local function CommitSelectedCategoryName(editor, name)
     editor.suppressCategoryRefresh = true
     local renamed, errorCode = Categories.RenameCategory(
@@ -301,11 +334,24 @@ local function CommitSelectedCategoryName(editor, name)
         return nil, errorCode
     end
 
-    RefreshCategories(editor, true)
+    local definition = FindDefinition(editor, editor.selectedCategoryID)
+    if definition then
+        definition.name = renamed
+    end
+
+    editor.scrollBox:ForEachFrame(function(row)
+        if row.definition
+            and row.definition.id == editor.selectedCategoryID then
+            row.definition.name = renamed
+            row.label:SetText(renamed)
+        end
+    end)
+    ScheduleCategoryRefresh(editor)
     return renamed
 end
 
 local function AddCategory(editor)
+    editor.ruleEditor:CommitFocusedValue()
     CommitCategoryNameEdit(editor)
 
     local suffix = 1
@@ -333,6 +379,7 @@ local function AddCategory(editor)
 end
 
 local function RemoveSelectedCategory(editor)
+    editor.ruleEditor:CommitFocusedValue()
     CommitCategoryNameEdit(editor)
 
     local definition = FindDefinition(editor, editor.selectedCategoryID)
@@ -353,7 +400,7 @@ local function RemoveSelectedCategory(editor)
     local categoryName = definition.name
 
     StaticPopup_ShowCustomGenericConfirmation({
-        text = "Remove %s? Items assigned to it will move to Other.",
+        text = "Remove %s? Its items will be reclassified against the remaining categories.",
         text_arg1 = categoryName,
         acceptText = "Remove",
         showAlert = true,
@@ -368,6 +415,29 @@ local function RemoveSelectedCategory(editor)
             end
 
             editor:RefreshCategories(true)
+        end,
+    })
+end
+
+local function ResetCategories(editor)
+    editor.ruleEditor:CommitFocusedValue()
+    editor.ruleEditor:CancelPendingRefresh()
+    CommitCategoryNameEdit(editor)
+    editor:CancelScheduledRefresh()
+    editor.suppressCategoryRefresh = true
+    Categories.ResetCategories()
+    editor.suppressCategoryRefresh = nil
+    editor:RefreshCategories(true)
+end
+
+local function ConfirmResetCategories(editor)
+    StaticPopup_ShowCustomGenericConfirmation({
+        text = "Reset all categories and rules in the active profile to "
+            .. "their defaults? Custom categories will be removed.",
+        acceptText = "Reset",
+        showAlert = true,
+        callback = function()
+            ResetCategories(editor)
         end,
     })
 end
@@ -447,7 +517,10 @@ local function StartCategoryDrag(editor, row)
         return
     end
 
+    editor.ruleEditor:CommitFocusedValue()
+    editor.ruleEditor:CancelRuleDrag()
     CommitCategoryNameEdit(editor)
+    editor:CancelScheduledRefresh()
     editor.draggedCategoryID = row.definition.id
     editor.dragInsertionPosition = row.definition.index
     editor:SelectCategory(row.definition.id)
@@ -599,20 +672,41 @@ local function CreateCategoryDetail(parent, editor)
         end,
     })
 
-    removeButton:SetPoint(
+    removeButton:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, 0)
+    editor.removeButton = removeButton
+
+    local rulesDivider = parent:CreateTexture(nil, "ARTWORK")
+
+    rulesDivider:SetColorTexture(1, 1, 1, 0.12)
+    rulesDivider:SetHeight(DIVIDER_WIDTH)
+    rulesDivider:SetPoint(
         "TOPLEFT",
         nameEdit,
         "BOTTOMLEFT",
         0,
-        -16
+        -DETAIL_DIVIDER_GAP
     )
-    editor.removeButton = removeButton
+    rulesDivider:SetPoint(
+        "TOPRIGHT",
+        nameEdit,
+        "BOTTOMRIGHT",
+        0,
+        -DETAIL_DIVIDER_GAP
+    )
+    editor.rulesDivider = rulesDivider
 
     local rulesRegion = CreateFrame("Frame", nil, parent)
 
-    rulesRegion:SetPoint("TOPLEFT", removeButton, "BOTTOMLEFT", 0, -16)
+    rulesRegion:SetPoint(
+        "TOPLEFT",
+        rulesDivider,
+        "BOTTOMLEFT",
+        0,
+        -DETAIL_RULES_GAP
+    )
     rulesRegion:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", 0, 0)
     editor.rulesRegion = rulesRegion
+    editor.ruleEditor = NS.CategoryRuleEditor.Create(rulesRegion, editor)
 end
 
 local function BuildEditorFrame(frame, measurementFrame)
@@ -621,10 +715,22 @@ local function BuildEditorFrame(frame, measurementFrame)
     })
     local flow = layout:GetRootFlow()
 
-    layout:AddHeader(
+    local pageTitle = layout:AddHeader(
         "Categories",
-        "Create, rename, remove, and reorder the categories stored in the active profile."
+        "Create, order, and define the categories stored in the active profile."
     )
+
+    local resetButton = ModernSettings:CreateButton(pageTitle:GetParent(), {
+        text = "Reset Categories",
+        fitToContent = true,
+        tooltip = "Restore the default category names, order, and rules.",
+        onClick = function()
+            ConfirmResetCategories(frame)
+        end,
+    })
+
+    resetButton:SetPoint("RIGHT", pageTitle, "RIGHT", 0, 0)
+    frame.resetButton = resetButton
 
     local editorHeight = math.max(
         layout:GetCanvasHeight()
@@ -686,6 +792,8 @@ function CategoryEditor.CreateFrame(measurementFrame)
     frame.SelectCategory = SelectCategory
     frame.RefreshCategories = RefreshCategories
     frame.AddCategory = AddCategory
+    frame.CommitCategoryNameEdit = CommitCategoryNameEdit
+    frame.CancelScheduledRefresh = CancelScheduledRefresh
     frame.CancelCategoryDrag = CancelCategoryDrag
     frame.StartCategoryDrag = StartCategoryDrag
     frame.FinishCategoryDrag = FinishCategoryDrag
@@ -696,13 +804,14 @@ function CategoryEditor.CreateFrame(measurementFrame)
         self:RefreshCategories(true)
     end
     frame.OnDefault = function(self)
-        CommitCategoryNameEdit(self)
-        self.suppressCategoryRefresh = true
-        Categories.ResetCategories()
-        self.suppressCategoryRefresh = nil
-        self:RefreshCategories(true)
+        ResetCategories(self)
     end
     frame:SetScript("OnHide", function(self)
+        self.ruleEditor:CommitFocusedValue()
+        self.ruleEditor:CancelPendingRefresh()
+        self.ruleEditor:CancelRuleDrag()
+        CommitCategoryNameEdit(self)
+        self:CancelScheduledRefresh()
         self:CancelCategoryDrag()
     end)
 

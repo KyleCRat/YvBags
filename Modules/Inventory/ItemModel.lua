@@ -5,6 +5,7 @@ local ItemModel = {}
 NS.ItemModel = ItemModel
 
 local Categories = NS.Categories
+local CategoryRules = NS.CategoryRules
 local Containers = NS.Containers
 local Pins = NS.ItemPins
 local Binding = NS.Binding
@@ -24,37 +25,41 @@ local COLLECTION_KINDS = {
 
 ItemModel.CollectionKinds = COLLECTION_KINDS
 
--- Blizzard enum compatibility
-local function EnumValue(enumName, key, fallback)
-    if Enum and Enum[enumName] and Enum[enumName][key] ~= nil then
-        return Enum[enumName][key]
-    end
-
-    return fallback
-end
-
 -- Binding display mapping
-local BIND_TYPE_INFO = {}
-
-local function SetBindTypeInfo(enumKey, fallback, key, label)
-    BIND_TYPE_INFO[EnumValue("ItemBind", enumKey, fallback)] = {
-        key = key,
-        label = label,
-    }
-end
-
-SetBindTypeInfo("None", 0, BindingKeys.None, NONE or "None")
-SetBindTypeInfo("OnAcquire", 1, BindingKeys.Pickup, ITEM_BIND_ON_PICKUP or "Bind on pickup")
-SetBindTypeInfo("OnEquip", 2, BindingKeys.Equip, ITEM_BIND_ON_EQUIP or "Bind on equip")
-SetBindTypeInfo("OnUse", 3, BindingKeys.Use, ITEM_BIND_ON_USE or "Bind on use")
-SetBindTypeInfo("Quest", 4, BindingKeys.Quest, ITEM_BIND_QUEST or "Quest item")
-SetBindTypeInfo("ToWoWAccount", 7, BindingKeys.Account, ITEM_BIND_TO_ACCOUNT or "Warbound")
-SetBindTypeInfo("ToBnetAccount", 8, BindingKeys.Account, ITEM_BIND_TO_BNETACCOUNT or "Account bound")
-SetBindTypeInfo("ToBnetAccountUntilEquipped", 9, BindingKeys.AccountUntilEquipped, ITEM_BIND_TO_BNETACCOUNT_UNTIL_EQUIPPED or "Account bound until equipped")
-
-local function GetAccountUntilEquippedLabel()
-    return ITEM_BIND_TO_ACCOUNT_UNTIL_EQUIPPED or ITEM_BIND_TO_BNETACCOUNT_UNTIL_EQUIPPED or "Warbound until equipped"
-end
+local BIND_TYPE_INFO = {
+    [Enum.ItemBind.None] = {
+        key = BindingKeys.None,
+        label = NONE,
+    },
+    [Enum.ItemBind.OnAcquire] = {
+        key = BindingKeys.Pickup,
+        label = ITEM_BIND_ON_PICKUP,
+    },
+    [Enum.ItemBind.OnEquip] = {
+        key = BindingKeys.Equip,
+        label = ITEM_BIND_ON_EQUIP,
+    },
+    [Enum.ItemBind.OnUse] = {
+        key = BindingKeys.Use,
+        label = ITEM_BIND_ON_USE,
+    },
+    [Enum.ItemBind.Quest] = {
+        key = BindingKeys.Quest,
+        label = ITEM_BIND_QUEST,
+    },
+    [Enum.ItemBind.ToWoWAccount] = {
+        key = BindingKeys.Account,
+        label = ITEM_BIND_TO_ACCOUNT,
+    },
+    [Enum.ItemBind.ToBnetAccount] = {
+        key = BindingKeys.Account,
+        label = ITEM_BIND_TO_BNETACCOUNT,
+    },
+    [Enum.ItemBind.ToBnetAccountUntilEquipped] = {
+        key = BindingKeys.AccountUntilEquipped,
+        label = ITEM_BIND_TO_BNETACCOUNT_UNTIL_EQUIPPED,
+    },
+}
 
 local function IsBindType(bindType, key)
     local info = BIND_TYPE_INFO[bindType]
@@ -63,12 +68,12 @@ end
 
 local function GetBindingInfo(bindType, isBound, isAccountBound, isAccountUntilEquipped)
     if isAccountUntilEquipped or IsBindType(bindType, BindingKeys.AccountUntilEquipped) then
-        return BindingKeys.AccountUntilEquipped, GetAccountUntilEquippedLabel()
+        return BindingKeys.AccountUntilEquipped, ITEM_BIND_TO_ACCOUNT_UNTIL_EQUIPPED
     end
 
     if isAccountBound or IsBindType(bindType, BindingKeys.Account) then
         local info = IsBindType(bindType, BindingKeys.Account) and BIND_TYPE_INFO[bindType]
-        return BindingKeys.Account, info and info.label or ITEM_BIND_TO_ACCOUNT or "Warbound"
+        return BindingKeys.Account, info and info.label or ITEM_BIND_TO_ACCOUNT
     end
 
     if isBound then
@@ -80,7 +85,7 @@ local function GetBindingInfo(bindType, isBound, isAccountBound, isAccountUntilE
         return info.key, info.label
     end
 
-    return BindingKeys.Unknown, UNKNOWN or "Unknown"
+    return BindingKeys.Unknown, UNKNOWN
 end
 
 local function IsBagItemAccountUntilEquipped(bagID, slotIndex, itemInfo)
@@ -194,14 +199,14 @@ local function GetCollectionKind(itemID, classID, subclassID, isBattlePet)
         collectionKind = COLLECTION_KINDS.Pet
     end
 
-    if not collectionKind and classID == EnumValue("ItemClass", "Battlepet", 17) then
+    if not collectionKind and classID == Enum.ItemClass.Battlepet then
         collectionKind = COLLECTION_KINDS.BattlePet
     end
 
-    if not collectionKind and classID == EnumValue("ItemClass", "Miscellaneous", 15) then
-        if subclassID == EnumValue("ItemMiscellaneousSubclass", "CompanionPet", 2) then
+    if not collectionKind and classID == Enum.ItemClass.Miscellaneous then
+        if subclassID == Enum.ItemMiscellaneousSubclass.CompanionPet then
             collectionKind = COLLECTION_KINDS.Pet
-        elseif subclassID == EnumValue("ItemMiscellaneousSubclass", "Mount", 5) then
+        elseif subclassID == Enum.ItemMiscellaneousSubclass.Mount then
             collectionKind = COLLECTION_KINDS.Mount
         end
     end
@@ -506,7 +511,7 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
         fullItemType = "Keystone"
         fullItemSubType = "Mythic Keystone"
         sellValue = 0
-        bindType = bindType or EnumValue("ItemBind", "OnAcquire", 1)
+        bindType = bindType or Enum.ItemBind.OnAcquire
         isCraftingReagent = false
     end
 
@@ -530,7 +535,7 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
         battlePetIcon = GetBattlePetSpeciesIcon(battlePetSpeciesID)
         itemQuality = battlePetQuality or itemQuality or containerItemInfo.quality
         staticItemLevel = battlePetLevel or staticItemLevel
-        fullItemType = BATTLE_PET or "Battle Pet"
+        fullItemType = BATTLE_PET
         fullItemSubType = "Caged Pet"
     end
 
@@ -649,8 +654,19 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
         usedStaticItemInfoFallback = usedStaticFallback,
     }
 
-    RefreshClassification(item)
     item.tooltipSearchText = GetTooltipSearchText(item)
+    item.ruleName = CategoryRules.NormalizeRuleText(
+        hyperlinkDisplayText or fullName or containerItemInfo.itemName
+    )
+    item.ruleTooltipText = CategoryRules.NormalizeRuleText(
+        item.tooltipSearchText
+    )
+    item.classSubclassKey = CategoryRules.MakeClassSubclassKey(
+        item.classID,
+        item.subclassID
+    )
+    item.defaultCategoryID = CategoryRules.GetDefaultCategoryID(item)
+    RefreshClassification(item)
 
     return item, itemInfo
 end

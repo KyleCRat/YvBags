@@ -63,9 +63,10 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - `Core.lua`: `ADDON_LOADED`, legacy account-storage adoption, LibSimpleDB/Profile-manager construction, shared event dispatch, and initialization callbacks.
 - `Modules/Inventory/Containers.lua`: discovery and metadata for player-owned bag containers and empty slots.
 - `Modules/Inventory/Pins.lua`: account-wide stable pin identities, pin persistence, and pinned presentation settings.
-- `Modules/Inventory/ItemModel.lua`: normalized occupied-slot item data, including async fallbacks, binding, pins, categories, keystones, collection kinds, caged pets, expansion, and profession quality.
-- `Modules/Inventory/Inventory.lua`: live inventory state, targeted container refreshes, in-memory category reclassification, debounced reconciliation scans, pending item data, indexes, totals, and update callbacks.
-- `Modules/Inventory/Categories.lua`: profile-backed category registry, stable category CRUD, cached ordering and labels, callbacks, and built-in item classification.
+- `Modules/Inventory/ItemModel.lua`: normalized occupied-slot item data, including async fallbacks, binding, pins, category-rule fields, keystones, collection kinds, caged pets, expansion, and profession quality.
+- `Modules/Inventory/Inventory.lua`: live inventory state, targeted container refreshes, debounced in-memory category reclassification and reconciliation scans, pending item data, indexes, totals, and update callbacks.
+- `Modules/Inventory/CategoryRules.lua`: stable field/operator registries, built-in default classification, Rule Set normalization and compilation, editor choices, and secret-safe normalized-item evaluation.
+- `Modules/Inventory/Categories.lua`: profile-backed category registry, stable category and Rule Set mutations, cached ordering and labels, compiled precedence, and callbacks.
 - `Constants/Binding.lua`: binding keys and binding predicates. Use these constants instead of repeating binding strings.
 - `Modules/Bags/BagManagement.lua`: bag pickup/swap, compatible item placement, empty-bag state machine, and Blizzard bag cleanup. Keep the asynchronous emptying state machine together.
 - `Modules/Bags/BlizzardBags.lua`: replacement wrappers for Blizzard bag open, close, toggle, and restore behavior.
@@ -88,7 +89,8 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - `Modules/MainFrame/Layout.lua`: geometry shared by main-frame modules.
 - `Modules/MainFrame/Footer.lua`: bag buttons, bag-space display, money, footer layout, and related tooltips.
 - `Modules/MainFrame/FooterCurrencies.lua`: tracked backpack currencies, responsive fitting, currency tooltips, and untracking.
-- `Modules/Settings/CategoryEditor.lua`: virtualized profile-backed category list, reorder interaction, category detail editor, and category canvas lifecycle.
+- `Modules/Settings/CategoryRuleEditor.lua`: virtualized flat Rule Set editor, structured field/operator/value controls, presentation-only rule reordering, and detached-snapshot refresh handling.
+- `Modules/Settings/CategoryEditor.lua`: virtualized profile-backed category list, reorder interaction, category detail composition, and category canvas lifecycle.
 - `Media.lua`: centralized fonts, textures, atlases, colors, and LibSharedMedia registration.
 - `Formatting/Money.lua`: shared compact and exact money formatting.
 - `Settings.lua`: LibModernSettings canvas composition, Blizzard Settings registrations, profile management, confirmations, and live setting callbacks.
@@ -140,9 +142,14 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - The fresh default list view groups by Category, sorts primarily by Rarity descending, and sorts secondarily by Item Level descending.
 - Manual primary sort means physical bag/slot order within each active group and pin-presentation partition. It forces secondary sort to `None` and disables secondary selection.
 - In non-manual modes, item name and item ID break ties after the selected primary and secondary sorts so duplicate stacks remain adjacent. Within an identical item, higher-count stacks come first unless Quantity is an active sort key; physical bag/slot provides the final stable order.
-- Pin state is presentation metadata and must not replace an item's base `categoryKey`; future ordered and custom category rules depend on that separation.
+- Pin state is presentation metadata and must not replace an item's base `categoryKey`; ordered and custom category rules depend on that separation.
 - Pinned presentation applies across all grouping and sort modes. The supported modes are direct top rows, a collapsible Pinned group, pins first within their normal groups, and normal active-sort placement.
 - Default Category grouping uses the explicit profile-backed order declared in `Defaults.lua`. Openable, Cosmetic, Collectables, Mythic Keystone, Consumable, and Equipment lead in that order; Blizzard loot containers plus Utility Curio, Combat Curio, and Relic consumables map to `openable`; `toy`, `mount`, `pet`, and `battlepet` collection kinds share the `collectables` category; armor and weapons share the `equipment` category unless Blizzard tags the item as cosmetic; and Junk remains last. Removed built-in classifications fall back to `other` without recreating the removed definition.
+- A Category is a stable classification target; a Display Group is only the presentation section produced by Group By. Each Category except `other` owns one flat `all`/`any` Rule Set of atomic Rules. Do not introduce a separate Condition model or nested rule groups without revisiting the product design.
+- Item Name and Tooltip Text Rules may contain multiple text alternatives within one atomic Rule. Equals and Contains match any complete alternative; Does Not Equal and Does Not Contain negate that grouped result and therefore match only when none of the alternatives match. Empty alternatives are ignored.
+- Evaluate configured Categories in order and assign the first match. Skip `other` during evaluation and use it only as the final fallback. Ignore incomplete Rules while they are being configured; a Rule Set with no complete Rules matches nothing. Missing, pending, or secret item data makes a complete Rule evaluate false.
+- Rule evaluation reads normalized item fields only. Settings mutations may rebuild cached choice labels, but reclassification must not call bag, item, tooltip, atlas, or formatting APIs. Tooltip Text rules consume the cached normalized tooltip text built during item-model construction.
+- Rule order is persisted and draggable for organization but has no matching effect. Reordering rules must not trigger inventory reclassification.
 - Mythic Keystones retain their own prioritized category unless pinned. Keystone pin identity is kind-based rather than link- or item-instance-based so it survives dungeon and level changes.
 - Bag/Slot remains an internal, disabled column and is not a user-facing sort or group option.
 - In sorted modes, a cursor-held item shows a full-list insertion overlay backed by a native container item button bound to one actual compatible empty slot.
@@ -167,7 +174,7 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - Account-wide pins live under the addon-global `pins.items`; regular item pins use item-ID identities and keystones use the stable `kind:keystone` identity. Pin presentation belongs to the active profile.
 - Profile-owned settings are list grouping/sorting, pin presentation, cooldown-name display, and the complete category registry. Bag replacement and gray-junk selling remain addon-global.
 - Keep Rename Profile and Delete Profile as selectors directly on the Settings canvas. Rename may open the name input after selection, and Delete must retain its destructive confirmation, but neither action should open an intermediate profile-selection modal.
-- Treat the profile's `categories` root as one transactional value: clone it, mutate the clone, and commit the complete root through `NS.Categories`. Category changes reclassify existing normalized inventory records and must not query bag, item, or tooltip APIs.
+- Treat the profile's `categories` root as one transactional value: clone it, mutate the clone, and commit the complete root through `NS.Categories`. Category and Rule Set changes reclassify existing normalized inventory records and must not query bag, item, or tooltip APIs. Multi-control rule edits use the Inventory-owned trailing debounce.
 - Add defaults in `Defaults.lua` before reading new settings. Use `Get` and `Set`, and register callbacks when a setting must refresh live UI.
 - Expose user settings and profile management through Blizzard's standard Settings API. Column editors remain future work.
 - UI that displays active profile identity or profile descriptors listens to manager lifecycle callbacks. `OnCharacterInfoChanged` refreshes identity-backed permanent descriptors even when the active profile does not change. Features that apply effective profile data listen to active-DB `OnDataChanged`/`OnReset`; do not refresh one feature through both manager and active-DB paths.

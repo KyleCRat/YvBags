@@ -9,6 +9,28 @@ NS.FRAME_NAME = ADDON_NAME .. "Frame"
 NS.ITEM_BUTTON_GLOBAL_NAME_PREFIX = ADDON_NAME .. "ItemListButton"
 NS.ADDON_MEDIA_PATH = "Interface\\AddOns\\" .. ADDON_NAME .. "\\Media\\"
 
+local function CreateDefaultCategoryRuleSet(categoryID)
+    return {
+        mode = "all",
+        nextRuleID = 2,
+        entries = {
+            {
+                id = "rule:1",
+                field = "defaultCategory",
+                operator = "equals",
+                value = categoryID,
+            },
+        },
+    }
+end
+
+local function CreateDefaultCategoryDefinition(categoryID, name)
+    return {
+        name = name,
+        rules = CreateDefaultCategoryRuleSet(categoryID),
+    }
+end
+
 NS.defaults = {
     global = {
         debug = false,
@@ -61,27 +83,27 @@ NS.defaults = {
                 "junk",
             },
             definitions = {
-                openable = { name = "Openable" },
-                cosmetic = { name = "Cosmetic" },
-                collectables = { name = "Collectables" },
-                keystone = { name = "Mythic Keystone" },
-                consumable = { name = "Consumable" },
-                equipment = { name = "Equipment" },
-                quest = { name = "Quest" },
-                enhancement = { name = "Enhancement" },
-                gem = { name = "Gem" },
-                recipe = { name = "Recipe" },
-                reagent = { name = "Reagent" },
-                tradegoods = { name = "Trade Goods" },
-                profession = { name = "Profession" },
-                container = { name = "Container" },
-                glyph = { name = "Glyph" },
-                token = { name = "Token" },
-                housing = { name = "Housing" },
-                miscellaneous = { name = "Miscellaneous" },
+                openable = CreateDefaultCategoryDefinition("openable", "Openable"),
+                cosmetic = CreateDefaultCategoryDefinition("cosmetic", "Cosmetic"),
+                collectables = CreateDefaultCategoryDefinition("collectables", "Collectables"),
+                keystone = CreateDefaultCategoryDefinition("keystone", "Mythic Keystone"),
+                consumable = CreateDefaultCategoryDefinition("consumable", "Consumable"),
+                equipment = CreateDefaultCategoryDefinition("equipment", "Equipment"),
+                quest = CreateDefaultCategoryDefinition("quest", "Quest"),
+                enhancement = CreateDefaultCategoryDefinition("enhancement", "Enhancement"),
+                gem = CreateDefaultCategoryDefinition("gem", "Gem"),
+                recipe = CreateDefaultCategoryDefinition("recipe", "Recipe"),
+                reagent = CreateDefaultCategoryDefinition("reagent", "Reagent"),
+                tradegoods = CreateDefaultCategoryDefinition("tradegoods", "Trade Goods"),
+                profession = CreateDefaultCategoryDefinition("profession", "Profession"),
+                container = CreateDefaultCategoryDefinition("container", "Container"),
+                glyph = CreateDefaultCategoryDefinition("glyph", "Glyph"),
+                token = CreateDefaultCategoryDefinition("token", "Token"),
+                housing = CreateDefaultCategoryDefinition("housing", "Housing"),
+                miscellaneous = CreateDefaultCategoryDefinition("miscellaneous", "Miscellaneous"),
                 other = { name = "Other" },
-                unknown = { name = "Unknown" },
-                junk = { name = "Junk" },
+                unknown = CreateDefaultCategoryDefinition("unknown", "Unknown"),
+                junk = CreateDefaultCategoryDefinition("junk", "Junk"),
             },
         },
     },

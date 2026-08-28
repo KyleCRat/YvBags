@@ -338,7 +338,7 @@ end
 
 function Columns.FormatColumn(item, columnKey)
     if columnKey == "name" then
-        return item.name or UNKNOWN or "Unknown"
+        return item.name or UNKNOWN
     elseif columnKey == "count" then
         return item.count and item.count > 1 and tostring(item.count) or ""
     elseif columnKey == "itemLevel" then
