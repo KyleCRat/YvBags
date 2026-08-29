@@ -1,0 +1,15 @@
+| Expansion                  | Direct image URL                                                                                                                                                               |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Classic / Vanilla**      | [https://warcraft.wiki.gg/wiki/Special:Redirect/file/WoW-Logo-Small.gif](https://warcraft.wiki.gg/wiki/Special:Redirect/file/WoW-Logo-Small.gif)                               |
+| **The Burning Crusade**    | [https://warcraft.wiki.gg/wiki/Special:Redirect/file/Bc-Logo-Small.gif](https://warcraft.wiki.gg/wiki/Special:Redirect/file/Bc-Logo-Small.gif)                                 |
+| **Wrath of the Lich King** | [https://warcraft.wiki.gg/wiki/Special:Redirect/file/Wrath-Logo-Small.png](https://warcraft.wiki.gg/wiki/Special:Redirect/file/Wrath-Logo-Small.png)                           |
+| **Cataclysm**              | [https://warcraft.wiki.gg/wiki/Special:Redirect/file/Cata-Logo-Small.png](https://warcraft.wiki.gg/wiki/Special:Redirect/file/Cata-Logo-Small.png)                             |
+| **Mists of Pandaria**      | [https://warcraft.wiki.gg/wiki/Special:Redirect/file/Mop-Logo-Small.png](https://warcraft.wiki.gg/wiki/Special:Redirect/file/Mop-Logo-Small.png)                               |
+| **Warlords of Draenor**    | [https://warcraft.wiki.gg/wiki/Special:Redirect/file/WoD-Logo-Small.png](https://warcraft.wiki.gg/wiki/Special:Redirect/file/WoD-Logo-Small.png)                               |
+| **Legion**                 | [https://warcraft.wiki.gg/wiki/Special:Redirect/file/Legion-Logo-Small.png](https://warcraft.wiki.gg/wiki/Special:Redirect/file/Legion-Logo-Small.png)                         |
+| **Battle for Azeroth**     | [https://warcraft.wiki.gg/wiki/Special:Redirect/file/BattleForAzeroth-Petopia-Logo.png](https://warcraft.wiki.gg/wiki/Special:Redirect/file/BattleForAzeroth-Petopia-Logo.png) |
+| **Shadowlands**            | [https://warcraft.wiki.gg/wiki/Special:Redirect/file/Shadowlands-Petopia-Logo.png](https://warcraft.wiki.gg/wiki/Special:Redirect/file/Shadowlands-Petopia-Logo.png)           |
+| **Dragonflight**           | [https://warcraft.wiki.gg/wiki/Special:Redirect/file/Dragonflight-Petopia-Logo.png](https://warcraft.wiki.gg/wiki/Special:Redirect/file/Dragonflight-Petopia-Logo.png)         |
+| **The War Within**         | [https://warcraft.wiki.gg/wiki/Special:Redirect/file/TheWarWithin-Petopia-Logo.png](https://warcraft.wiki.gg/wiki/Special:Redirect/file/TheWarWithin-Petopia-Logo.png)         |
+| **Midnight**               | [https://warcraft.wiki.gg/wiki/Special:Redirect/file/Midnight-Petopia-Logo.png](https://warcraft.wiki.gg/wiki/Special:Redirect/file/Midnight-Petopia-Logo.png)                 |
+| **The Last Titan**         | [https://warcraft.wiki.gg/wiki/Special:Redirect/file/TLT-inline.png](https://warcraft.wiki.gg/wiki/Special:Redirect/file/TLT-inline.png)                                       |

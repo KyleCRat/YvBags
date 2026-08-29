@@ -1,6 +1,7 @@
 ## Future Appearance Settings
 
 - Make the shared accent color customizable, including header text, header dividers, category text, category dividers, and matching hover/pressed accents.
+- Downlaod and Use xpac_icons.md icons instead of numbers for expansions
 
 ## Inventory Organization Settings
 
