@@ -13,10 +13,16 @@ local OTHER_CATEGORY_ID = "other"
 local HEADER_HEIGHT = 34
 local SECTION_GAP = 8
 local CONTROL_HEIGHT = 34
-local SINGLE_LINE_ROW_HEIGHT = 46
-local VALUE_ROW_HEIGHT = 88
-local TEXT_VALUE_ROW_STEP = CONTROL_HEIGHT + SECTION_GAP
-local ROW_INSET = 6
+local ROW_HORIZONTAL_INSET = 6
+local RULE_LINE_GAP = 4
+local RULE_VERTICAL_PADDING = 4
+local SINGLE_LINE_ROW_HEIGHT =
+    CONTROL_HEIGHT + (RULE_VERTICAL_PADDING * 2)
+local VALUE_ROW_HEIGHT =
+    (CONTROL_HEIGHT * 2)
+        + RULE_LINE_GAP
+        + (RULE_VERTICAL_PADDING * 2)
+local TEXT_VALUE_ROW_STEP = CONTROL_HEIGHT + RULE_LINE_GAP
 local CONTROL_GAP = 8
 local DROPDOWN_EDGE_INSET = 2
 local SCROLLBAR_GAP = 6
@@ -88,10 +94,10 @@ local function LayoutRuleRow(row)
         rowWidth = row.owner.scrollBox:GetWidth()
     end
 
-    local contentLeft = ROW_INSET + HANDLE_WIDTH
+    local contentLeft = ROW_HORIZONTAL_INSET + HANDLE_WIDTH
     local contentWidth = math.max(
         1,
-        rowWidth - (ROW_INSET * 2) - HANDLE_WIDTH
+        rowWidth - (ROW_HORIZONTAL_INSET * 2) - HANDLE_WIDTH
     )
     local hasValueRow = row.hasValueRow == true
     local isBoolean = row.isBoolean == true
@@ -154,7 +160,7 @@ local function LayoutRuleRow(row)
         row,
         "TOPLEFT",
         contentLeft,
-        -ROW_INSET
+        -RULE_VERTICAL_PADDING
     )
 
     row.operatorDropdown:ClearAllPoints()
@@ -190,7 +196,7 @@ local function LayoutRuleRow(row)
         row.fieldDropdown,
         "BOTTOMLEFT",
         0,
-        -SECTION_GAP
+        -RULE_LINE_GAP
     )
 
     row.scalarValueEdit:ClearAllPoints()
@@ -199,7 +205,7 @@ local function LayoutRuleRow(row)
         row.fieldDropdown,
         "BOTTOMLEFT",
         0,
-        -SECTION_GAP
+        -RULE_LINE_GAP
     )
 
     local previousInput
@@ -211,7 +217,7 @@ local function LayoutRuleRow(row)
                 previousInput,
                 "BOTTOMLEFT",
                 0,
-                -SECTION_GAP
+                -RULE_LINE_GAP
             )
         else
             control.input:SetPoint(
@@ -219,7 +225,7 @@ local function LayoutRuleRow(row)
                 row.fieldDropdown,
                 "BOTTOMLEFT",
                 0,
-                -SECTION_GAP
+                -RULE_LINE_GAP
             )
         end
 
@@ -261,8 +267,8 @@ local function LayoutRuleRow(row)
         "TOPRIGHT",
         row,
         "TOPRIGHT",
-        -ROW_INSET,
-        -ROW_INSET
+        -ROW_HORIZONTAL_INSET,
+        -RULE_VERTICAL_PADDING
     )
 end
 

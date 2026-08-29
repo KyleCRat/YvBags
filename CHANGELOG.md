@@ -29,7 +29,8 @@
 
 ### Changed
 - Aligned compact rule-editor dropdown bounds with the text-input rows and
-  normalized horizontal gaps across each rule block.
+  reduced spacing between inputs within a rule to six four while retaining
+  four-pixel padding at the top and bottom of every rule.
 - Replaced the rule-level Remove text button with a square X action anchored
   consistently on the rule's first row.
 - Removed the unused `Unknown` default category; unmatched items continue to
