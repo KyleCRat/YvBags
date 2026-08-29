@@ -28,6 +28,8 @@
 - Restored Mythic Keystones to their own prioritized category and gave keystone pins a stable identity across dungeon and level changes.
 
 ### Changed
+- Established a clearer category-editor heading hierarchy with H1-sized
+  Categories and Category pane titles and an H2-sized Rules title.
 - Placed the category Name label and input on one compact reusable settings
   field to give the rule editor more vertical space.
 - Aligned compact rule-editor dropdown bounds with the text-input rows and

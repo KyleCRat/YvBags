@@ -1063,7 +1063,7 @@ local function CreateHeader(editor)
     header:SetHeight(HEADER_HEIGHT)
 
     local title = ModernSettings:CreateText(header, {
-        fontObject = GameFontNormal,
+        fontObject = GameFontNormalMed2,
         text = "Rules",
     })
     title:SetPoint("LEFT", header, "LEFT", 0, 0)

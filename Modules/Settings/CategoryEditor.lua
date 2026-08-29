@@ -575,7 +575,7 @@ local function CreateCategoryList(parent, editor)
     header:SetHeight(LIST_HEADER_HEIGHT)
 
     local title = ModernSettings:CreateText(header, {
-        fontObject = GameFontNormal,
+        fontObject = GameFontNormalLarge,
         text = "Categories",
     })
 
