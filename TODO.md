@@ -1,3 +1,12 @@
+## Next Major Feature: Column Customization
+
+- Create a dedicated implementation plan before coding profile-owned column
+  customization. The plan must cover column visibility, drag-and-drop ordering
+  directly from the YvBags headers, drag-to-resize column widths, profile
+  persistence and reset behavior, fixed or internal columns, responsive layout
+  constraints, header and row alignment, virtualization, and safe live
+  refreshes.
+
 ## Future Appearance Settings
 
 - Make the shared accent color customizable, including header text, header dividers, category text, category dividers, and matching hover/pressed accents.
