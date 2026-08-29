@@ -54,6 +54,8 @@
 - Classified Utility Curio, Combat Curio, and Relic consumables as Openable instead of general Consumables.
 
 ### Fixed
+- Preserved the first button click made while editing category or rule text by
+  deferring focus-loss refreshes until the click reaches its target.
 - Capped long settings dropdown menus at three quarters of the UI height and
   enabled native scrolling through every available choice while keeping the
   scrolling menu vertically centered.

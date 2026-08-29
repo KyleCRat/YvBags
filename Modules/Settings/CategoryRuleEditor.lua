@@ -53,11 +53,6 @@ local function ReportRuleError(action, errorCode)
     ))
 end
 
-local function UseVirtualizedRowClickTiming(button)
-    -- Focus loss can rebuild a virtualized row before mouse-up.
-    button:RegisterForClicks("LeftButtonDown")
-end
-
 local function RuleUsesValueRow(rule)
     return rule.field ~= nil
         and rule.operator ~= nil
@@ -313,7 +308,6 @@ local function CreateTextValueControl(row)
             end
         end,
     })
-    UseVirtualizedRowClickTiming(control.removeButton)
     control.input:Hide()
     control.removeButton:Hide()
     row.textValueControls[#row.textValueControls + 1] = control
@@ -464,7 +458,6 @@ local function InitializeRuleRow(row)
             end
         end,
     })
-    UseVirtualizedRowClickTiming(row.addTextValueButton)
     row.addTextValueButton:Hide()
 
     row.booleanIsText = ModernSettings:CreateText(row, {
@@ -486,8 +479,6 @@ local function InitializeRuleRow(row)
             end
         end,
     })
-    UseVirtualizedRowClickTiming(row.removeButton)
-
     row:SetScript("OnSizeChanged", LayoutRuleRow)
     LayoutRuleRow(row)
 end
