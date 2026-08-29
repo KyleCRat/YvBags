@@ -28,8 +28,10 @@
 - Restored Mythic Keystones to their own prioritized category and gave keystone pins a stable identity across dungeon and level changes.
 
 ### Changed
+- Placed the category Name label and input on one compact reusable settings
+  field to give the rule editor more vertical space.
 - Aligned compact rule-editor dropdown bounds with the text-input rows and
-  reduced spacing between inputs within a rule to six four while retaining
+  reduced spacing between inputs within a rule to four pixels while retaining
   four-pixel padding at the top and bottom of every rule.
 - Replaced the rule-level Remove text button with a square X action anchored
   consistently on the rule's first row.

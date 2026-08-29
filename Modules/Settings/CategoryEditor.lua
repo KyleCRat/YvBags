@@ -19,6 +19,8 @@ local LIST_SCROLLBAR_GAP = 6
 local LIST_SCROLLBAR_WIDTH = 17
 local HANDLE_WIDTH = 26
 local MOVER_ICON_SIZE = 18
+local DETAIL_HEADER_HEIGHT = 34
+local DETAIL_HEADER_GAP = 8
 local DETAIL_DIVIDER_GAP = 10
 local DETAIL_RULES_GAP = 8
 
@@ -214,13 +216,13 @@ local function RefreshCategoryDetail(editor)
 
     if not definition then
         editor.nameEdit:SetValue("")
-        editor.nameEdit:SetControlEnabled(false)
+        editor.nameField:SetControlEnabled(false)
         editor.removeButton:SetControlEnabled(false)
         editor.ruleEditor:SetDefinition(nil)
         return
     end
 
-    editor.nameEdit:SetControlEnabled(true)
+    editor.nameField:SetControlEnabled(true)
     editor.nameEdit:SetValue(definition.name)
 
     local canRemove = definition.id ~= OTHER_CATEGORY_ID
@@ -636,34 +638,20 @@ local function CreateCategoryList(parent, editor)
 end
 
 local function CreateCategoryDetail(parent, editor)
-    local title = ModernSettings:CreateText(parent, {
+    local header = CreateFrame("Frame", nil, parent)
+
+    header:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, 0)
+    header:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, 0)
+    header:SetHeight(DETAIL_HEADER_HEIGHT)
+
+    local title = ModernSettings:CreateText(header, {
         fontObject = GameFontNormalLarge,
         text = "Category",
     })
 
-    title:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, 0)
+    title:SetPoint("TOPLEFT", header, "TOPLEFT", 0, 0)
 
-    local nameLabel = ModernSettings:CreateText(parent, {
-        fontObject = GameFontHighlight,
-        text = "Name",
-    })
-
-    nameLabel:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -18)
-
-    local nameEdit = ModernSettings:CreateTextInput(parent, {
-        width = parent:GetWidth(),
-        onCommit = function(name)
-            return CommitSelectedCategoryName(editor, name)
-        end,
-        onError = function(errorCode)
-            ReportCategoryError("Renaming category", errorCode)
-        end,
-    })
-
-    nameEdit:SetPoint("TOPLEFT", nameLabel, "BOTTOMLEFT", 0, -6)
-    editor.nameEdit = nameEdit
-
-    local removeButton = ModernSettings:CreateButton(parent, {
+    local removeButton = ModernSettings:CreateButton(header, {
         text = "Remove",
         width = 110,
         tooltip = "Remove this category from the active profile.",
@@ -672,8 +660,35 @@ local function CreateCategoryDetail(parent, editor)
         end,
     })
 
-    removeButton:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, 0)
+    removeButton:SetPoint("TOPRIGHT", header, "TOPRIGHT", 0, 0)
     editor.removeButton = removeButton
+
+    local nameField = ModernSettings:CreateField(parent, {
+        label = "Name",
+        labelPosition = "left",
+        labelWidth = 48,
+        gap = 8,
+        width = parent:GetWidth(),
+        controlType = "textInput",
+        controlOptions = {
+            onCommit = function(name)
+                return CommitSelectedCategoryName(editor, name)
+            end,
+            onError = function(errorCode)
+                ReportCategoryError("Renaming category", errorCode)
+            end,
+        },
+    })
+
+    nameField:SetPoint(
+        "TOPLEFT",
+        header,
+        "BOTTOMLEFT",
+        0,
+        -DETAIL_HEADER_GAP
+    )
+    editor.nameField = nameField
+    editor.nameEdit = nameField:GetControl()
 
     local rulesDivider = parent:CreateTexture(nil, "ARTWORK")
 
@@ -681,14 +696,14 @@ local function CreateCategoryDetail(parent, editor)
     rulesDivider:SetHeight(DIVIDER_WIDTH)
     rulesDivider:SetPoint(
         "TOPLEFT",
-        nameEdit,
+        nameField,
         "BOTTOMLEFT",
         0,
         -DETAIL_DIVIDER_GAP
     )
     rulesDivider:SetPoint(
         "TOPRIGHT",
-        nameEdit,
+        nameField,
         "BOTTOMRIGHT",
         0,
         -DETAIL_DIVIDER_GAP
