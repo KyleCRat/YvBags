@@ -30,6 +30,8 @@
 ### Changed
 - Aligned compact rule-editor dropdown bounds with the text-input rows and
   normalized horizontal gaps across each rule block.
+- Replaced the rule-level Remove text button with a square X action anchored
+  consistently on the rule's first row.
 - Removed the unused `Unknown` default category; unmatched items continue to
   use the required `Other` fallback.
 - Use regular tertiary buttons for profile actions and Add Category; reserve

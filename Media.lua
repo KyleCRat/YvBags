@@ -38,6 +38,7 @@ local Atlases = {
     warboundBindingIcon = "GM-icon-assist-hover",
     add = "common-icon-plus",
     remove = "common-icon-minus",
+    delete = "common-icon-redx",
 }
 
 local Colors = {
@@ -101,6 +102,10 @@ end
 
 function Media.GetRemoveAtlas()
     return Atlases.remove
+end
+
+function Media.GetDeleteAtlas()
+    return Atlases.delete
 end
 
 function Media.GetDividerTexture()

@@ -21,10 +21,9 @@ local CONTROL_GAP = 8
 local DROPDOWN_EDGE_INSET = 2
 local SCROLLBAR_GAP = 6
 local SCROLLBAR_WIDTH = 17
-local REMOVE_WIDTH = 65
 local HANDLE_WIDTH = 26
 local MOVER_ICON_SIZE = 18
-local TEXT_ACTION_SIZE = 34
+local ACTION_BUTTON_SIZE = 34
 local BOOLEAN_IS_WIDTH = 16
 local MODE_DROPDOWN_WIDTH = 170
 local HEADER_CONTROL_GAP = 8
@@ -96,19 +95,27 @@ local function LayoutRuleRow(row)
     )
     local hasValueRow = row.hasValueRow == true
     local isBoolean = row.isBoolean == true
-    local isTextValueRule = row.isTextValueRule == true
     local textValueCount = row.textValueCount or 0
+    local firstRowControlsWidth = math.max(
+        64,
+        contentWidth - ACTION_BUTTON_SIZE - CONTROL_GAP
+    )
     local fieldWidth
     local operatorWidth
 
     if hasValueRow then
+        local dropdownsWidth = math.max(
+            64,
+            firstRowControlsWidth - CONTROL_GAP
+        )
+
         fieldWidth = math.max(
             32,
-            math.floor((contentWidth - CONTROL_GAP) / 2)
+            math.floor(dropdownsWidth / 2)
         )
         operatorWidth = math.max(
             32,
-            contentWidth - fieldWidth - CONTROL_GAP
+            dropdownsWidth - fieldWidth
         )
     else
         local separatorWidth = isBoolean
@@ -116,26 +123,20 @@ local function LayoutRuleRow(row)
             or CONTROL_GAP
         local controlsWidth = math.max(
             64,
-            contentWidth
-                - REMOVE_WIDTH
-                - CONTROL_GAP
-                - separatorWidth
+            firstRowControlsWidth - separatorWidth
         )
 
         fieldWidth = math.max(32, math.floor(controlsWidth * 0.58))
         operatorWidth = math.max(32, controlsWidth - fieldWidth)
     end
 
-    local scalarValueWidth = math.max(
-        32,
-        contentWidth - REMOVE_WIDTH - CONTROL_GAP
-    )
+    local textActionCount = textValueCount > 1 and 2 or 1
+    local scalarValueWidth = math.max(32, contentWidth)
     local textValueWidth = math.max(
         32,
         contentWidth
-            - REMOVE_WIDTH
-            - TEXT_ACTION_SIZE
-            - (CONTROL_GAP * 2)
+            - (ACTION_BUTTON_SIZE * textActionCount)
+            - (CONTROL_GAP * textActionCount)
     )
 
     row.fieldDropdown:SetControlWidth(fieldWidth)
@@ -256,35 +257,13 @@ local function LayoutRuleRow(row)
     end
 
     row.removeButton:ClearAllPoints()
-    if isTextValueRule and firstTextControl then
-        local firstTextAction = textValueCount > 1
-            and firstTextControl.removeButton
-            or row.addTextValueButton
-
-        row.removeButton:SetPoint(
-            "LEFT",
-            firstTextAction,
-            "RIGHT",
-            CONTROL_GAP,
-            0
-        )
-    elseif hasValueRow then
-        row.removeButton:SetPoint(
-            "RIGHT",
-            row,
-            "BOTTOMRIGHT",
-            -ROW_INSET,
-            ROW_INSET + (CONTROL_HEIGHT / 2)
-        )
-    else
-        row.removeButton:SetPoint(
-            "RIGHT",
-            row,
-            "RIGHT",
-            -ROW_INSET,
-            0
-        )
-    end
+    row.removeButton:SetPoint(
+        "TOPRIGHT",
+        row,
+        "TOPRIGHT",
+        -ROW_INSET,
+        -ROW_INSET
+    )
 end
 
 local function CreateTextValueControl(row)
@@ -312,7 +291,7 @@ local function CreateTextValueControl(row)
     })
     control.removeButton = ModernSettings:CreateButton(row, {
         variant = "square",
-        width = TEXT_ACTION_SIZE,
+        width = ACTION_BUTTON_SIZE,
         iconAtlas = Media.GetRemoveAtlas(),
         tooltip = "Remove this text match.",
         onClick = function()
@@ -469,7 +448,7 @@ local function InitializeRuleRow(row)
     row.textValueControls = {}
     row.addTextValueButton = ModernSettings:CreateButton(row, {
         variant = "square",
-        width = TEXT_ACTION_SIZE,
+        width = ACTION_BUTTON_SIZE,
         iconAtlas = Media.GetAddAtlas(),
         tooltip = "Add another text alternative. Positive operators match any "
             .. "alternative; negative operators require none to match.",
@@ -491,9 +470,9 @@ local function InitializeRuleRow(row)
     row.booleanIsText:Hide()
 
     row.removeButton = ModernSettings:CreateButton(row, {
-        text = "Remove",
-        variant = "small",
-        width = REMOVE_WIDTH,
+        variant = "square",
+        width = ACTION_BUTTON_SIZE,
+        iconAtlas = Media.GetDeleteAtlas(),
         tooltip = "Remove this rule from the category.",
         onClick = function()
             if row.owner and row.categoryID and row.ruleID then
@@ -501,6 +480,7 @@ local function InitializeRuleRow(row)
             end
         end,
     })
+    UseVirtualizedRowClickTiming(row.removeButton)
 
     row:SetScript("OnSizeChanged", LayoutRuleRow)
     LayoutRuleRow(row)
@@ -570,7 +550,6 @@ local function RenderRuleRow(row, rule, editor)
     row.owner = editor
     row.hasValueRow = RuleUsesValueRow(rule)
     row.isBoolean = IsBooleanRule(rule)
-    row.isTextValueRule = IsTextValueRule(rule)
     InitializeRuleRow(row)
     row.ruleID = rule.id
     row.ruleIndex = rule.index
@@ -627,7 +606,6 @@ local function ResetRuleRow(row)
     row.categoryID = nil
     row.hasValueRow = nil
     row.isBoolean = nil
-    row.isTextValueRule = nil
     row.textValueCount = nil
     row.stripe:Hide()
     row.handle.hoverIcon:Hide()
