@@ -267,6 +267,17 @@ local function LayoutRuleRow(row)
     )
 end
 
+local function UpdateRenderedRuleValue(row, value)
+    row.rule.value = value
+end
+
+local function UpdateRenderedRuleTextValue(row, valueIndex, value)
+    local values = Rules.GetRuleTextValues(row.rule)
+
+    values[valueIndex] = value
+    row.rule.value = values
+end
+
 local function CreateTextValueControl(row)
     local control = {}
 
@@ -279,12 +290,20 @@ local function CreateTextValueControl(row)
                 return nil, Categories.ErrorCodes.MissingRule
             end
 
-            return row.owner:CommitRuleTextValue(
+            local valueIndex = control.valueIndex
+            local updated, errorCode = row.owner:CommitRuleTextValue(
                 row.categoryID,
                 row.ruleID,
-                control.valueIndex,
+                valueIndex,
                 value
             )
+
+            if updated == nil then
+                return nil, errorCode
+            end
+
+            UpdateRenderedRuleTextValue(row, valueIndex, updated)
+            return updated
         end,
         onError = function(errorCode)
             ReportRuleError("Updating rule value", errorCode)
@@ -419,11 +438,15 @@ local function InitializeRuleRow(row)
         choices = {},
         onChanged = function(value)
             if row.owner and row.categoryID and row.ruleID then
-                row.owner:UpdateRuleValue(
+                local updated = row.owner:UpdateRuleValue(
                     row.categoryID,
                     row.ruleID,
                     value
                 )
+
+                if updated ~= nil then
+                    UpdateRenderedRuleValue(row, updated)
+                end
             end
         end,
     })
@@ -434,11 +457,18 @@ local function InitializeRuleRow(row)
                 return nil, Categories.ErrorCodes.MissingRule
             end
 
-            return row.owner:CommitRuleScalarValue(
+            local updated, errorCode = row.owner:CommitRuleScalarValue(
                 row.categoryID,
                 row.ruleID,
                 value
             )
+
+            if updated == nil then
+                return nil, errorCode
+            end
+
+            UpdateRenderedRuleValue(row, updated)
+            return updated
         end,
         onError = function(errorCode)
             ReportRuleError("Updating rule value", errorCode)
@@ -551,6 +581,7 @@ local function RenderRuleRow(row, rule, editor)
     row.ruleID = rule.id
     row.ruleIndex = rule.index
     row.categoryID = editor.categoryID
+    row.rule = rule
     row.stripe:SetShown(rule.index % 2 == 0)
     row.handle.hoverIcon:Hide()
     row.fieldDropdown:SetValue(rule.field)
@@ -601,6 +632,7 @@ local function ResetRuleRow(row)
     row.ruleID = nil
     row.ruleIndex = nil
     row.categoryID = nil
+    row.rule = nil
     row.hasValueRow = nil
     row.isBoolean = nil
     row.textValueCount = nil
@@ -640,10 +672,9 @@ local function CreateRuleListView(editor)
     return view
 end
 
--- Transactional mutations and detached-snapshot refresh
-local function PerformMutation(editor, action, mutation)
-    editor.categoryEditor:CommitCategoryNameEdit()
-    editor.categoryEditor:CancelScheduledRefresh()
+-- Transactional mutations and targeted detached-snapshot refresh
+local function PerformMutation(editor, action, mutation, refreshEditor)
+    editor.categoryEditor:FlushPendingCategoryNameEdit()
     editor.categoryEditor.suppressCategoryRefresh = true
 
     local succeeded, result, errorCode = pcall(mutation)
@@ -658,7 +689,10 @@ local function PerformMutation(editor, action, mutation)
         return nil, errorCode
     end
 
-    editor:ScheduleRefresh()
+    if refreshEditor ~= false then
+        editor:ScheduleRefresh()
+    end
+
     return result
 end
 
@@ -825,7 +859,7 @@ local function UpdateRuleValue(editor, categoryID, ruleID, value)
             ruleID,
             value
         )
-    end)
+    end, false)
 end
 
 local function CommitRuleScalarValue(editor, categoryID, ruleID, value)
@@ -859,7 +893,8 @@ local function CommitRuleTextValue(
                 valueIndex,
                 value
             )
-        end
+        end,
+        false
     )
     if updated == nil then
         return nil, errorCode
@@ -1002,7 +1037,6 @@ local function StartRuleDrag(editor, row)
     editor.categoryEditor:CommitCategoryNameEdit()
     editor:CommitFocusedValue()
     editor:CancelPendingRefresh()
-    editor.categoryEditor:CancelScheduledRefresh()
     editor.categoryEditor:CancelCategoryDrag()
     editor.draggedRuleID = row.ruleID
     editor.draggedRuleCategoryID = row.categoryID

@@ -241,6 +241,14 @@ local function CommitCategoryNameEdit(editor)
     editor.nameEdit:CommitAndClearFocus()
 end
 
+local function FlushPendingCategoryNameEdit(editor)
+    if editor.nameEdit:HasFocus() then
+        return true
+    end
+
+    return editor.nameEdit:CommitAndClearFocus()
+end
+
 local function SelectCategory(editor, categoryID)
     if not FindDefinition(editor, categoryID) then
         return false
@@ -260,11 +268,6 @@ end
 
 local function RefreshCategories(editor, retainScroll, focusName)
     editor.ruleEditor:CancelPendingRefresh()
-
-    if editor.categoryRefreshTimer then
-        editor.categoryRefreshTimer:Cancel()
-        editor.categoryRefreshTimer = nil
-    end
 
     editor:CancelCategoryDrag()
     editor.definitions = Categories.GetOrderedDefinitions()
@@ -307,23 +310,6 @@ local function RefreshCategories(editor, retainScroll, focusName)
     end
 end
 
-local function CancelScheduledRefresh(editor)
-    if editor.categoryRefreshTimer then
-        editor.categoryRefreshTimer:Cancel()
-        editor.categoryRefreshTimer = nil
-    end
-end
-
-local function ScheduleCategoryRefresh(editor)
-    CancelScheduledRefresh(editor)
-    editor.categoryRefreshTimer = C_Timer.NewTimer(0, function()
-        editor.categoryRefreshTimer = nil
-        if editor:IsShown() then
-            editor:RefreshCategories(true)
-        end
-    end)
-end
-
 local function CommitSelectedCategoryName(editor, name)
     editor.suppressCategoryRefresh = true
     local renamed, errorCode = Categories.RenameCategory(
@@ -348,7 +334,6 @@ local function CommitSelectedCategoryName(editor, name)
             row.label:SetText(renamed)
         end
     end)
-    ScheduleCategoryRefresh(editor)
     return renamed
 end
 
@@ -425,7 +410,6 @@ local function ResetCategories(editor)
     editor.ruleEditor:CommitFocusedValue()
     editor.ruleEditor:CancelPendingRefresh()
     CommitCategoryNameEdit(editor)
-    editor:CancelScheduledRefresh()
     editor.suppressCategoryRefresh = true
     Categories.ResetCategories()
     editor.suppressCategoryRefresh = nil
@@ -522,7 +506,6 @@ local function StartCategoryDrag(editor, row)
     editor.ruleEditor:CommitFocusedValue()
     editor.ruleEditor:CancelRuleDrag()
     CommitCategoryNameEdit(editor)
-    editor:CancelScheduledRefresh()
     editor.draggedCategoryID = row.definition.id
     editor.dragInsertionPosition = row.definition.index
     editor:SelectCategory(row.definition.id)
@@ -808,7 +791,7 @@ function CategoryEditor.CreateFrame(measurementFrame)
     frame.RefreshCategories = RefreshCategories
     frame.AddCategory = AddCategory
     frame.CommitCategoryNameEdit = CommitCategoryNameEdit
-    frame.CancelScheduledRefresh = CancelScheduledRefresh
+    frame.FlushPendingCategoryNameEdit = FlushPendingCategoryNameEdit
     frame.CancelCategoryDrag = CancelCategoryDrag
     frame.StartCategoryDrag = StartCategoryDrag
     frame.FinishCategoryDrag = FinishCategoryDrag
@@ -826,7 +809,6 @@ function CategoryEditor.CreateFrame(measurementFrame)
         self.ruleEditor:CancelPendingRefresh()
         self.ruleEditor:CancelRuleDrag()
         CommitCategoryNameEdit(self)
-        self:CancelScheduledRefresh()
         self:CancelCategoryDrag()
     end)
 

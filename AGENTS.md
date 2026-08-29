@@ -175,6 +175,10 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - Profile-owned settings are list grouping/sorting, pin presentation, cooldown-name display, and the complete category registry. Bag replacement and gray-junk selling remain addon-global.
 - Keep Rename Profile and Delete Profile as selectors directly on the Settings canvas. Rename may open the name input after selection, and Delete must retain its destructive confirmation, but neither action should open an intermediate profile-selection modal.
 - Treat the profile's `categories` root as one transactional value: clone it, mutate the clone, and commit the complete root through `NS.Categories`. Category and Rule Set changes reclassify existing normalized inventory records and must not query bag, item, or tooltip APIs. Multi-control rule edits use the Inventory-owned trailing debounce.
+- Keep value-only category-rule edits in place: update the visible detached row
+  snapshot without replacing the editor data provider. Reserve full editor
+  refreshes for structural changes so moving focus between text inputs does not
+  discard the newly focused control.
 - Add defaults in `Defaults.lua` before reading new settings. Use `Get` and `Set`, and register callbacks when a setting must refresh live UI.
 - Expose user settings and profile management through Blizzard's standard Settings API. Column editors remain future work.
 - UI that displays active profile identity or profile descriptors listens to manager lifecycle callbacks. `OnCharacterInfoChanged` refreshes identity-backed permanent descriptors even when the active profile does not change. Features that apply effective profile data listen to active-DB `OnDataChanged`/`OnReset`; do not refresh one feature through both manager and active-DB paths.
