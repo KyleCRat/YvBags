@@ -18,6 +18,7 @@ local VALUE_ROW_HEIGHT = 88
 local TEXT_VALUE_ROW_STEP = CONTROL_HEIGHT + SECTION_GAP
 local ROW_INSET = 6
 local CONTROL_GAP = 8
+local DROPDOWN_EDGE_INSET = 2
 local SCROLLBAR_GAP = 6
 local SCROLLBAR_WIDTH = 17
 local REMOVE_WIDTH = 65
@@ -105,16 +106,19 @@ local function LayoutRuleRow(row)
             32,
             math.floor((contentWidth - CONTROL_GAP) / 2)
         )
-        operatorWidth = fieldWidth
+        operatorWidth = math.max(
+            32,
+            contentWidth - fieldWidth - CONTROL_GAP
+        )
     else
         local separatorWidth = isBoolean
-            and (BOOLEAN_IS_WIDTH + CONTROL_GAP)
-            or 0
+            and (BOOLEAN_IS_WIDTH + (CONTROL_GAP * 2))
+            or CONTROL_GAP
         local controlsWidth = math.max(
             64,
             contentWidth
                 - REMOVE_WIDTH
-                - (CONTROL_GAP * 2)
+                - CONTROL_GAP
                 - separatorWidth
         )
 
@@ -397,6 +401,8 @@ local function InitializeRuleRow(row)
     row.fieldDropdown = ModernSettings:CreateDropdown(row, {
         label = "Field",
         showLabel = false,
+        leftInset = DROPDOWN_EDGE_INSET,
+        rightInset = 0,
         choices = Rules.GetFieldChoices(),
         onChanged = function(fieldID)
             if row.owner and row.categoryID and row.ruleID then
@@ -412,6 +418,8 @@ local function InitializeRuleRow(row)
     row.operatorDropdown = ModernSettings:CreateDropdown(row, {
         label = "Operator",
         showLabel = false,
+        leftInset = 0,
+        rightInset = DROPDOWN_EDGE_INSET,
         choices = {},
         onChanged = function(operatorID)
             if row.owner and row.categoryID and row.ruleID then
@@ -427,6 +435,8 @@ local function InitializeRuleRow(row)
     row.valueDropdown = ModernSettings:CreateDropdown(row, {
         label = "Value",
         showLabel = false,
+        leftInset = DROPDOWN_EDGE_INSET,
+        rightInset = DROPDOWN_EDGE_INSET,
         choices = {},
         onChanged = function(value)
             if row.owner and row.categoryID and row.ruleID then
@@ -1089,6 +1099,8 @@ local function CreateHeader(editor)
     local modeDropdown = ModernSettings:CreateDropdown(header, {
         label = "Match",
         showLabel = false,
+        leftInset = DROPDOWN_EDGE_INSET,
+        rightInset = DROPDOWN_EDGE_INSET,
         width = MODE_DROPDOWN_WIDTH,
         choices = Rules.GetModeChoices(),
         tooltip = "Require all rules or any one rule to match.",

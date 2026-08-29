@@ -28,6 +28,8 @@
 - Restored Mythic Keystones to their own prioritized category and gave keystone pins a stable identity across dungeon and level changes.
 
 ### Changed
+- Aligned compact rule-editor dropdown bounds with the text-input rows and
+  normalized horizontal gaps across each rule block.
 - Removed the unused `Unknown` default category; unmatched items continue to
   use the required `Other` fallback.
 - Use regular tertiary buttons for profile actions and Add Category; reserve
