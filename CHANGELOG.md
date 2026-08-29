@@ -49,6 +49,9 @@
 - Classified Utility Curio, Combat Curio, and Relic consumables as Openable instead of general Consumables.
 
 ### Fixed
+- Capped long settings dropdown menus at three quarters of the UI height and
+  enabled native scrolling through every available choice while keeping the
+  scrolling menu vertically centered.
 - Kept incomplete category rules neutral while they are being configured so
   adding a blank rule does not disable the category's existing matches.
 - Corrected the category-name text field's border spacing and text alignment.
