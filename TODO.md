@@ -9,7 +9,12 @@
 
 ## Future Appearance Settings
 
-- Make the shared accent color customizable, including header text, header dividers, category text, category dividers, and matching hover/pressed accents.
+- Make the shared accent color customizable as a low-priority appearance
+  option. Decide addon-global versus profile ownership (addon-global is likely
+  the better fit), add a reusable LibModernSettings color control, and replace
+  file-load color snapshots with a targeted live recolor path. Apply it only to
+  YvBags accent and selection visuals; keep semantic colors such as rarity,
+  money, binding, and errors unchanged.
 - Downlaod and Use xpac_icons.md icons instead of numbers for expansions
 
 ## Inventory Organization Settings
