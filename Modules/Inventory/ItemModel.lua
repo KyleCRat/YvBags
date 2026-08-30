@@ -650,6 +650,8 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
         hasLoot = containerItemInfo.hasLoot,
         hasNoValue = containerItemInfo.hasNoValue,
         isFiltered = containerItemInfo.isFiltered,
+        isNewThisSession = false,
+        isNewUnseen = false,
         isPendingItemInfo = fullName == nil,
         usedStaticItemInfoFallback = usedStaticFallback,
     }

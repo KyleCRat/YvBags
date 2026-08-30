@@ -6,6 +6,7 @@ NS.Inventory = Inventory
 
 local Categories = NS.Categories
 local Containers = NS.Containers
+local NewItems = NS.NewItems
 local Pins = NS.ItemPins
 local ItemModel = NS.ItemModel
 
@@ -15,6 +16,8 @@ local CATEGORY_RULE_REFRESH_DELAY_SECONDS = 0.1
 Inventory.UpdateReasons = {
     Categories = "categories",
     Locks = "locks",
+    NewItemPlacement = "newItemPlacement",
+    NewItemVisuals = "newItemVisuals",
     Pins = "pins",
 }
 
@@ -134,6 +137,45 @@ local function NotifyUpdateCallbacks(reason, ...)
     for _, callback in ipairs(Inventory.updateCallbacks) do
         callback(Inventory, reason, ...)
     end
+end
+
+local function CancelNewItemStateRefresh()
+    if Inventory.newItemStateRefreshTimer then
+        Inventory.newItemStateRefreshTimer:Cancel()
+        Inventory.newItemStateRefreshTimer = nil
+    end
+end
+
+local function ReconcileNewItemState()
+    local placementChanged, visualsChanged = NewItems.Reconcile(
+        Inventory.items,
+        Inventory.itemsByLocation
+    )
+
+    if placementChanged then
+        NotifyUpdateCallbacks(Inventory.UpdateReasons.NewItemPlacement)
+    elseif visualsChanged then
+        NotifyUpdateCallbacks(Inventory.UpdateReasons.NewItemVisuals)
+    end
+end
+
+local function ScheduleNewItemStateRefresh()
+    if Inventory.newItemStateRefreshTimer or not NewItems.IsSessionActive() then
+        return
+    end
+
+    local timer
+    timer = C_Timer.NewTimer(0, function()
+        if Inventory.newItemStateRefreshTimer ~= timer then
+            return
+        end
+
+        Inventory.newItemStateRefreshTimer = nil
+        if NewItems.IsSessionActive() then
+            ReconcileNewItemState()
+        end
+    end)
+    Inventory.newItemStateRefreshTimer = timer
 end
 
 -- Container scan helpers
@@ -256,6 +298,10 @@ local function OnBagUpdateDelayed()
     Inventory:ScheduleScan("BAG_UPDATE_DELAYED")
 end
 
+local function OnBagNewItemsUpdated()
+    ScheduleNewItemStateRefresh()
+end
+
 local function OnItemLockChanged(_, bagOrSlotIndex, slotIndex)
     if not Containers.IsPlayerContainerID(bagOrSlotIndex) then
         return
@@ -310,6 +356,7 @@ function Inventory:ScanNow(reason)
     end
 
     SortInventoryEntries(self)
+    NewItems.Reconcile(self.items, self.itemsByLocation)
     RebuildStats(self, reason)
     self.initialScanComplete = true
 
@@ -333,6 +380,7 @@ function Inventory:RefreshContainerNow(containerID, reason)
     ReplaceContainer(self, nextContainer)
     ScanContainerSlots(self, nextContainer)
     SortInventoryEntries(self)
+    NewItems.Reconcile(self.items, self.itemsByLocation)
     RebuildStats(self, reason or "container-refresh")
 
     NotifyUpdateCallbacks()
@@ -376,6 +424,16 @@ end
 
 function Inventory:GetItems()
     return self.items
+end
+
+function Inventory:BeginNewItemSession()
+    CancelNewItemStateRefresh()
+    NewItems.BeginSession(self.items, self.itemsByLocation)
+end
+
+function Inventory:EndNewItemSession()
+    CancelNewItemStateRefresh()
+    NewItems.EndSession(self.items)
 end
 
 function Inventory:GetItemByLocation(bagID, slotIndex)
@@ -538,6 +596,7 @@ function Inventory:Initialize()
     NS:RegisterEventHandler("PLAYER_ENTERING_WORLD", OnPlayerEnteringWorld)
     NS:RegisterEventHandler("BAG_UPDATE", OnBagUpdate)
     NS:RegisterEventHandler("BAG_UPDATE_DELAYED", OnBagUpdateDelayed)
+    NS:RegisterEventHandler("BAG_NEW_ITEMS_UPDATED", OnBagNewItemsUpdated)
     NS:RegisterEventHandler("ITEM_LOCK_CHANGED", OnItemLockChanged)
     NS:RegisterEventHandler("GET_ITEM_INFO_RECEIVED", OnItemInfoReceived)
 

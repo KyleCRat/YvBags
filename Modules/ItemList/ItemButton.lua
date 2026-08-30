@@ -88,6 +88,7 @@ function ItemButton.Create(row)
     button:HookScript("OnEnter", function(self)
         local buttonRow = buttonRows[self]
         if buttonRow then
+            NS.ItemRow.HandleItemEnter(buttonRow)
             buttonRow.highlight:Show()
         end
     end)

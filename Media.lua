@@ -29,6 +29,7 @@ local Textures = {
     sortArrow = ADDON_MEDIA_PATH .. "Textures\\Vertex-Arrow.tga",
     circle = ADDON_MEDIA_PATH .. "Textures\\Vertex-Circle.tga",
     mover = ADDON_MEDIA_PATH .. "Textures\\Vertex-Mover.tga",
+    newItem = ADDON_MEDIA_PATH .. "Textures\\Vertex-New.tga",
     pinned = ADDON_MEDIA_PATH .. "Textures\\Vertex-Pinned.tga",
     soulboundBindingIcon = ADDON_MEDIA_PATH .. "Textures\\Vertex-Lock.tga",
     divider = "Interface\\Common\\UI-TooltipDivider",
@@ -82,6 +83,10 @@ end
 
 function Media.GetMoverColor()
     return NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b
+end
+
+function Media.GetNewItemTexture()
+    return Textures.newItem
 end
 
 function Media.GetPinnedTexture()

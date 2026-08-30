@@ -3,6 +3,10 @@
 ## Unreleased
 
 ### Added
+- Added an accent-highlighted new-item partition above pins and groups, with
+  hover acknowledgement that stops the breathing background while retaining
+  the new-item marker, stable placement until the next bag open, and a divider
+  before pins using Top Rows presentation.
 - Added profile management with Character, Specialization, Class, Realm, Faction, Global, and user-created profiles.
 - Added profile selection, creation, copying, resetting, renaming, and deletion to the Blizzard Settings panel.
 - Added a profile-backed category editor for creating, renaming, reordering, removing, and resetting categories.

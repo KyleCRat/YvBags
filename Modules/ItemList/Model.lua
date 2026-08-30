@@ -10,6 +10,7 @@ local Pins = NS.ItemPins
 
 local ROW_TYPE_ITEM = "item"
 local ROW_TYPE_GROUP = "group"
+local ROW_TYPE_DIVIDER = "divider"
 local NO_GROUP_KEY = "none"
 local MANUAL_SORT_KEY = "manual"
 local NO_SECONDARY_SORT_KEY = "none"
@@ -525,6 +526,10 @@ function ListModel.GetRowTypeGroup()
     return ROW_TYPE_GROUP
 end
 
+function ListModel.GetRowTypeDivider()
+    return ROW_TYPE_DIVIDER
+end
+
 function ListModel.GetSortKeyList()
     return SORT_KEY_LIST
 end
@@ -588,6 +593,27 @@ function ListModel.IsSecondarySortEnabled(secondarySortKey, primarySortKey)
     return primarySortKey ~= MANUAL_SORT_KEY and secondarySortKey ~= NO_SECONDARY_SORT_KEY and secondarySortKey ~= primarySortKey
 end
 
+local function AppendItemRows(rows, items)
+    for _, item in ipairs(items) do
+        rows[#rows + 1] = {
+            rowType = ROW_TYPE_ITEM,
+            item = item,
+        }
+    end
+end
+
+local function AppendTopRowsDivider(rows, newItems, pinnedItems, pinDisplayMode)
+    if pinDisplayMode ~= Pins.DisplayModes.Top
+        or #newItems == 0
+        or #pinnedItems == 0 then
+        return
+    end
+
+    rows[#rows + 1] = {
+        rowType = ROW_TYPE_DIVIDER,
+    }
+end
+
 function ListModel.BuildRows(items, state)
     local searchText = Lower(state and state.searchText)
     local sortKey = ListModel.NormalizeSortKey(state and state.sortKey)
@@ -601,6 +627,8 @@ function ListModel.BuildRows(items, state)
     local collapsedGroups = state and state.collapsedGroups or {}
     local pinDisplayMode = Pins.GetDisplayMode()
     local filteredItems = {}
+    local newItems = {}
+    local regularItems = {}
 
     if items then
         for _, item in ipairs(items) do
@@ -612,15 +640,22 @@ function ListModel.BuildRows(items, state)
 
     SortItems(filteredItems, sortKey, sortAscending, secondarySortKey, secondarySortAscending)
 
+    for _, item in ipairs(filteredItems) do
+        local target = item.isNewThisSession and newItems or regularItems
+        target[#target + 1] = item
+    end
+
     if not ListModel.IsGrouped(groupKey) then
         local rows = {}
         local pinnedItems = {}
         local unpinnedItems = {}
 
+        AppendItemRows(rows, newItems)
+
         if pinDisplayMode == Pins.DisplayModes.Normal then
-            unpinnedItems = filteredItems
+            unpinnedItems = regularItems
         else
-            for _, item in ipairs(filteredItems) do
+            for _, item in ipairs(regularItems) do
                 local target = item.isPinned and pinnedItems or unpinnedItems
                 target[#target + 1] = item
             end
@@ -646,20 +681,11 @@ function ListModel.BuildRows(items, state)
                 end
             end
         else
-            for _, item in ipairs(pinnedItems) do
-                rows[#rows + 1] = {
-                    rowType = ROW_TYPE_ITEM,
-                    item = item,
-                }
-            end
+            AppendTopRowsDivider(rows, newItems, pinnedItems, pinDisplayMode)
+            AppendItemRows(rows, pinnedItems)
         end
 
-        for _, item in ipairs(unpinnedItems) do
-            rows[#rows + 1] = {
-                rowType = ROW_TYPE_ITEM,
-                item = item,
-            }
-        end
+        AppendItemRows(rows, unpinnedItems)
 
         return rows, #filteredItems
     end
@@ -668,7 +694,7 @@ function ListModel.BuildRows(items, state)
     local groups = {}
     local pinnedItems = {}
 
-    for _, item in ipairs(filteredItems) do
+    for _, item in ipairs(regularItems) do
         if item.isPinned and pinDisplayMode == Pins.DisplayModes.Top then
             pinnedItems[#pinnedItems + 1] = item
         else
@@ -727,12 +753,9 @@ function ListModel.BuildRows(items, state)
     end)
 
     local rows = {}
-    for _, item in ipairs(pinnedItems) do
-        rows[#rows + 1] = {
-            rowType = ROW_TYPE_ITEM,
-            item = item,
-        }
-    end
+    AppendItemRows(rows, newItems)
+    AppendTopRowsDivider(rows, newItems, pinnedItems, pinDisplayMode)
+    AppendItemRows(rows, pinnedItems)
 
     for _, group in ipairs(groups) do
         local collapsed = collapsedGroups[group.id] == true

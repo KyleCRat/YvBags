@@ -6,6 +6,7 @@ NS.ItemList = ItemList
 
 local Columns = NS.ItemListColumns
 local CursorDrop = NS.ItemListCursorDrop
+local DividerRow = NS.ItemSectionDividerRow
 local GroupRow = NS.ItemGroupRow
 local Header = NS.ItemListHeader
 local ItemRow = NS.ItemRow
@@ -16,6 +17,8 @@ local SearchBox = NS.ItemListSearchBox
 local SCROLL_BOX_TEMPLATE = "WowScrollBoxList"
 local SCROLL_BAR_TEMPLATE = "MinimalScrollBar"
 local ITEM_ROW_FRAME_TYPE = "Frame"
+-- A distinct native type keeps dividers out of the protected item-row pool.
+local DIVIDER_ROW_FRAME_TYPE = "EventFrame"
 local ITEM_ROW_PREWARM_BUFFER = 2
 local MIN_PREWARMED_ITEM_ROWS = 12
 local EMPTY_TEXT_SIZE = 16
@@ -208,6 +211,22 @@ function ListController:RefreshVisibleCooldowns()
     end
 end
 
+function ListController:RefreshVisibleNewItemStates()
+    for _, row in ipairs(self.view:GetFrames()) do
+        if row.item then
+            ItemRow.RefreshNewItemState(row)
+        end
+    end
+end
+
+function ListController:StopNewItemAnimations()
+    for _, row in ipairs(self.view:GetFrames()) do
+        if row.rowInitialized then
+            ItemRow.StopNewItemAnimation(row)
+        end
+    end
+end
+
 function ListController:RefreshItemLock(bagID, slotIndex, isLocked)
     for _, row in ipairs(self.view:GetFrames()) do
         local item = row.item
@@ -243,14 +262,21 @@ end
 local function CreateScrollView(list)
     local view = CreateScrollBoxListLinearView()
     view:SetElementExtentCalculator(function(_, elementData)
-        if elementData.rowType == ListModel.GetRowTypeGroup() then
+        if elementData.rowType == ListModel.GetRowTypeDivider() then
+            return DividerRow.GetRowHeight()
+        elseif elementData.rowType == ListModel.GetRowTypeGroup() then
             return GroupRow.GetRowHeight()
         end
 
         return ItemRow.GetRowHeight()
     end)
     view:SetElementFactory(function(factory, elementData)
-        if elementData.rowType == ListModel.GetRowTypeGroup() then
+        if elementData.rowType == ListModel.GetRowTypeDivider() then
+            factory(DIVIDER_ROW_FRAME_TYPE, function(row)
+                row.rightClipPadding = Layout.ScrollBarContentPadding
+                DividerRow.Render(row)
+            end)
+        elseif elementData.rowType == ListModel.GetRowTypeGroup() then
             factory("Button", function(row, rowData)
                 row.rightClipPadding = Layout.ScrollBarContentPadding
                 GroupRow.Render(row, rowData, list)
@@ -263,7 +289,9 @@ local function CreateScrollView(list)
         end
     end)
     view:SetElementResetter(function(row)
-        if row.groupInitialized then
+        if row.sectionDividerInitialized then
+            DividerRow.Reset(row)
+        elseif row.groupInitialized then
             GroupRow.Reset(row)
         else
             ItemRow.Reset(row)

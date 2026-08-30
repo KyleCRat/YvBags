@@ -9,6 +9,7 @@ YvBags is a World of Warcraft bag replacement addon that shows your current char
 - Shows bag contents in a virtualized list for fast scrolling.
 - Uses full-row item interaction for tooltips, item use, drag, pickup, and cooldown display.
 - Supports name, column, and tooltip search plus collapsible groups, primary sorting, secondary sorting, and manual bag-slot ordering.
+- Surfaces unseen items in accent-highlighted top rows until they are hovered and the bag is reopened.
 - Supports account-wide item pinning with top-row, collapsible-group, top-of-group, or normal-sort presentation in every grouping and sort mode.
 - Keeps the Mythic Keystone in its own prioritized category unless the keystone kind is pinned.
 - Includes explicitly ordered built-in categories, leading with Openable, Cosmetic, Collectables, Mythic Keystone, Consumable, and Equipment while keeping Junk last.
@@ -33,6 +34,8 @@ YvBags opens from normal bag keybinds when **Replace Blizzard Bags** is enabled.
 Middle-click an item row to pin or unpin that item type. Pinning a Mythic Keystone applies to every future keystone regardless of its dungeon or level.
 
 Pinned-item presentation can place pins above the full list, in one collapsible Pinned group, at the top of their respective groups, or in normal sort order. Manual sorting preserves physical bag-slot order within each resulting section.
+
+Items Blizzard marks as new appear above pinned rows and groups. When pins use Top Rows presentation, a divider separates the new-item and pinned sections. Hovering a new row acknowledges it and removes its breathing highlight without moving it or removing its new-item marker. The marker remains until the row returns to its normal sorted position after YvBags is closed and reopened, or until the item is physically moved. Unseen rows remain at the top across bag opens.
 
 While the YvBags frame is open and you are out of combat, press `Ctrl+F` to focus the search field. The shortcut is inactive while the frame is closed or during combat and does not change the player's saved binding.
 

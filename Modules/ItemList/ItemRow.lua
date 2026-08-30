@@ -7,6 +7,7 @@ NS.ItemRow = ItemRow
 local Columns = NS.ItemListColumns
 local Cooldown = NS.ItemRowCooldown
 local ItemButton = NS.ItemRowButton
+local NewItems = NS.NewItems
 
 -- Row geometry
 local ROW_HEIGHT = 31
@@ -15,6 +16,7 @@ local ICON_FRAME_SIZE = 29
 local PROFESSION_QUALITY_ICON_SIZE = 22
 local BINDING_ICON_SIZE = 22
 local ICON_LEFT_OFFSET = 3
+local NEW_ITEM_MARKER_SIZE = 20
 local PIN_MARKER_SIZE = 16
 local ICON_TEX_COORD_LEFT = 0.08
 local ICON_TEX_COORD_RIGHT = 0.92
@@ -32,6 +34,10 @@ local DEFAULT_ICON_BORDER_COLOR_B = 0.55
 local RARITY_HIGHLIGHT_ALPHA = 0.16
 local DEFAULT_HIGHLIGHT_ALPHA = 0.08
 local CONTAINER_HIGHLIGHT_ALPHA = 0.14
+local NEW_ITEM_HIGHLIGHT_MIN_ALPHA = 0.04
+local NEW_ITEM_HIGHLIGHT_MAX_ALPHA = 0.12
+local NEW_ITEM_HIGHLIGHT_HALF_DURATION = 1
+local NEW_ITEM_MARKER_ALPHA = 0.9
 local PIN_MARKER_ALPHA = 0.82
 local FALLBACK_ITEM_ICON = 134400
 local CONTAINER_HIGHLIGHT_COLOR_R, CONTAINER_HIGHLIGHT_COLOR_G, CONTAINER_HIGHLIGHT_COLOR_B = NS.Media.GetAccentColor()
@@ -46,8 +52,8 @@ local PROFESSION_QUALITY_LAYER = "ARTWORK"
 local PROFESSION_QUALITY_SUBLEVEL = 7
 local BINDING_ICON_LAYER = "ARTWORK"
 local BINDING_ICON_SUBLEVEL = 7
-local PIN_MARKER_LAYER = "OVERLAY"
-local PIN_MARKER_SUBLEVEL = 2
+local ITEM_MARKER_LAYER = "OVERLAY"
+local ITEM_MARKER_SUBLEVEL = 2
 
 local function IsTextColumn(column)
     return column.key ~= "icon" and column.key ~= "binding" and column.key ~= "professionQuality"
@@ -89,15 +95,43 @@ local function UpdateContainerHighlight(row)
     row.containerHighlight:SetShown(highlighted)
 end
 
-local function UpdatePinMarker(row, item)
-    if not item.isPinned then
-        row.pinMarker:Hide()
+local function StopNewItemAnimation(row)
+    row.newItemAnimation:Stop()
+    row.newItemHighlight:SetAlpha(NEW_ITEM_HIGHLIGHT_MIN_ALPHA)
+    row.newItemHighlight:Hide()
+end
+
+local function UpdateItemMarkers(row, item)
+    row.newItemMarker:Hide()
+    row.pinMarker:Hide()
+
+    local r, g, b = NS.Media.GetAccentColor()
+    if item.isNewThisSession then
+        row.newItemMarker:SetVertexColor(r, g, b, NEW_ITEM_MARKER_ALPHA)
+        row.newItemMarker:Show()
+    elseif item.isPinned then
+        row.pinMarker:SetVertexColor(r, g, b, PIN_MARKER_ALPHA)
+        row.pinMarker:Show()
+    end
+end
+
+local function UpdateNewItemVisuals(row, item)
+    UpdateItemMarkers(row, item)
+
+    if not item.isNewUnseen then
+        StopNewItemAnimation(row)
         return
     end
 
     local r, g, b = NS.Media.GetAccentColor()
-    row.pinMarker:SetVertexColor(r, g, b, PIN_MARKER_ALPHA)
-    row.pinMarker:Show()
+    row.newItemHighlight:SetColorTexture(r, g, b, 1)
+    if not row.newItemHighlight:IsShown() then
+        row.newItemHighlight:SetAlpha(NEW_ITEM_HIGHLIGHT_MIN_ALPHA)
+        row.newItemHighlight:Show()
+    end
+    if not row.newItemAnimation:IsPlaying() then
+        row.newItemAnimation:Play()
+    end
 end
 
 -- Row construction and layout
@@ -159,6 +193,27 @@ local function CreateTextColumns(row, columns)
     end
 end
 
+local function CreateNewItemAnimation(row)
+    local animation = row.newItemHighlight:CreateAnimationGroup()
+    animation:SetLooping("REPEAT")
+
+    local fadeIn = animation:CreateAnimation("Alpha")
+    fadeIn:SetFromAlpha(NEW_ITEM_HIGHLIGHT_MIN_ALPHA)
+    fadeIn:SetToAlpha(NEW_ITEM_HIGHLIGHT_MAX_ALPHA)
+    fadeIn:SetDuration(NEW_ITEM_HIGHLIGHT_HALF_DURATION)
+    fadeIn:SetOrder(1)
+    fadeIn:SetSmoothing("IN_OUT")
+
+    local fadeOut = animation:CreateAnimation("Alpha")
+    fadeOut:SetFromAlpha(NEW_ITEM_HIGHLIGHT_MAX_ALPHA)
+    fadeOut:SetToAlpha(NEW_ITEM_HIGHLIGHT_MIN_ALPHA)
+    fadeOut:SetDuration(NEW_ITEM_HIGHLIGHT_HALF_DURATION)
+    fadeOut:SetOrder(2)
+    fadeOut:SetSmoothing("IN_OUT")
+
+    row.newItemAnimation = animation
+end
+
 local function InitializeRow(row)
     local columns = Columns.GetColumns()
 
@@ -166,6 +221,12 @@ local function InitializeRow(row)
     row:SetClipsChildren(true)
     row:EnableMouse(false)
     row:SetID(0)
+
+    row.newItemHighlight = row:CreateTexture(nil, ROW_HIGHLIGHT_LAYER)
+    row.newItemHighlight:SetAllPoints(row)
+    row.newItemHighlight:SetAlpha(NEW_ITEM_HIGHLIGHT_MIN_ALPHA)
+    row.newItemHighlight:Hide()
+    CreateNewItemAnimation(row)
 
     row.containerHighlight = row:CreateTexture(nil, ROW_HIGHLIGHT_LAYER)
     row.containerHighlight:SetAllPoints(row)
@@ -180,8 +241,15 @@ local function InitializeRow(row)
     row.contentClip = CreateFrame("Frame", nil, row)
     row.contentClip:SetClipsChildren(true)
 
-    row.pinMarker = row.contentClip:CreateTexture(nil, PIN_MARKER_LAYER)
-    row.pinMarker:SetDrawLayer(PIN_MARKER_LAYER, PIN_MARKER_SUBLEVEL)
+    row.newItemMarker = row.contentClip:CreateTexture(nil, ITEM_MARKER_LAYER)
+    row.newItemMarker:SetDrawLayer(ITEM_MARKER_LAYER, ITEM_MARKER_SUBLEVEL)
+    row.newItemMarker:SetTexture(NS.Media.GetNewItemTexture())
+    row.newItemMarker:SetSize(NEW_ITEM_MARKER_SIZE, NEW_ITEM_MARKER_SIZE)
+    row.newItemMarker:SetPoint("LEFT", row.contentClip, "LEFT", 0, 0)
+    row.newItemMarker:Hide()
+
+    row.pinMarker = row.contentClip:CreateTexture(nil, ITEM_MARKER_LAYER)
+    row.pinMarker:SetDrawLayer(ITEM_MARKER_LAYER, ITEM_MARKER_SUBLEVEL)
     row.pinMarker:SetTexture(NS.Media.GetPinnedTexture())
     row.pinMarker:SetSize(PIN_MARKER_SIZE, PIN_MARKER_SIZE)
     row.pinMarker:SetPoint("TOPLEFT", row.contentClip, "TOPLEFT", 0, 0)
@@ -289,6 +357,22 @@ function ItemRow.RefreshLock(row, isLocked)
     end
 end
 
+function ItemRow.RefreshNewItemState(row)
+    if row.item then
+        UpdateNewItemVisuals(row, row.item)
+    end
+end
+
+function ItemRow.HandleItemEnter(row)
+    if row.item and NewItems.MarkSeen(row.item) then
+        UpdateNewItemVisuals(row, row.item)
+    end
+end
+
+function ItemRow.StopNewItemAnimation(row)
+    StopNewItemAnimation(row)
+end
+
 function ItemRow.SetHighlightedBagID(row, highlightedBagID)
     row.highlightedBagID = highlightedBagID
     UpdateContainerHighlight(row)
@@ -304,7 +388,7 @@ function ItemRow.Render(row, item, list)
 
     UpdateRowHighlightColor(row, item)
     UpdateContainerHighlight(row)
-    UpdatePinMarker(row, item)
+    UpdateNewItemVisuals(row, item)
     UpdateIconBorderColor(row, item)
     ItemButton.Update(row.itemButton, item)
 
@@ -322,8 +406,10 @@ function ItemRow.Reset(row)
     row.item = nil
     row.highlightedBagID = nil
     row:SetID(0)
+    StopNewItemAnimation(row)
     row.highlight:Hide()
     row.containerHighlight:Hide()
+    row.newItemMarker:Hide()
     row.pinMarker:Hide()
     Cooldown.Clear(row)
 

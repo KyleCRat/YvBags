@@ -46,6 +46,7 @@ end
 
 local function IsPresentationOnlyUpdate(reason)
     return reason == NS.Inventory.UpdateReasons.Categories
+        or reason == NS.Inventory.UpdateReasons.NewItemPlacement
         or reason == NS.Inventory.UpdateReasons.Pins
 end
 
@@ -132,6 +133,8 @@ local function RegisterCallbacks(frame)
 
         if reason == NS.Inventory.UpdateReasons.Locks then
             RefreshItemLock(frame, bagID, slotIndex, isLocked)
+        elseif reason == NS.Inventory.UpdateReasons.NewItemVisuals then
+            frame.itemList:RefreshVisibleNewItemStates()
         else
             RequestInventoryRefresh(frame, reason)
         end
@@ -212,7 +215,12 @@ function MainFrame.Create()
             NS.Inventory:ScanNow("frame-show")
         end
 
+        NS.Inventory:BeginNewItemSession()
         RequestInventoryRefresh(self)
+    end)
+    frame:SetScript("OnHide", function(self)
+        NS.Inventory:EndNewItemSession()
+        self.itemList:StopNewItemAnimations()
     end)
     Controls.RegisterSearchShortcut(frame)
 

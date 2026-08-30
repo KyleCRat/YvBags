@@ -62,8 +62,9 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - `Defaults.lua`: addon identity constants plus addon-global, profile, character, and default category-registry data.
 - `Core.lua`: `ADDON_LOADED`, legacy account-storage adoption, LibSimpleDB/Profile-manager construction, shared event dispatch, and initialization callbacks.
 - `Modules/Inventory/Containers.lua`: discovery and metadata for player-owned bag containers and empty slots.
+- `Modules/Inventory/NewItems.lua`: Blizzard-backed unseen-item state, transient per-open placement, physical-move dismissal, and hover acknowledgement.
 - `Modules/Inventory/Pins.lua`: account-wide stable pin identities, pin persistence, and pinned presentation settings.
-- `Modules/Inventory/ItemModel.lua`: normalized occupied-slot item data, including async fallbacks, binding, pins, category-rule fields, keystones, collection kinds, caged pets, expansion, and profession quality.
+- `Modules/Inventory/ItemModel.lua`: normalized occupied-slot item data, including async fallbacks, binding, new-item and pin presentation state, category-rule fields, keystones, collection kinds, caged pets, expansion, and profession quality.
 - `Modules/Inventory/Inventory.lua`: live inventory state, targeted container refreshes, debounced in-memory category reclassification and reconciliation scans, pending item data, indexes, totals, and update callbacks.
 - `Modules/Inventory/CategoryRules.lua`: stable field/operator registries, built-in default classification, Rule Set normalization and compilation, editor choices, and secret-safe normalized-item evaluation.
 - `Modules/Inventory/Categories.lua`: profile-backed category registry, stable category and Rule Set mutations, cached ordering and labels, compiled precedence, and callbacks.
@@ -81,6 +82,7 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - `Modules/ItemList/ItemButton.lua`: native `ContainerFrameItemButtonTemplate` interaction bridge and suppression of native button art.
 - `Modules/ItemList/Cooldown.lua`: secret-safe cooldown/GCD lookup, cached state, row shade, and cooldown name prefix.
 - `Modules/ItemList/GroupRow.lua`: pooled category/group rows and collapse controls.
+- `Modules/ItemList/DividerRow.lua`: pooled noninteractive separation between new-item rows and direct top-row pins.
 - `Modules/ItemList/Tooltip.lua`: debounced native tooltips, custom anchoring, immediate cursor feedback, and pooled-button cleanup.
 - `Modules/ItemList/Layout.lua`: geometry shared by the list, header, scrollbar, and drop overlay.
 - `Modules/MainFrame/MainFrame.lua`: top-level frame lifecycle, composition, and reason-scoped inventory refresh routing.
@@ -118,6 +120,7 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - Configure protected button geometry and reusable regions during row initialization. Do not resize, re-anchor, or recreate protected row buttons during combat refreshes.
 - Before assigning the first data provider, prewarm enough fully initialized item rows for the current viewport so ScrollBox does not lazily create native interaction bridges during combat. Keep this pool viewport-sized rather than inventory-sized.
 - ScrollBox rows are pooled. Every render and reset path must clear state that could leak to the next item, including tooltip, highlight, pin marker, icon, binding, lock, cooldown, and bag-hover state.
+- New-item backgrounds use pooled AnimationGroups only on visible unseen rows. Hover and every reset, recycle, or frame-close path must stop the animation and clear its marker.
 - Never reassign the item-list data provider while a native item-button input handler is still on the stack or a normalized player item is locked. Coalesce inventory-driven rebuilds into an owned next-frame timer, retain pending work through lock transitions, and resume after unlock without polling.
 - `ITEM_LOCK_CHANGED` updates only the affected normalized lock state and visible custom desaturation immediately. Do not replace the data provider or rebind the native interaction bridge from that synchronous event handler.
 - Keep fast scrolling and item interaction functional in combat.
@@ -143,6 +146,9 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - Manual primary sort means physical bag/slot order within each active group and pin-presentation partition. It forces secondary sort to `None` and disables secondary selection.
 - In non-manual modes, item name and item ID break ties after the selected primary and secondary sorts so duplicate stacks remain adjacent. Within an identical item, higher-count stacks come first unless Quantity is an active sort key; physical bag/slot provides the final stable order.
 - Pin state is presentation metadata and must not replace an item's base `categoryKey`; ordered and custom category rules depend on that separation.
+- Blizzard `C_NewItems` state is authoritative for unseen items. YvBags keeps only a transient per-open location-and-GUID snapshot; it never persists a parallel new-item history.
+- Session-new items are direct top rows above every pin mode and display group. Hover clears the breathing accent background immediately but leaves the new-item marker while the row remains session-new; it must not rebuild or reposition the row. Seen rows return to normal placement only after close/reopen. A physical location change dismisses the session placement and marker immediately.
+- When both partitions exist and pins use Top Rows presentation, a noninteractive divider separates session-new items from the pinned rows.
 - Pinned presentation applies across all grouping and sort modes. The supported modes are direct top rows, a collapsible Pinned group, pins first within their normal groups, and normal active-sort placement.
 - Default Category grouping uses the explicit profile-backed order declared in `Defaults.lua`. Openable, Cosmetic, Collectables, Mythic Keystone, Consumable, and Equipment lead in that order; Blizzard loot containers plus Utility Curio, Combat Curio, and Relic consumables map to `openable`; `toy`, `mount`, `pet`, and `battlepet` collection kinds share the `collectables` category; armor and weapons share the `equipment` category unless Blizzard tags the item as cosmetic; and Junk remains last. Removed built-in classifications fall back to `other` without recreating the removed definition.
 - A Category is a stable classification target; a Display Group is only the presentation section produced by Group By. Each Category except `other` owns one flat `all`/`any` Rule Set of atomic Rules. Do not introduce a separate Condition model or nested rule groups without revisiting the product design.
