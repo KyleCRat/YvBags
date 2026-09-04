@@ -38,6 +38,8 @@ local HIGHLIGHT_ALPHA = 0.18
 local BORDER_ALPHA = 0.95
 local PURCHASE_DISABLED_ALPHA = 0.4
 local PURCHASE_ATLAS = "Garr_Building-AddFollowerPlus"
+local TAB_SETTINGS_LOADING_TOOLTIP = "Bank tab settings are still loading."
+local TAB_SETTINGS_UNAVAILABLE_TOOLTIP = "Bank tab settings are unavailable."
 local INCLUDE_REAGENTS_TOOLTIP = "Include tradeable reagents when depositing all into the Warband bank."
 local MONEY_WITHDRAW_TOOLTIP = "Withdraw money from the Warband bank."
 local MONEY_DEPOSIT_TOOLTIP = "Deposit money into the Warband bank."
@@ -246,6 +248,19 @@ local function ShowTabTooltip(button)
     GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
     GameTooltip:ClearLines()
     GameTooltip:SetText(container.name, 1, 1, 1)
+
+    if not button:IsEnabled() then
+        GameTooltip:AddLine(
+            button.disabledTooltip,
+            GRAY_FONT_COLOR.r,
+            GRAY_FONT_COLOR.g,
+            GRAY_FONT_COLOR.b,
+            true
+        )
+        GameTooltip:Show()
+        return
+    end
+
     GameTooltip:AddDoubleLine(
         "Used / Total",
         ("%d / %d"):format(
@@ -266,8 +281,10 @@ local function ShowTabTooltip(button)
 end
 
 local function OnTabEnter(button)
-    button.highlight:Show()
-    button.owner.itemList:SetHighlightedBagID(button.container.id)
+    if button:IsEnabled() then
+        button.highlight:Show()
+        button.owner.itemList:SetHighlightedBagID(button.container.id)
+    end
     ShowTabTooltip(button)
 end
 
@@ -279,6 +296,36 @@ local function OnTabLeave(button)
         button.owner.itemList:SetHighlightedBagID(nil)
     end
     GameTooltip:Hide()
+end
+
+local function GetTabSettingsAvailability(bankType, tabID)
+    if not NS.BankInventory:IsLoaded(bankType)
+        or NS.BankInventory:IsLoading(bankType)
+        or BankPanel:GetActiveBankType() ~= bankType
+        or not BankPanel:GetTabData(tabID) then
+        return false, TAB_SETTINGS_LOADING_TOOLTIP
+    end
+
+    if not C_Bank.CanUseBank(bankType) then
+        return false, TAB_SETTINGS_UNAVAILABLE_TOOLTIP
+    end
+
+    return true
+end
+
+local function SetTabButtonEnabled(button, enabled, disabledTooltip)
+    button:SetEnabled(enabled)
+    button.disabledTooltip = disabledTooltip
+    button.icon:SetDesaturated(not enabled)
+    button.icon:SetAlpha(enabled and 1 or PURCHASE_DISABLED_ALPHA)
+    button.border:SetAlpha(enabled and 1 or PURCHASE_DISABLED_ALPHA)
+
+    if not enabled then
+        button.highlight:Hide()
+        if button.owner.itemList.highlightedBagID == button.container.id then
+            button.owner.itemList:SetHighlightedBagID(nil)
+        end
+    end
 end
 
 local function CreateTabButton(frame, footer, index)
@@ -313,12 +360,18 @@ local function CreateTabButton(frame, footer, index)
     border:SetSize(TAB_BUTTON_SIZE, TAB_BUTTON_SIZE)
     border:SetTexture(NS.Media.GetIconBorderTexture())
     border:SetVertexColor(0.86, 0.86, 0.86, BORDER_ALPHA)
+    button.border = border
 
     button:SetScript("OnClick", function(self)
-        if C_Bank.CanUseBank(self.container.bankType) then
+        local canConfigure = GetTabSettingsAvailability(
+            self.container.bankType,
+            self.container.id
+        )
+        if canConfigure then
             self.owner:OpenTabSettings(self.container.id)
         end
     end)
+    button:SetMotionScriptsWhileDisabled(true)
     button:SetScript("OnEnter", OnTabEnter)
     button:SetScript("OnLeave", OnTabLeave)
     button:Hide()
@@ -731,6 +784,10 @@ local function RefreshTabButtons(frame)
         if container then
             button.container = container
             button.icon:SetTexture(container.icon)
+            SetTabButtonEnabled(
+                button,
+                GetTabSettingsAvailability(bankType, container.id)
+            )
             button:Show()
         else
             button:Hide()
@@ -1069,6 +1126,12 @@ function Footer.Create(frame)
     frame.tabSettingsMenu = settingsMenu
 
     function frame:OpenTabSettings(tabID)
+        local bankType = NS.BankInventory:GetActiveBankType()
+        if not bankType
+            or not GetTabSettingsAvailability(bankType, tabID) then
+            return
+        end
+
         if self.tabSettingsMenu:IsShown()
             and self.tabSettingsMenu:GetSelectedTabID() ~= tabID then
             self.tabSettingsMenu:SetSelectedTab(tabID)

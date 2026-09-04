@@ -221,6 +221,11 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
   refundable-item confirmation, tab settings, and cleanup depend on that state.
 - Show purchased physical tabs as footer icons and only the next purchasable
   tab. Clicking a purchased icon opens Blizzard's tab configurator.
+- Keep purchased-tab configuration disabled until the staged bank scan is
+  committed and the synchronized native `BankPanel` exposes that tab's data.
+  Repair a cold native panel's missing purchased-tab cache from the completed
+  load before enabling it, and never open Blizzard's configurator without a
+  valid selected-tab record.
 - Preload both bank types' footer icons and reveal the active tab group only
   after its textures load so cold Character/Warband switches remain atomic.
 - Use Blizzard's native Deposit All behavior unchanged. Any exclusion policy

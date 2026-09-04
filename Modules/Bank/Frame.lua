@@ -85,6 +85,12 @@ local function ApplyInventoryRefresh(frame, refreshFooter)
         return
     end
 
+    local containers = Inventory:GetContainers(bankType)
+    local expectedTab = not Inventory:IsLoading(bankType) and containers[1]
+    NS.BlizzardBank.SyncNativeBankType(
+        bankType,
+        expectedTab and expectedTab.id
+    )
     frame.itemList:SetEmptyText(GetEmptyText(bankType))
     frame.itemList:SetItems(
         C_Bank.FetchBankLockedReason(bankType) == nil

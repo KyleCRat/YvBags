@@ -86,6 +86,9 @@
 - Classified Utility Curio, Combat Curio, and Relic consumables as Openable instead of general Consumables.
 
 ### Fixed
+- Kept purchased bank-tab configuration disabled until both the staged bank
+  load and Blizzard's native tab data are ready, then repaired stale native
+  tab state so the controls become available without switching bank views.
 - Preloaded Character and Warband tab icons and revealed each refreshed bank
   tab strip atomically, preventing icons from appearing one at a time on the
   first switch after login.

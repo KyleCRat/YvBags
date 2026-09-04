@@ -68,7 +68,7 @@ function BlizzardBank.IsReplacementEnabled()
     return IsReplacementEnabled()
 end
 
-function BlizzardBank.SyncNativeBankType(bankType)
+function BlizzardBank.SyncNativeBankType(bankType, expectedTabID)
     -- Native refundable-item confirmations ask BankFrame for its active type,
     -- which only succeeds while the internal BankPanel is explicitly shown.
     -- Set the type before the first Show so BankPanel's OnShow refresh never
@@ -80,6 +80,13 @@ function BlizzardBank.SyncNativeBankType(bankType)
 
     if not BankPanel:IsShown() then
         BankPanel:Show()
+    end
+
+    -- On a cold open BankPanel can already be shown with the requested type
+    -- while its purchased-tab cache is still empty. Refresh it once YvBags
+    -- has committed a tab that the native configurator must be able to find.
+    if expectedTabID and not BankPanel:GetTabData(expectedTabID) then
+        BankPanel:Reset()
     end
 end
 
