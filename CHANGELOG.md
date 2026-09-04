@@ -13,6 +13,8 @@
   configuration, the next purchasable tab with Blizzard's confirmation flow,
   native bank cleanup, money transfer, Deposit All Reagents, Deposit All
   Warbound Items, and the Include Tradeable Reagents option.
+- Added optional Icon Browser integration for searchable, filterable bank-tab
+  icon selection while retaining Blizzard's native selector by default.
 - Added a Bank settings page with independent replacement and scale controls
   plus profile-owned list settings that mirror bag settings by default and can
   be detached without losing their prior independent configuration.

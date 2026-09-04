@@ -34,6 +34,11 @@ local CHECKMARK_OFFSET_Y = 2
 local MONEY_FRAME_RIGHT_OFFSET = 2
 local MONEY_DISPLAY_MIN_WIDTH = 50
 local MONEY_DISPLAY_PADDING = 8
+local ICON_BROWSER_TOP_X_OFFSET = 8
+local ICON_BROWSER_TOP_Y_OFFSET = -5
+local ICON_BROWSER_RIGHT_OFFSET = -5
+local ICON_BROWSER_BOTTOM_OFFSET = 40
+local ICON_BROWSER_LABEL_Y_OFFSET = -10
 local HIGHLIGHT_ALPHA = 0.18
 local BORDER_ALPHA = 0.95
 local PURCHASE_DISABLED_ALPHA = 0.4
@@ -840,6 +845,57 @@ local function RefreshTabButtons(frame)
     )
 end
 
+local function HideDefaultIconSelector(settingsMenu)
+    settingsMenu.IconSelector:Hide()
+    settingsMenu.IconSelector:SetAlpha(0)
+    settingsMenu.BorderBox.IconTypeDropdown:Hide()
+    settingsMenu.BorderBox.IconTypeDropdown:SetAlpha(0)
+end
+
+local function AttachOptionalIconBrowser(settingsMenu)
+    local iconBrowserAPI = _G.LRPMediaIconBrowserAPI
+    if not iconBrowserAPI or not iconBrowserAPI.CreateBrowser then
+        return
+    end
+
+    local browser = iconBrowserAPI.CreateBrowser(
+        settingsMenu.BorderBox
+    )
+    browser:ClearAllPoints()
+    browser:SetPoint(
+        "TOPLEFT",
+        settingsMenu.DepositSettingsMenu,
+        "BOTTOMLEFT",
+        ICON_BROWSER_TOP_X_OFFSET,
+        ICON_BROWSER_TOP_Y_OFFSET
+    )
+    browser:SetPoint(
+        "BOTTOMRIGHT",
+        settingsMenu.BorderBox,
+        "BOTTOMRIGHT",
+        ICON_BROWSER_RIGHT_OFFSET,
+        ICON_BROWSER_BOTTOM_OFFSET
+    )
+    settingsMenu.LRPMIB_Browser = browser
+
+    local selectionText = settingsMenu.BorderBox.IconSelectionText
+    local point, relativeTo, relativePoint, xOffset, yOffset =
+        selectionText:GetPoint(1)
+    selectionText:ClearAllPoints()
+    selectionText:SetPoint(
+        point,
+        relativeTo,
+        relativePoint,
+        xOffset,
+        yOffset + ICON_BROWSER_LABEL_Y_OFFSET
+    )
+
+    settingsMenu:HookScript("OnShow", function(self)
+        HideDefaultIconSelector(self)
+        browser:Show()
+    end)
+end
+
 function Footer.PreloadTabIcons(frame)
     local preloadTextures = frame.bankTabIconPreloadTextures
     local preloadIndex = 0
@@ -1123,6 +1179,7 @@ function Footer.Create(frame)
     settingsMenu:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     settingsMenu:SetFrameStrata("DIALOG")
     settingsMenu:Hide()
+    AttachOptionalIconBrowser(settingsMenu)
     frame.tabSettingsMenu = settingsMenu
 
     function frame:OpenTabSettings(tabID)

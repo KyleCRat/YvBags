@@ -226,6 +226,8 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
   Repair a cold native panel's missing purchased-tab cache from the completed
   load before enabling it, and never open Blizzard's configurator without a
   valid selected-tab record.
+- Integrate the optional IconBrowser addon only through its public
+  `LRPMediaIconBrowserAPI`; retain Blizzard's native selector when it is absent.
 - Preload both bank types' footer icons and reveal the active tab group only
   after its textures load so cold Character/Warband switches remain atomic.
 - Use Blizzard's native Deposit All behavior unchanged. Any exclusion policy

@@ -4,6 +4,7 @@
 ## Author: Yvairel
 ## Version: 12.1.0-2
 ## IconTexture: Interface\Icons\INV_Misc_Bag_08
+## OptionalDeps: IconBrowser
 ## SavedVariables: YvBagsDB
 ## SavedVariablesPerCharacter: YvBagsCharacterDB
 

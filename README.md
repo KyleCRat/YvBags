@@ -156,6 +156,9 @@ The current release supports World of Warcraft: Midnight, interface version 12.1
 
 All required libraries are included with the addon.
 
+When the optional Icon Browser addon is enabled, its searchable and filterable
+browser replaces the native icon list in YvBags' bank-tab configurator.
+
 ## Limitations
 
 - Guild banks, void storage, cached-character inventories, and currency-list
