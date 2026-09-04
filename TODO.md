@@ -1,3 +1,5 @@
+- Deposit all warbound items ignore pinned items? Find a way to not deposit all hearty feasts every time I cilck this button, Maybe toggle to ignore consumables? 
+
 ## Next Major Feature: Column Customization
 
 - Create a dedicated implementation plan before coding profile-owned column
