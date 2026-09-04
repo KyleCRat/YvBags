@@ -38,14 +38,21 @@ local PROFILE_DESCRIPTOR_EVENTS = {
 }
 
 local controls = {}
+local bankControls = {}
 local profileDescriptors = {}
 local profileRefsByToken = {}
 local pendingSettingsCategoryID
 local controlRefreshScheduled = {}
+local BAG_SCOPE = NS.ItemListSettings.Scopes.Bags
+local BANK_SCOPE = NS.ItemListSettings.Scopes.Bank
 
 -- Stored values and list updates
 local function GetItemList()
     return NS.frame.itemList
+end
+
+local function GetBankItemList()
+    return NS.bankFrame.itemList
 end
 
 local function GetBooleanSetting(database, section, key)
@@ -84,6 +91,15 @@ local function SetReplaceBlizzardBags(value)
     end
 end
 
+local function SetReplaceBlizzardBank(value)
+    SetBooleanSetting(
+        NS.globalDB,
+        "features",
+        "replaceBlizzardBank",
+        value
+    )
+end
+
 local function SetAutosellGrayJunk(value)
     SetBooleanSetting(NS.globalDB, "features", "autosellGrayJunk", value)
 
@@ -95,10 +111,11 @@ end
 local function SetShowCooldownsInName(value)
     SetBooleanSetting(NS.db, "display", "showCooldownsInName", value)
     GetItemList():RefreshVisibleRows()
+    GetBankItemList():RefreshVisibleRows()
 end
 
 local function GetListValue(key)
-    return NS.db:Get("list", key)
+    return NS.ItemListSettings.GetListValue(BAG_SCOPE, key)
 end
 
 local function SetPrimarySort(sortKey)
@@ -132,8 +149,70 @@ local function SetGroup(groupKey)
 end
 
 local function SetPinDisplayMode(displayMode)
-    NS.ItemPins.SetDisplayMode(displayMode)
-    GetItemList():RefreshDataProvider(true)
+    NS.ItemListSettings.SetPinDisplayMode(
+        BAG_SCOPE,
+        NS.ItemPins.NormalizeDisplayMode(displayMode)
+    )
+    GetItemList():RefreshProfileSettings()
+end
+
+local function GetBankFrameScalePercent()
+    local scale = NS.charDB:Get("bankFrame", "scale")
+        or NS.defaults.character.bankFrame.scale
+    return math.floor((scale * 100) + 0.5)
+end
+
+local function SetBankFrameScalePercent(value)
+    value = math.max(
+        SCALE_MIN_PERCENT,
+        math.min(SCALE_MAX_PERCENT, tonumber(value) or 100)
+    )
+    NS.BankFrameGeometry.SetScale(value / 100)
+end
+
+local function GetBankListValue(key)
+    return NS.ItemListSettings.GetListValue(BANK_SCOPE, key)
+end
+
+local function SetBankMirroring(value)
+    NS.ItemListSettings.SetBankMirroring(value == true)
+end
+
+local function SetBankPrimarySort(sortKey)
+    GetBankItemList():SetSort(
+        NS.ItemListModel.NormalizeSortKey(sortKey),
+        GetBankListValue("sortAscending") ~= false
+    )
+end
+
+local function SetBankPrimarySortDirection(sortAscending)
+    GetBankItemList():SetSort(
+        GetBankListValue("sortKey"),
+        sortAscending == true
+    )
+end
+
+local function SetBankSecondarySort(sortKey)
+    GetBankItemList():SetSecondarySort(
+        sortKey,
+        GetBankListValue("secondarySortAscending") ~= false
+    )
+end
+
+local function SetBankSecondarySortDirection(sortAscending)
+    GetBankItemList():SetSecondarySortDirection(sortAscending == true)
+end
+
+local function SetBankGroup(groupKey)
+    GetBankItemList():SetGroup(groupKey)
+end
+
+local function SetBankPinDisplayMode(displayMode)
+    NS.ItemListSettings.SetPinDisplayMode(
+        BANK_SCOPE,
+        NS.ItemPins.NormalizeDisplayMode(displayMode)
+    )
+    GetBankItemList():RefreshProfileSettings()
 end
 
 -- Dropdown choices
@@ -576,6 +655,11 @@ local function MainFrameIsShown()
     return AddonSettings.frame and AddonSettings.frame:IsShown()
 end
 
+local function BankSettingsFrameIsShown()
+    return AddonSettings.bankSettingsFrame
+        and AddonSettings.bankSettingsFrame:IsShown()
+end
+
 local function RefreshProfileControls()
     RefreshProfileDescriptors()
 
@@ -676,6 +760,58 @@ local function RefreshMainFrame()
     RefreshProfileSettingControls()
 end
 
+local function RefreshBankSettingsFrame()
+    local ListModel = NS.ItemListModel
+    local primarySortKey = ListModel.NormalizeSortKey(
+        GetBankListValue("sortKey")
+    )
+    local secondarySortKey = ListModel.NormalizeSecondarySortKey(
+        GetBankListValue("secondarySortKey")
+    )
+    local manual = ListModel.IsManualSortKey(primarySortKey)
+    local secondaryEnabled = not manual
+        and secondarySortKey ~= ListModel.GetNoSecondarySortKey()
+
+    bankControls.replaceBlizzardBank:SetValue(
+        NS.globalDB:Get("features", "replaceBlizzardBank") ~= false
+    )
+    bankControls.useBagListSettings:SetValue(
+        NS.ItemListSettings.IsBankMirroring()
+    )
+    bankControls.frameScale:SetValue(GetBankFrameScalePercent())
+    bankControls.groupKey:SetValue(ListModel.NormalizeGroupKey(
+        GetBankListValue("groupKey")
+    ))
+    bankControls.pinDisplayMode:SetValue(
+        NS.ItemPins.NormalizeDisplayMode(
+            NS.ItemListSettings.GetPinDisplayMode(BANK_SCOPE)
+        )
+    )
+    bankControls.primarySortKey:SetValue(primarySortKey)
+    bankControls.primarySortDirection:SetValue(
+        GetBankListValue("sortAscending") ~= false
+    )
+    bankControls.secondarySortKey:SetValue(secondarySortKey)
+    bankControls.secondarySortDirection:SetValue(
+        GetBankListValue("secondarySortAscending") ~= false
+    )
+
+    bankControls.primarySortDirection:SetControlEnabled(
+        not manual,
+        "Manual sorting always follows bank tab and slot order."
+    )
+    bankControls.secondarySortKey:SetControlEnabled(
+        not manual,
+        "Manual primary sorting disables secondary sorting."
+    )
+    bankControls.secondarySortDirection:SetControlEnabled(
+        secondaryEnabled,
+        manual
+            and "Manual primary sorting disables secondary sorting."
+            or "Choose a secondary sort before setting its direction."
+    )
+end
+
 local function ScheduleControlRefresh(key, callback)
     if not MainFrameIsShown() or controlRefreshScheduled[key] then
         return
@@ -706,6 +842,21 @@ local function RefreshProfileSettingControlsIfShown()
     ScheduleControlRefresh("profileSettings", RefreshProfileSettingControls)
 end
 
+local function RefreshBankSettingsIfShown()
+    if not BankSettingsFrameIsShown()
+        or controlRefreshScheduled.bankSettings then
+        return
+    end
+
+    controlRefreshScheduled.bankSettings = true
+    C_Timer.After(0, function()
+        controlRefreshScheduled.bankSettings = nil
+        if BankSettingsFrameIsShown() then
+            RefreshBankSettingsFrame()
+        end
+    end)
+end
+
 local function ResetMainSettings()
     local globalDefaults = NS.defaults.global.features
     local profileDefaults = NS.defaults.profile
@@ -723,6 +874,18 @@ local function ResetMainSettings()
     SetPrimarySortDirection(listDefaults.sortAscending)
     SetSecondarySort(listDefaults.secondarySortKey)
     SetSecondarySortDirection(listDefaults.secondarySortAscending)
+end
+
+local function ResetBankSettings()
+    NS.globalDB:Set(
+        "features",
+        "replaceBlizzardBank",
+        NS.defaults.global.features.replaceBlizzardBank
+    )
+    NS.db:Delete("bank")
+    SetBankFrameScalePercent(
+        NS.defaults.character.bankFrame.scale * 100
+    )
 end
 
 -- Main page composition
@@ -895,6 +1058,105 @@ local function BuildMainSettingsFrame(frame, measurementFrame)
     frame.layout = layout
 end
 
+local function BuildBankSettingsFrame(frame, measurementFrame)
+    local layout = ModernSettings:CreateCanvasLayout(frame, {
+        measurementFrame = measurementFrame,
+        scrollable = true,
+    })
+    local root = layout:GetRootFlow()
+
+    layout:AddHeader(
+        "Bank",
+        "Configure the combined Character and Warband bank window."
+    )
+
+    local columns = root:BeginColumns()
+
+    columns.left:AddSection("General", { marginTop = 0 })
+    bankControls.replaceBlizzardBank = columns.left:AddControl(
+        "checkbox",
+        {
+            label = "Replace Blizzard Bank",
+            tooltip = "Use YvBags for Character and Warband bank access.",
+            onChanged = SetReplaceBlizzardBank,
+        }
+    )
+    bankControls.useBagListSettings = columns.left:AddControl(
+        "checkbox",
+        {
+            label = "Use Bag List Settings",
+            tooltip = "Keep bank grouping, sorting, directions, and pinned-item presentation synchronized with the bag list. Changes made from either window update both while enabled.",
+            onChanged = SetBankMirroring,
+        }
+    )
+    bankControls.frameScale = columns.left:AddControl("slider", {
+        label = "Scale",
+        minValue = SCALE_MIN_PERCENT,
+        maxValue = SCALE_MAX_PERCENT,
+        step = SCALE_STEP_PERCENT,
+        suffix = "%",
+        tooltip = "Resize the YvBags bank frame.",
+        onChanged = SetBankFrameScalePercent,
+    })
+
+    columns.right:AddSection("List", { marginTop = 0 })
+    bankControls.groupKey = columns.right:AddControl("dropdown", {
+        label = "Group By",
+        choices = CreateGroupChoices(),
+        tooltip = "Choose how both bank views group items.",
+        onChanged = SetBankGroup,
+    })
+    bankControls.pinDisplayMode = columns.right:AddControl(
+        "dropdown",
+        {
+            label = "Pinned Items",
+            choices = CreatePinDisplayChoices(),
+            tooltip = "Choose how account-wide pins appear in both bank views.",
+            onChanged = SetBankPinDisplayMode,
+        }
+    )
+    bankControls.primarySortKey = columns.right:AddControl(
+        "dropdown",
+        {
+            label = "Primary Sort",
+            choices = CreateSortChoices(),
+            tooltip = "Choose the primary bank-item sort order.",
+            onChanged = SetBankPrimarySort,
+        }
+    )
+    bankControls.primarySortDirection = columns.right:AddControl(
+        "dropdown",
+        {
+            label = "Primary Sort Direction",
+            choices = CreateDirectionChoices(),
+            tooltip = "Choose the primary bank sort direction.",
+            onChanged = SetBankPrimarySortDirection,
+        }
+    )
+    bankControls.secondarySortKey = columns.right:AddControl(
+        "dropdown",
+        {
+            label = "Secondary Sort",
+            choices = CreateSecondarySortChoices(),
+            tooltip = "Choose the secondary bank-item sort order.",
+            onChanged = SetBankSecondarySort,
+        }
+    )
+    bankControls.secondarySortDirection = columns.right:AddControl(
+        "dropdown",
+        {
+            label = "Secondary Sort Direction",
+            choices = CreateDirectionChoices(),
+            tooltip = "Choose the secondary bank sort direction.",
+            onChanged = SetBankSecondarySortDirection,
+        }
+    )
+
+    columns:Finish()
+    layout:Finalize()
+    frame.layout = layout
+end
+
 -- Settings registration and public contract
 local function OpenSettingsCategory(categoryID)
     pendingSettingsCategoryID = nil
@@ -942,11 +1204,27 @@ function AddonSettings.Open(categoryID)
     return true
 end
 
+function AddonSettings.OpenBank()
+    return AddonSettings.Open(
+        AddonSettings.bankCategory
+            and AddonSettings.bankCategory:GetID()
+    )
+end
+
 function AddonSettings.NotifyFrameScaleChanged()
     local value = GetFrameScalePercent()
 
     if controls.frameScale and controls.frameScale:GetValue() ~= value then
         controls.frameScale:SetValue(value)
+    end
+end
+
+function AddonSettings.NotifyBankFrameScaleChanged()
+    local value = GetBankFrameScalePercent()
+
+    if bankControls.frameScale
+        and bankControls.frameScale:GetValue() ~= value then
+        bankControls.frameScale:SetValue(value)
     end
 end
 
@@ -967,6 +1245,15 @@ function AddonSettings.Register()
         mainFrame,
         ADDON_NAME
     )
+    local bankFrame = CreateFrame("Frame")
+    BuildBankSettingsFrame(bankFrame, measurementFrame)
+    bankFrame.OnRefresh = RefreshBankSettingsFrame
+    bankFrame.OnDefault = ResetBankSettings
+    local bankCategory = Settings.RegisterCanvasLayoutSubcategory(
+        category,
+        bankFrame,
+        "Bank"
+    )
     local categoriesFrame = NS.CategoryEditor.CreateFrame(measurementFrame)
     local categoriesCategory = Settings.RegisterCanvasLayoutSubcategory(
         category,
@@ -978,6 +1265,8 @@ function AddonSettings.Register()
 
     AddonSettings.frame = mainFrame
     AddonSettings.category = category
+    AddonSettings.bankSettingsFrame = bankFrame
+    AddonSettings.bankCategory = bankCategory
     AddonSettings.categoriesFrame = categoriesFrame
     AddonSettings.categoriesCategory = categoriesCategory
 
@@ -992,6 +1281,10 @@ function AddonSettings.Register()
         RefreshGlobalAndCharacterControlsIfShown,
         "features"
     )
+    NS.globalDB:RegisterTreeCallback(
+        RefreshBankSettingsIfShown,
+        "features"
+    )
     NS.db:RegisterTreeCallback(
         RefreshProfileSettingControlsIfShown,
         "display"
@@ -1004,6 +1297,9 @@ function AddonSettings.Register()
         RefreshProfileSettingControlsIfShown,
         "pins"
     )
+    NS.db:RegisterTreeCallback(RefreshBankSettingsIfShown, "list")
+    NS.db:RegisterTreeCallback(RefreshBankSettingsIfShown, "pins")
+    NS.db:RegisterTreeCallback(RefreshBankSettingsIfShown, "bank")
     NS.db:RegisterLifecycleCallback(
         "OnDataChanged",
         RefreshProfileSettingControlsIfShown
@@ -1012,9 +1308,18 @@ function AddonSettings.Register()
         "OnReset",
         RefreshProfileSettingControlsIfShown
     )
+    NS.db:RegisterLifecycleCallback(
+        "OnDataChanged",
+        RefreshBankSettingsIfShown
+    )
+    NS.db:RegisterLifecycleCallback(
+        "OnReset",
+        RefreshBankSettingsIfShown
+    )
 
     AddonSettings.registered = true
     RefreshMainFrame()
+    RefreshBankSettingsFrame()
 end
 
 NS:RegisterInitCallback(AddonSettings.Register)

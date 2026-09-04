@@ -4,11 +4,16 @@ This file is the standing product and engineering contract for work in the YvBag
 
 ## Product Boundary
 
-- YvBags is a list-based replacement for the current character's player bags.
-- Supported containers are the backpack, equipped bag slots, and the equipped reagent bag.
-- Bank, reagent bank, warband bank, guild bank, void storage, cached characters, and grid mode are intentionally out of scope unless the user explicitly changes the product boundary.
+- YvBags is a list-based replacement for the current character's player bags,
+  Character bank, and Warband bank.
+- Player-bag containers are the backpack, equipped bag slots, and equipped
+  reagent bag. The custom bank combines all purchased physical tabs within
+  each of its separate Character and Warband views.
+- Guild bank, void storage, cached characters, and grid mode are intentionally
+  out of scope unless the user explicitly changes the product boundary.
 - Preserve manual bag-slot ordering alongside sorted and grouped list modes.
-- Do not quietly expand scope into a general inventory database or bank addon.
+- Keep bag replacement and bank replacement independently toggleable. Do not
+  expand scope into a general cross-character inventory database.
 
 ## Environment
 
@@ -66,6 +71,9 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - `Modules/Inventory/Pins.lua`: account-wide stable pin identities, pin persistence, and pinned presentation settings.
 - `Modules/Inventory/ItemModel.lua`: normalized occupied-slot item data, including async fallbacks, binding, new-item and pin presentation state, category-rule fields, keystones, collection kinds, caged pets, expansion, and profession quality.
 - `Modules/Inventory/Inventory.lua`: live inventory state, targeted container refreshes, debounced in-memory category reclassification and reconciliation scans, pending item data, indexes, totals, and update callbacks.
+- `Modules/Bank/Inventory.lua`: session-only Character and Warband bank states,
+  purchased-tab discovery, staged initial scans, targeted tab refreshes, and
+  shared category/pin reclassification.
 - `Modules/Inventory/CategoryRules.lua`: stable field/operator registries, built-in default classification, Rule Set normalization and compilation, editor choices, and secret-safe normalized-item evaluation.
 - `Modules/Inventory/Categories.lua`: profile-backed category registry, stable category and Rule Set mutations, cached ordering and labels, compiled precedence, and callbacks.
 - `Constants/Binding.lua`: binding keys and binding predicates. Use these constants instead of repeating binding strings.
@@ -73,13 +81,19 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - `Modules/Bags/BlizzardBags.lua`: replacement wrappers for Blizzard bag open, close, toggle, and restore behavior.
 - `Modules/Bags/JunkAutosell.lua`: optional use of Blizzard's native gray-junk selling API.
 - `Modules/ItemList/Columns.lua`: fixed/disabled column definitions, header metadata, cell formatting, and column-owned visual metadata.
+- `Modules/ItemList/Settings.lua`: effective bag/bank list-setting ownership,
+  bidirectional mirroring, and first-detach snapshots.
 - `Modules/ItemList/Model.lua`: search, grouping, primary sorting, secondary sorting, manual ordering, and display-row construction. Cache sort values here rather than in row rendering.
-- `Modules/ItemList/List.lua`: list state, ScrollBox composition, data-provider refreshes, and coordination between list-owned modules.
+- `Modules/ItemList/List.lua`: inventory-adapted list state, ScrollBox
+  composition, data-provider refreshes, and coordination between list-owned
+  modules.
 - `Modules/ItemList/Header.lua`: header visuals, sorting/grouping context menus, sort indicators, and separator interactions.
 - `Modules/ItemList/SearchBox.lua`: search-box creation and list search dispatch.
 - `Modules/ItemList/CursorDrop.lua`: cursor-item drop targets, insertion overlay, and active cursor polling.
 - `Modules/ItemList/ItemRow.lua`: pooled item-row layout and custom visual rendering.
 - `Modules/ItemList/ItemButton.lua`: native `ContainerFrameItemButtonTemplate` interaction bridge and suppression of native button art.
+- `Modules/Bank/ItemButton.lua`: native `BankItemButtonTemplate` interaction
+  bridge and suppression of native button art.
 - `Modules/ItemList/Cooldown.lua`: secret-safe cooldown/GCD lookup, cached state, row shade, and cooldown name prefix.
 - `Modules/ItemList/GroupRow.lua`: pooled category/group rows and collapse controls.
 - `Modules/ItemList/DividerRow.lua`: pooled noninteractive separation between new-item rows and direct top-row pins.
@@ -91,11 +105,22 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - `Modules/MainFrame/Layout.lua`: geometry shared by main-frame modules.
 - `Modules/MainFrame/Footer.lua`: bag buttons, bag-space display, money, footer layout, and related tooltips.
 - `Modules/MainFrame/FooterCurrencies.lua`: tracked backpack currencies, responsive fitting, currency tooltips, and untracking.
+- `Modules/Bank/Layout.lua`: shared custom-bank frame geometry constants.
+- `Modules/Bank/Geometry.lua`: per-character custom-bank position, size, and
+  scale persistence.
+- `Modules/Bank/Footer.lua`: physical bank-tab controls, usage, native purchase
+  and configuration flows, cleanup, deposits, and bank money controls.
+- `Modules/Bank/BlizzardBank.lua`: native BankFrame suppression, active native
+  bank-state synchronization, replacement toggling, and session routing.
+- `Modules/Bank/Frame.lua`: custom bank composition, Character/Warband view
+  selection, safe inventory refreshes, and frame lifecycle.
 - `Modules/Settings/CategoryRuleEditor.lua`: virtualized flat Rule Set editor, structured field/operator/value controls, presentation-only rule reordering, and detached-snapshot refresh handling.
 - `Modules/Settings/CategoryEditor.lua`: virtualized profile-backed category list, reorder interaction, category detail composition, and category canvas lifecycle.
 - `Media.lua`: centralized fonts, textures, atlases, colors, and LibSharedMedia registration.
 - `Formatting/Money.lua`: shared compact and exact money formatting.
-- `Settings.lua`: LibModernSettings canvas composition, Blizzard Settings registrations, profile management, confirmations, and live setting callbacks.
+- `Settings.lua`: LibModernSettings bag and bank canvas composition, Blizzard
+  Settings registrations, profile management, confirmations, and live setting
+  callbacks.
 - `Commands.lua`: slash commands and diagnostics.
 
 ## Critical Implementation Invariants
@@ -104,6 +129,13 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 
 - `BAG_UPDATE` uses `Inventory:RefreshContainerNow` for the affected player container so counts and rows update promptly.
 - Noisier follow-up events use the 0.2-second `Inventory:ScheduleScan` path to reconcile all containers.
+- Bank state exists only while a bank session is open. Character and Warband
+  inventories are separate states; each combines its purchased physical tabs.
+  Stage initial loads one physical tab per next-frame tick, commit the completed
+  snapshot atomically, and lazily load the inactive bank type.
+- Target known bank-tab updates without rescanning the other type. Reconcile
+  noisy bank events through the trailing scan path, and retain a follow-up scan
+  if a tab changes during a staged load.
 - Preserve `itemsByLocation`, `locationKey`, bag ID, and slot index even when Bag/Slot is not user-visible. Manual mode and item-button routing depend on physical location.
 - New normalized fields belong in `Modules/Inventory/ItemModel.lua`. Update pending-item diagnostics, sorting/filtering consumers, and row formatting only when they need that field.
 - Item data is asynchronous. A temporary cache miss must not permanently classify an item as unknown.
@@ -113,7 +145,11 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 
 - The visible row is the item. Hovering or clicking any part of it must behave like the item icon would in Blizzard bags.
 - Each pooled row uses a named `ContainerFrameItemButtonTemplate` button stretched across the row as a native interaction bridge.
-- The bridge owns Blizzard click, use, drag, pickup, split-stack, cursor, and tooltip semantics. Do not replace those paths with direct calls such as `UseContainerItem`, which can taint or fail in combat.
+- Bag rows use `ContainerFrameItemButtonTemplate`; bank rows use
+  `BankItemButtonTemplate`. Their inventory-specific bridges own Blizzard
+  click, use, drag, pickup, split-stack, cursor, refundable-item confirmation,
+  and tooltip semantics. Do not replace those paths with direct protected item
+  calls.
 - Keep YvBags-owned row, hover, and routing state outside the native item-button table. Use weak-keyed side tables so pooled-button refreshes do not contaminate Blizzard's protected click path.
 - Middle-click is reserved for the account-wide pin toggle through the button's unregistered `OnMouseUp` path. Do not register MiddleButton with the native bridge because Blizzard routes every non-left registered click through its right-click behavior.
 - All visible pixels belong to custom row regions. Native button textures are deliberately suppressed so template art is not stretched across the row.
@@ -124,6 +160,8 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - Never reassign the item-list data provider while a native item-button input handler is still on the stack or a normalized player item is locked. Coalesce inventory-driven rebuilds into an owned next-frame timer, retain pending work through lock transitions, and resume after unlock without polling.
 - `ITEM_LOCK_CHANGED` updates only the affected normalized lock state and visible custom desaturation immediately. Do not replace the data provider or rebind the native interaction bridge from that synchronous event handler.
 - Keep fast scrolling and item interaction functional in combat.
+- Prewarm both the bag and bank viewport pools at addon initialization. Bank
+  rows must never be created lazily during an active bank interaction.
 
 ### Hover And Tooltips
 
@@ -161,6 +199,8 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - In sorted modes, a cursor-held item shows a full-list insertion overlay backed by a native container item button bound to one actual compatible empty slot.
 - In Manual mode, rows remain available for normal item swapping and a bottom insertion area exposes that same native empty-slot target.
 - Cursor-drop visuals never call `PickupContainerItem` or distribute a cursor stack through custom Lua. Blizzard's native item-button scripts own the single physical-slot drop in and out of combat.
+- The bank cursor overlay binds to a real empty slot in the active bank type and
+  validates the cursor item with `C_Bank.IsItemAllowedInBankType`.
 - Header context menus intentionally stay open and return refresh responses when choices change.
 
 ### Bag Management
@@ -171,14 +211,40 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - Preserve item-family compatibility, stack-first placement, cursor checks, timeout/failure handling, and the single-operation guard.
 - Use Blizzard's bag sort API for cleanup; do not implement a custom physical inventory sorter.
 
+### Bank Management
+
+- Keep the custom bank as one movable/resizable frame with separate Character
+  and Warband views. Combine physical tabs for presentation without erasing
+  their tab IDs from normalized items.
+- Keep Blizzard's hidden `BankPanel` synchronized to the active custom view;
+  native bank buttons, deposit controls, money controls, purchase confirmation,
+  refundable-item confirmation, tab settings, and cleanup depend on that state.
+- Show purchased physical tabs as footer icons and only the next purchasable
+  tab. Clicking a purchased icon opens Blizzard's tab configurator.
+- Preload both bank types' footer icons and reveal the active tab group only
+  after its textures load so cold Character/Warband switches remain atomic.
+- Use Blizzard's native Deposit All behavior unchanged. Any exclusion policy
+  for pinned items or categories requires a separate planned feature.
+- Remember the last selected bank type per character, falling back to Character
+  and then Warband when the stored type is unavailable.
+
 ### Persistence And Settings
 
 - Use `LibSimpleDB-2.0` for all SavedVariables reads and writes.
 - `NS.db` is the stable active profile DB returned by `NS.profileManager:GetActiveDB()`. Never replace it or read profile payload tables directly.
-- `NS.globalDB` is account-wide and owns feature toggles, debug state, and pinned item identities. `NS.charDB` is per-character and owns frame position, size, and scale.
+- `NS.globalDB` is account-wide and owns bag/bank replacement toggles, debug
+  state, and pinned item identities. `NS.charDB` is per-character and owns both
+  frames' position, size, and scale plus the last selected bank type.
 - `YvBagsDB.profiles` is exclusively owned by `LibSimpleDBProfiles-1.0`; profile selections and payloads must be accessed through `NS.profileManager` and `NS.db`.
 - Account-wide pins live under the addon-global `pins.items`; regular item pins use item-ID identities and keystones use the stable `kind:keystone` identity. Pin presentation belongs to the active profile.
-- Profile-owned settings are list grouping/sorting, pin presentation, cooldown-name display, and the complete category registry. Bag replacement and gray-junk selling remain addon-global.
+- Profile-owned settings are bag list grouping/sorting, bank mirroring or its
+  independent list settings, pin presentation, cooldown-name display, and the
+  complete shared category registry. Bag replacement, bank replacement, and
+  gray-junk selling remain addon-global.
+- `Use Bag List Settings` is bidirectional while enabled: list changes made from
+  either frame update the shared bag values and refresh both lists. On the first
+  disable, snapshot the effective bag list into the independent bank values;
+  later re-enables must preserve that detached configuration for reuse.
 - Keep Rename Profile and Delete Profile as selectors directly on the Settings canvas. Rename may open the name input after selection, and Delete must retain its destructive confirmation, but neither action should open an intermediate profile-selection modal.
 - Treat the profile's `categories` root as one transactional value: clone it, mutate the clone, and commit the complete root through `NS.Categories`. Category and Rule Set changes reclassify existing normalized inventory records and must not query bag, item, or tooltip APIs. Multi-control rule edits use the Inventory-owned trailing debounce.
 - Keep value-only category-rule edits in place: update the visible detached row
@@ -229,3 +295,18 @@ Use the relevant subset for small changes and the full list before release:
 - Check free-space totals, Blizzard cleanup, money, tracked currencies, tooltips, and currency fitting at narrow widths.
 - Test settings live refresh and persistence.
 - Test gray-junk autosell at a merchant with the setting both disabled and enabled.
+- Open and close the bank with replacement enabled and disabled; verify player
+  bags follow the native bank lifecycle in both configurations.
+- Switch Character and Warband views, close/reopen, and verify the last
+  available view is restored. Check combined-tab counts, search, groups, sorts,
+  manual order, collapse state, and account-wide pins in both views.
+- Use, drag, split, compare, and move bank items between bags, occupied bank
+  rows, and the real-empty-slot overlay. Test refundable Warband deposits and
+  lock-state recovery.
+- Configure a purchased tab, purchase the next available tab, sort each bank,
+  transfer supported money, run both native Deposit All actions, and toggle the
+  Warband tradeable-reagent option.
+- Toggle `Use Bag List Settings`, verify changes propagate in both directions,
+  detach without a visual jump, preserve independent bank values across a
+  re-enable/re-disable cycle, and test profile switching/reset.
+- Move, resize, scale, and reload the bank frame independently of the bag frame.

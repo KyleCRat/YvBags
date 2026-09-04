@@ -1,4 +1,7 @@
-- Deposit all warbound items ignore pinned items? Find a way to not deposit all hearty feasts every time I cilck this button, Maybe toggle to ignore consumables? 
+- Plan an optional Warband Deposit All exclusion policy, such as retaining
+  pinned items or selected categories (for example, frequently carried
+  consumables). The current bank implementation deliberately uses Blizzard's
+  native Deposit All behavior unchanged.
 
 ## Next Major Feature: Column Customization
 

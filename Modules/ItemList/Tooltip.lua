@@ -24,6 +24,14 @@ local pendingButton
 local pendingElapsed = 0
 local buttonStates = setmetatable({}, { __mode = "k" })
 
+local function EnterContainerItemButton(button)
+    ContainerFrameItemButton_OnEnter(button)
+end
+
+local function LeaveContainerItemButton(button)
+    button:OnLeave()
+end
+
 -- Tooltip positioning
 local function GetScreenSize()
     local width = GetScreenWidth and GetScreenWidth() or nil
@@ -57,7 +65,7 @@ local function GetCursorUiPosition()
 end
 
 local function GetPreferredSide(row)
-    local frame = NS.frame or row
+    local frame = row.list.context.tooltipFrame or row
     local cursorX = GetCursorUiPosition()
     local frameLeft = frame and frame:GetLeft()
     local frameRight = frame and frame:GetRight()
@@ -165,6 +173,16 @@ local function IsRegisteredRowButton(button)
     return row and row.itemButton == button and state or nil
 end
 
+local function AnchorOwnedRowTooltip(tooltip, owner)
+    local state = IsRegisteredRowButton(owner)
+    if state then
+        -- Bank item buttons populate the tooltip immediately after SetOwner.
+        -- Anchor here so Blizzard's automatic comparison layout sees the
+        -- outward-facing side before it positions the shopping tooltips.
+        AnchorRowTooltip(state.row, tooltip)
+    end
+end
+
 local function CancelPendingTooltip(button)
     if pendingButton == button then
         pendingButton = nil
@@ -185,7 +203,7 @@ local function ClearCursorState()
     end
 end
 
-local function UpdateCursorState(button)
+local function UpdateContainerCursorState(button)
     if not button or not button.GetBagID or not button.GetID then
         return
     end
@@ -220,8 +238,8 @@ local function HideTooltip(button)
     CancelPendingTooltip(button)
 
     local state = button and buttonStates[button]
-    if state and state.tooltipShown and button.OnLeave then
-        button:OnLeave()
+    if state and state.tooltipShown then
+        state.nativeOnLeave(button)
     else
         if GameTooltip_Hide then
             GameTooltip_Hide()
@@ -239,7 +257,11 @@ end
 
 -- Delayed native tooltip rendering
 local function ShouldShowTooltip(button)
-    return IsRegisteredRowButton(button) and button.IsMouseOver and button:IsMouseOver() and button.HasItem and button:HasItem()
+    local state = IsRegisteredRowButton(button)
+    return state
+        and state.row.item ~= nil
+        and button.IsMouseOver
+        and button:IsMouseOver()
 end
 
 local function AddPinActionLine(tooltip)
@@ -275,11 +297,8 @@ local function ShowTooltip(button)
         return
     end
 
-    if ContainerFrameItemButton_OnEnter then
-        ContainerFrameItemButton_OnEnter(button)
-    elseif button.OnEnter then
-        button:OnEnter()
-    end
+    state.nativeOnEnter(button)
+    AnchorRowTooltip(state.row, GameTooltip)
 
     state.tooltipShown = true
 end
@@ -319,7 +338,7 @@ local function OnRowButtonEnter(button)
     if state then
         state.tooltipShown = false
     end
-    UpdateCursorState(button)
+    state.updateCursor(button)
     ScheduleTooltip(button)
 end
 
@@ -339,19 +358,27 @@ function ItemTooltip.Initialize()
             AnchorRowTooltip(state.row, tooltip)
         end
     end)
+    hooksecurefunc(GameTooltip, "SetOwner", AnchorOwnedRowTooltip)
     TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, AddPinActionLine)
 
     hooked = true
 end
 
-function ItemTooltip.RegisterRowButton(button, row)
+function ItemTooltip.RegisterRowButton(button, row, options)
     if not button or not row then
         return
     end
 
+    options = options or {}
     buttonStates[button] = {
         row = row,
         tooltipShown = false,
+        nativeOnEnter = options.nativeOnEnter
+            or EnterContainerItemButton,
+        nativeOnLeave = options.nativeOnLeave
+            or LeaveContainerItemButton,
+        updateCursor = options.updateCursor
+            or UpdateContainerCursorState,
     }
     button:SetScript("OnEnter", OnRowButtonEnter)
     button:SetScript("OnLeave", OnRowButtonLeave)

@@ -555,21 +555,16 @@ function Inventory:RefreshCategories(changeType, categoryID)
     end
 end
 
-function Inventory:ToggleItemPin(item)
-    local isPinned, pinKey = Pins.Toggle(item)
-    if isPinned == nil then
-        return nil
-    end
-
-    for _, candidate in ipairs(self.items) do
+local function RefreshPinnedItems(pinKey)
+    for _, candidate in ipairs(Inventory.items) do
         if Pins.GetKey(candidate) == pinKey then
             ItemModel.RefreshPin(candidate)
         end
     end
 
-    for _, pendingItem in ipairs(self.pendingItems) do
+    for _, pendingItem in ipairs(Inventory.pendingItems) do
         if Pins.GetKey(pendingItem) == pinKey then
-            local currentItem = self.itemsByLocation[pendingItem.locationKey]
+            local currentItem = Inventory.itemsByLocation[pendingItem.locationKey]
             if currentItem then
                 pendingItem.isPinned = currentItem.isPinned
             end
@@ -577,6 +572,10 @@ function Inventory:ToggleItemPin(item)
     end
 
     NotifyUpdateCallbacks(Inventory.UpdateReasons.Pins)
+end
+
+function Inventory:ToggleItemPin(item)
+    local isPinned = Pins.Toggle(item)
     return isPinned
 end
 
@@ -602,6 +601,9 @@ function Inventory:Initialize()
 
     Categories.RegisterCallback(function(_, changeType, categoryID)
         self:RefreshCategories(changeType, categoryID)
+    end)
+    Pins.RegisterCallback(function(_, pinKey)
+        RefreshPinnedItems(pinKey)
     end)
 
     self:ScheduleScan("init")

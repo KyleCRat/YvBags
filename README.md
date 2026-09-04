@@ -1,12 +1,17 @@
 # YvBags
 
-YvBags is a World of Warcraft bag replacement addon that shows your current character's bags as a sortable, searchable list instead of a grid.
+YvBags is a World of Warcraft inventory replacement addon that shows your bags,
+Character bank, and Warband bank as sortable, searchable lists instead of grids.
 
 ## Features
 
 - Replaces standard Blizzard player bag open, close, and toggle behavior.
 - Supports the backpack, equipped bag slots, and equipped reagent bag.
-- Shows bag contents in a virtualized list for fast scrolling.
+- Independently replaces the Blizzard bank with one movable and resizable frame
+  containing separate Character and Warband views.
+- Combines all purchased physical tabs within each bank view while retaining
+  native tab configuration, purchase, cleanup, money, and deposit actions.
+- Shows inventory contents in a virtualized list for fast scrolling.
 - Uses full-row item interaction for tooltips, item use, drag, pickup, and cooldown display.
 - Supports name, column, and tooltip search plus collapsible groups, primary sorting, secondary sorting, and manual bag-slot ordering.
 - Surfaces unseen items in accent-highlighted top rows until they are hovered and the bag is reopened.
@@ -31,6 +36,10 @@ YvBags is a World of Warcraft bag replacement addon that shows your current char
 
 YvBags opens from normal bag keybinds when **Replace Blizzard Bags** is enabled. You can also use `/ybags` to toggle the frame.
 
+When **Replace Blizzard Bank** is enabled, interacting with a banker opens the
+custom bank window. Use its Character and Warband buttons to switch views;
+YvBags remembers the last available view used by each character.
+
 Middle-click an item row to pin or unpin that item type. Pinning a Mythic Keystone applies to every future keystone regardless of its dungeon or level.
 
 Pinned-item presentation can place pins above the full list, in one collapsible Pinned group, at the top of their respective groups, or in normal sort order. Manual sorting preserves physical bag-slot order within each resulting section.
@@ -48,6 +57,12 @@ The footer includes:
 - Equipped bag buttons: left-click or drag to pick up the bag, right-click to empty that bag first.
 - Tracked currencies: left-click opens the character currency pane, middle-click stops tracking that currency.
 
+The bank footer shows every purchased tab as an icon. Hover an icon to inspect
+its usage and deposit rules, or click it to open Blizzard's tab configurator.
+Only the next available tab purchase is shown. The footer also retains
+Blizzard's native bank cleanup, money transfer, Character-bank reagent deposit,
+and Warband deposit controls, including the tradeable-reagent option.
+
 ## Settings
 
 Open settings with `/ybags settings` or through the Blizzard AddOns settings panel.
@@ -64,11 +79,14 @@ Settings include:
 - Primary Sort and direction
 - Secondary Sort and direction
 - Categories subpage with category and Rule Set management
+- Bank subpage with replacement, frame scale, list mirroring, grouping, pin
+  presentation, and sorting controls
 
-Profile settings include grouping, sorting, pinned-item presentation,
-cooldown-name display, and the complete category registry. Bag replacement,
+Profile settings include bag grouping and sorting, bank list mirroring or its
+independent list configuration, pinned-item presentation, cooldown-name
+display, and the complete shared category registry. Bag and bank replacement,
 gray-junk selling, and pinned item identities remain shared across the addon.
-Frame position, size, and scale remain stored per character.
+Bag and bank frame position, size, and scale remain stored per character.
 
 ## Categories And Rules
 
@@ -140,7 +158,8 @@ All required libraries are included with the addon.
 
 ## Limitations
 
-- Player bags only; bank, warband bank, guild bank, void storage, and currency-list replacement are not included.
+- Guild banks, void storage, cached-character inventories, and currency-list
+  replacement are not included.
 - Grid mode is not included.
 - Column visibility, resizing, and reordering are not included.
 

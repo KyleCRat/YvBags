@@ -3,6 +3,19 @@
 ## Unreleased
 
 ### Added
+- Added an independently toggleable custom bank window with separate Character
+  and Warband views, each combining every purchased physical bank tab into the
+  shared virtualized item list.
+- Added native full-row bank item interaction, combined-tab search, categories,
+  grouping, sorting, account-wide pins, cursor placement into real empty bank
+  slots, and per-character bank frame geometry.
+- Added purchased bank-tab footer icons with row highlighting and native tab
+  configuration, the next purchasable tab with Blizzard's confirmation flow,
+  native bank cleanup, money transfer, Deposit All Reagents, Deposit All
+  Warbound Items, and the Include Tradeable Reagents option.
+- Added a Bank settings page with independent replacement and scale controls
+  plus profile-owned list settings that mirror bag settings by default and can
+  be detached without losing their prior independent configuration.
 - Added an accent-highlighted new-item partition above pins and groups, with
   hover acknowledgement that stops the breathing background while retaining
   the new-item marker, stable placement until the next bag open, and a divider
@@ -32,6 +45,16 @@
 - Restored Mythic Keystones to their own prioritized category and gave keystone pins a stable identity across dungeon and level changes.
 
 ### Changed
+- Normalized both footer layouts around compact square tertiary controls and
+  matched the bag and bank-tab buttons to their visible footprint. Deposit
+  settings are visually separated from compact minus/plus money-transfer
+  controls, and the bank balance remains at the shared right edge.
+- Reduced the bank frame's minimum width now that its footer controls use a
+  compact single-row layout.
+- Generalized the virtualized item list around inventory-specific native button,
+  tooltip, cursor-drop, empty-state, and profile-setting adapters so bags and
+  banks share one presentation model without sharing physical-container logic.
+- Made account-wide pin changes refresh every loaded bag and bank view.
 - Established a clearer category-editor heading hierarchy with H1-sized
   Categories and Category pane titles and an H2-sized Rules title.
 - Placed the category Name label and input on one compact reusable settings
@@ -58,6 +81,20 @@
 - Classified Utility Curio, Combat Curio, and Relic consumables as Openable instead of general Consumables.
 
 ### Fixed
+- Preloaded Character and Warband tab icons and revealed each refreshed bank
+  tab strip atomically, preventing icons from appearing one at a time on the
+  first switch after login.
+- Aligned the bank-tab footer icons with the bag-container icons and vertically
+  centered the search icon in the enlarged bag and bank search bars.
+- Matched every Character and Warband selector state to the same full-size
+  tertiary texture family while preserving the selected atlas's larger
+  highlight bounds and keeping the selected visual stable on hover.
+- Anchored bank comparison tooltips outward with their primary item tooltip so
+  comparisons no longer cover the bank item list.
+- Kept the next bank-tab purchase control visible but disabled during routine
+  inventory rescans instead of making it flicker out and back in.
+- Initialized Blizzard's hidden bank panel with the active bank type before
+  refreshing native footer controls, preventing a nil bank-type error on open.
 - Preserved the first button click made while editing category or rule text by
   deferring focus-loss refreshes until the click reaches its target.
 - Capped long settings dropdown menus at three quarters of the UI height and

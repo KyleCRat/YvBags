@@ -79,7 +79,7 @@ local function CreateNativeButton(parent)
     return button
 end
 
-function ItemButton.Create(row)
+function ItemButton.Create(row, list)
     local button = CreateNativeButton(row)
     buttonRows[button] = row
     NS.ItemTooltip.RegisterRowButton(button, row)
@@ -106,7 +106,7 @@ function ItemButton.Create(row)
         local buttonRow = buttonRows[self]
         local item = buttonRow and buttonRow.item
         if item then
-            NS.Inventory:ToggleItemPin(item)
+            NS.ItemPins.Toggle(item)
         end
     end)
     return button

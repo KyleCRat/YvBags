@@ -4,7 +4,6 @@ local _, NS = ...
 local CursorDrop = {}
 NS.ItemListCursorDrop = CursorDrop
 
-local ItemButton = NS.ItemRowButton
 local Layout = NS.ItemListLayout
 local ListModel = NS.ItemListModel
 local ACCENT_COLOR_R, ACCENT_COLOR_G, ACCENT_COLOR_B = NS.Media.GetAccentColor()
@@ -14,7 +13,7 @@ local OVERLAY_FRAME_LEVEL_OFFSET = 80
 local MANUAL_OVERLAY_HEIGHT = 50
 local TEXT_SIZE = 22
 local TEXT_FLAGS = "OUTLINE, SLUG"
-local TEXT_FORMAT = "Place %s into your bags"
+local DEFAULT_TEXT_FORMAT = "Place %s"
 local FALLBACK_ITEM_NAME = "item"
 local TEXT_SIDE_PADDING = 24
 local BACKGROUND_ALPHA = 0.72
@@ -30,7 +29,7 @@ local GLOW_PULSE_DURATION = 0.85
 local MODE_FULL = "full"
 local MODE_MANUAL = "manual"
 
-local function GetDropText(itemID, itemLink)
+local function GetDropText(itemID, itemLink, textFormat)
     local itemName = itemLink
     if not itemName and itemID then
         if C_Item and C_Item.GetItemInfo then
@@ -40,7 +39,9 @@ local function GetDropText(itemID, itemLink)
         end
     end
 
-    return TEXT_FORMAT:format(itemName or FALLBACK_ITEM_NAME)
+    return (textFormat or DEFAULT_TEXT_FORMAT):format(
+        itemName or FALLBACK_ITEM_NAME
+    )
 end
 
 local function GetCursorItemData()
@@ -150,7 +151,8 @@ local function CreateGlow(parent)
     parent.glowPulse = pulse
 end
 
-local function CreateOverlay(parent)
+local function CreateOverlay(list)
+    local parent = list.frame
     local overlay = CreateFrame("Frame", nil, parent)
     overlay:SetFrameLevel(parent:GetFrameLevel() + OVERLAY_FRAME_LEVEL_OFFSET)
     overlay:SetScript("OnShow", StartGlow)
@@ -180,7 +182,8 @@ local function CreateOverlay(parent)
     text:SetWordWrap(false)
     overlay.text = text
 
-    overlay.emptySlotTarget = ItemButton.CreateEmptySlotTarget(overlay)
+    overlay.emptySlotTarget =
+        list.context.itemButtonAdapter.CreateEmptySlotTarget(overlay, list)
     overlay.dropTargetDirty = true
 
     overlay:Hide()
@@ -264,8 +267,11 @@ local function ClearCursorItem(overlay)
 end
 
 local function RefreshEmptySlotTarget(overlay)
+    local list = overlay.list
+    local dropContext = list.context.cursorDrop
+
     if overlay.targetBagID
-        and not NS.BagManagement.IsPlayerContainerSlotEmpty(
+        and not dropContext.isSlotEmpty(
             overlay.targetBagID,
             overlay.targetSlotIndex
         ) then
@@ -273,7 +279,7 @@ local function RefreshEmptySlotTarget(overlay)
     end
 
     if overlay.dropTargetDirty then
-        local bagID, slotIndex = NS.BagManagement.FindCursorItemEmptySlot(
+        local bagID, slotIndex = dropContext.findEmptySlot(
             overlay.cursorItemID,
             overlay.cursorItemLink,
             overlay.sourceContainerID,
@@ -284,7 +290,11 @@ local function RefreshEmptySlotTarget(overlay)
         overlay.dropTargetDirty = false
 
         if bagID then
-            ItemButton.SetEmptySlotTarget(overlay.emptySlotTarget, bagID, slotIndex)
+            list.context.itemButtonAdapter.SetEmptySlotTarget(
+                overlay.emptySlotTarget,
+                bagID,
+                slotIndex
+            )
         end
     end
 
@@ -326,7 +336,11 @@ function CursorDrop.Update(list)
         SetOverlayMode(list, MODE_FULL)
     end
 
-    local dropText = GetDropText(itemID, itemLink)
+    local dropText = GetDropText(
+        itemID,
+        itemLink,
+        list.context.cursorDrop.textFormat
+    )
     if overlay.dropText ~= dropText then
         overlay.text:SetText(dropText)
         overlay.dropText = dropText
@@ -337,9 +351,10 @@ function CursorDrop.Update(list)
 end
 
 function CursorDrop.Attach(list)
-    list.cursorDropOverlay = CreateOverlay(list.frame)
+    list.cursorDropOverlay = CreateOverlay(list)
+    list.cursorDropOverlay.list = list
 
-    NS.Inventory:RegisterUpdateCallback(function()
+    list.context.cursorDrop.registerUpdateCallback(function()
         list.cursorDropOverlay.dropTargetDirty = true
     end)
 

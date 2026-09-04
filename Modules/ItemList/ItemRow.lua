@@ -6,8 +6,6 @@ NS.ItemRow = ItemRow
 
 local Columns = NS.ItemListColumns
 local Cooldown = NS.ItemRowCooldown
-local ItemButton = NS.ItemRowButton
-local NewItems = NS.NewItems
 
 -- Row geometry
 local ROW_HEIGHT = 31
@@ -214,7 +212,9 @@ local function CreateNewItemAnimation(row)
     row.newItemAnimation = animation
 end
 
-local function InitializeRow(row)
+local function InitializeRow(row, list)
+    row.list = list
+    row.itemButtonAdapter = list.context.itemButtonAdapter
     local columns = Columns.GetColumns()
 
     row:SetHeight(ROW_HEIGHT)
@@ -266,7 +266,7 @@ local function InitializeRow(row)
     row.iconBorder:Hide()
 
     Cooldown.CreateShade(row)
-    row.itemButton = ItemButton.Create(row)
+    row.itemButton = row.itemButtonAdapter.Create(row, list)
     CreateTextColumns(row, columns)
 
     row.professionQualityIcon = row.contentClip:CreateTexture(nil, PROFESSION_QUALITY_LAYER)
@@ -337,9 +337,9 @@ function ItemRow.GetRowHeight()
     return ROW_HEIGHT
 end
 
-function ItemRow.Initialize(row)
+function ItemRow.Initialize(row, list)
     if not row.rowInitialized then
-        InitializeRow(row)
+        InitializeRow(row, list)
     end
 end
 
@@ -364,7 +364,7 @@ function ItemRow.RefreshNewItemState(row)
 end
 
 function ItemRow.HandleItemEnter(row)
-    if row.item and NewItems.MarkSeen(row.item) then
+    if row.item and row.list.context.handleItemEnter(row.item) then
         UpdateNewItemVisuals(row, row.item)
     end
 end
@@ -379,7 +379,7 @@ function ItemRow.SetHighlightedBagID(row, highlightedBagID)
 end
 
 function ItemRow.Render(row, item, list)
-    ItemRow.Initialize(row)
+    ItemRow.Initialize(row, list)
 
     row.item = item
     if list then
@@ -390,7 +390,7 @@ function ItemRow.Render(row, item, list)
     UpdateContainerHighlight(row)
     UpdateNewItemVisuals(row, item)
     UpdateIconBorderColor(row, item)
-    ItemButton.Update(row.itemButton, item)
+    row.itemButtonAdapter.Update(row.itemButton, item)
 
     row.icon:SetTexture(item.icon or FALLBACK_ITEM_ICON)
     row.icon:SetDesaturated(item.isLocked)
@@ -417,7 +417,7 @@ function ItemRow.Reset(row)
     row.icon:SetDesaturated(false)
     row.icon:Hide()
     row.iconBorder:Hide()
-    ItemButton.Reset(row.itemButton)
+    row.itemButtonAdapter.Reset(row.itemButton)
     row.professionQualityIcon:Hide()
 
     row.bindingIcon:SetSize(BINDING_ICON_SIZE, BINDING_ICON_SIZE)

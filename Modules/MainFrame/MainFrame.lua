@@ -7,6 +7,7 @@ NS.MainFrame = MainFrame
 local Controls = NS.MainFrameControls
 local Geometry = NS.MainFrameGeometry
 local Layout = NS.MainFrameLayout
+local ListSettings = NS.ItemListSettings
 
 local FRAME_NAME = NS.FRAME_NAME
 local FRAME_TEMPLATE = "ButtonFrameTemplate"
@@ -106,7 +107,40 @@ local function CreateContent(frame)
     content:SetPoint("TOPLEFT", frame.Inset, "TOPLEFT", Layout.ContentInsetLeft, Layout.ContentInsetTop)
     content:SetPoint("BOTTOMRIGHT", frame.Inset, "BOTTOMRIGHT", Layout.ContentInsetRight, Layout.ContentInsetBottom)
     frame.content = content
-    frame.itemList = NS.ItemList.Create(content)
+    frame.itemList = NS.ItemList.Create(content, {
+        settingsScope = ListSettings.Scopes.Bags,
+        itemButtonAdapter = NS.ItemRowButton,
+        tooltipFrame = frame,
+        emptyText = "No bag items",
+        handleItemEnter = function(item)
+            return NS.NewItems.MarkSeen(item)
+        end,
+        cursorDrop = {
+            textFormat = "Place %s into your bags",
+            isSlotEmpty = function(bagID, slotIndex)
+                return NS.BagManagement.IsPlayerContainerSlotEmpty(
+                    bagID,
+                    slotIndex
+                )
+            end,
+            findEmptySlot = function(
+                itemID,
+                itemLink,
+                sourceContainerID,
+                sourceSlotIndex
+            )
+                return NS.BagManagement.FindCursorItemEmptySlot(
+                    itemID,
+                    itemLink,
+                    sourceContainerID,
+                    sourceSlotIndex
+                )
+            end,
+            registerUpdateCallback = function(callback)
+                NS.Inventory:RegisterUpdateCallback(callback)
+            end,
+        },
+    })
 end
 
 local function CreateResizeButton(frame)

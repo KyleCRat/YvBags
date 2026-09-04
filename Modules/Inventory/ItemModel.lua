@@ -595,6 +595,7 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
         bagSlotText = ("%d/%d"):format(container.id, slotIndex),
         containerKind = container.kind,
         containerName = container.name,
+        bankType = container.bankType,
         itemID = containerItemInfo.itemID or instantItemID,
         name = displayName,
         link = containerItemInfo.hyperlink or fullLink,

@@ -91,7 +91,10 @@ function Controls.RefreshScale(frame, scale)
     end
 end
 
-function Controls.CreateTitle(frame)
+function Controls.CreateTitle(frame, options)
+    options = options or {}
+    local geometry = options.geometry or Geometry
+    local frameLabel = options.frameLabel or ADDON_NAME
     local button = CreateFrame("Button", nil, frame)
     button:SetSize(SCALE_BUTTON_WIDTH, SCALE_BUTTON_HEIGHT)
     button:SetPoint("RIGHT", frame.CloseButton, "LEFT", -TITLE_BUTTON_GAP, 0)
@@ -118,11 +121,15 @@ function Controls.CreateTitle(frame)
     button.text = text
 
     frame.scaleButton = button
-    Controls.RefreshScale(frame, Geometry.GetSavedScale())
+    Controls.RefreshScale(frame, geometry.GetSavedScale())
     button:SetScript("OnEnter", function(self)
         self.isHovered = true
         UpdateScaleButtonVisualState(self)
-        ShowTooltip(self, "Scale", ("Click and drag to resize the %s frame."):format(ADDON_NAME))
+        ShowTooltip(
+            self,
+            "Scale",
+            ("Click and drag to resize the %s frame."):format(frameLabel)
+        )
     end)
     button:SetScript("OnLeave", function(self)
         self.isHovered = false
@@ -151,7 +158,7 @@ function Controls.CreateTitle(frame)
             label = "Scale",
             formatValue = FormatScalePercent,
             onValueChanged = function(value)
-                Geometry.SetScale(value / 100)
+                geometry.SetScale(value / 100)
             end,
             sliderHeight = SCALE_POPUP_HEIGHT,
             popupWidth = SCALE_POPUP_WIDTH,
@@ -159,7 +166,7 @@ function Controls.CreateTitle(frame)
             fontFlags = SCALE_BUTTON_FONT_FLAGS,
             fontSize = SCALE_POPUP_FONT_SIZE,
         })
-        popup:SetValue(Geometry.GetSavedScale() * 100, true)
+        popup:SetValue(geometry.GetSavedScale() * 100, true)
         frame.scalePopup = popup
     else
         button:Disable()
@@ -167,10 +174,17 @@ function Controls.CreateTitle(frame)
     end
 end
 
-local function CreateSettingsButton(frame)
+function Controls.CreateSettingsButton(frame, options)
+    options = options or {}
     local button = CreateFrame("Button", nil, frame)
     button:SetSize(SETTINGS_BUTTON_SIZE, SETTINGS_BUTTON_SIZE)
-    button:SetPoint("TOPLEFT", frame, "TOPLEFT", SETTINGS_BUTTON_LEFT_OFFSET, SEARCH_BOX_TOP_OFFSET)
+    button:SetPoint(
+        "TOPLEFT",
+        frame,
+        "TOPLEFT",
+        options.leftOffset or SETTINGS_BUTTON_LEFT_OFFSET,
+        options.topOffset or SEARCH_BOX_TOP_OFFSET
+    )
     button:SetFrameLevel(frame:GetFrameLevel() + SEARCH_BOX_FRAME_LEVEL_OFFSET)
     button:RegisterForClicks("LeftButtonUp")
 
@@ -196,7 +210,12 @@ local function CreateSettingsButton(frame)
     end)
     button:SetScript("OnEnter", function(self)
         self.icon:SetAlpha(SETTINGS_BUTTON_HOVER_ALPHA)
-        ShowTooltip(self, "Settings", ("Open %s settings."):format(ADDON_NAME))
+        ShowTooltip(
+            self,
+            "Settings",
+            options.tooltip
+                or ("Open %s settings."):format(ADDON_NAME)
+        )
     end)
     button:SetScript("OnLeave", function(self)
         self.icon:SetAlpha(SETTINGS_BUTTON_NORMAL_ALPHA)
@@ -205,7 +224,11 @@ local function CreateSettingsButton(frame)
         GameTooltip:Hide()
     end)
     button:SetScript("OnClick", function()
-        NS.Settings.Open()
+        if options.onClick then
+            options.onClick()
+        else
+            NS.Settings.Open()
+        end
     end)
 
     frame.settingsButton = button
@@ -259,12 +282,26 @@ function Controls.RegisterSearchShortcut(frame)
     frame.searchShortcutListener = listener
 end
 
-function Controls.CreateSearch(frame)
-    local settingsButton = CreateSettingsButton(frame)
+function Controls.CreateSearch(frame, options)
+    local options = options or {}
+    local settingsButton = options.settingsButton
+        or Controls.CreateSettingsButton(frame, options.settingsButtonOptions)
     local searchBox = frame.itemList:CreateSearchBox(frame)
     searchBox:ClearAllPoints()
-    searchBox:SetPoint("TOPLEFT", settingsButton, "TOPRIGHT", SETTINGS_BUTTON_SEARCH_GAP, 0)
-    searchBox:SetPoint("TOPRIGHT", frame, "TOPRIGHT", SEARCH_BOX_RIGHT_OFFSET, SEARCH_BOX_TOP_OFFSET)
+    searchBox:SetPoint(
+        "TOPLEFT",
+        options.leftAnchor or settingsButton,
+        "TOPRIGHT",
+        options.leftGap or SETTINGS_BUTTON_SEARCH_GAP,
+        0
+    )
+    searchBox:SetPoint(
+        "TOPRIGHT",
+        frame,
+        "TOPRIGHT",
+        options.rightOffset or SEARCH_BOX_RIGHT_OFFSET,
+        options.topOffset or SEARCH_BOX_TOP_OFFSET
+    )
     searchBox:SetFrameLevel(frame:GetFrameLevel() + SEARCH_BOX_FRAME_LEVEL_OFFSET)
     frame.searchBox = searchBox
 end

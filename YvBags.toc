@@ -1,6 +1,6 @@
 ## Interface: 120007, 120100
 ## Title: YvBags
-## Notes: List-based player bag replacement.
+## Notes: List-based player bag and bank replacement.
 ## Author: Yvairel
 ## Version: 12.1.0-2
 ## IconTexture: Interface\Icons\INV_Misc_Bag_08
@@ -27,15 +27,18 @@ Modules\Inventory\NewItems.lua
 Modules\Inventory\Pins.lua
 Modules\Inventory\ItemModel.lua
 Modules\Inventory\Inventory.lua
+Modules\Bank\Inventory.lua
 Modules\Bags\BagManagement.lua
 Modules\Bags\BlizzardBags.lua
 Modules\Bags\JunkAutosell.lua
 Modules\ItemList\Layout.lua
 Modules\ItemList\Columns.lua
+Modules\ItemList\Settings.lua
 Modules\ItemList\Model.lua
 Modules\ItemList\Tooltip.lua
 Modules\ItemList\Cooldown.lua
 Modules\ItemList\ItemButton.lua
+Modules\Bank\ItemButton.lua
 Modules\ItemList\GroupRow.lua
 Modules\ItemList\DividerRow.lua
 Modules\ItemList\ItemRow.lua
@@ -49,6 +52,11 @@ Modules\MainFrame\Layout.lua
 Modules\MainFrame\Geometry.lua
 Modules\MainFrame\Controls.lua
 Modules\MainFrame\MainFrame.lua
+Modules\Bank\Layout.lua
+Modules\Bank\Geometry.lua
+Modules\Bank\Footer.lua
+Modules\Bank\BlizzardBank.lua
+Modules\Bank\Frame.lua
 Modules\Settings\CategoryRuleEditor.lua
 Modules\Settings\CategoryEditor.lua
 Settings.lua

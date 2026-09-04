@@ -8,6 +8,7 @@ local DB_SECTION = "pins"
 local DB_ITEMS_KEY = "items"
 local ITEM_PIN_PREFIX = "item:"
 local KEYSTONE_PIN_KEY = "kind:keystone"
+local updateCallbacks = {}
 
 Pins.DisplayModes = {
     Top = "top",
@@ -33,6 +34,12 @@ local function GetItemIDPinKey(itemID)
     end
 
     return ITEM_PIN_PREFIX .. tostring(itemID)
+end
+
+local function NotifyUpdateCallbacks(pinKey, isPinned)
+    for index = 1, #updateCallbacks do
+        updateCallbacks[index](Pins, pinKey, isPinned)
+    end
 end
 
 function Pins.GetKey(item)
@@ -65,7 +72,16 @@ function Pins.Toggle(item)
         NS.globalDB:Delete(DB_SECTION, DB_ITEMS_KEY, pinKey)
     end
 
+    NotifyUpdateCallbacks(pinKey, isPinned)
     return isPinned, pinKey
+end
+
+function Pins.RegisterCallback(callback)
+    if type(callback) ~= "function" then
+        error("Usage: Pins.RegisterCallback(callback)", 2)
+    end
+
+    updateCallbacks[#updateCallbacks + 1] = callback
 end
 
 function Pins.NormalizeDisplayMode(displayMode)

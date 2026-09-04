@@ -7,6 +7,8 @@ NS.ACCOUNT_STORAGE_METADATA_KEY = "__yvBags"
 NS.ACCOUNT_STORAGE_SCHEMA_VERSION = 1
 NS.FRAME_NAME = ADDON_NAME .. "Frame"
 NS.ITEM_BUTTON_GLOBAL_NAME_PREFIX = ADDON_NAME .. "ItemListButton"
+NS.BANK_FRAME_NAME = ADDON_NAME .. "BankFrame"
+NS.BANK_ITEM_BUTTON_GLOBAL_NAME_PREFIX = ADDON_NAME .. "BankItemListButton"
 NS.ADDON_MEDIA_PATH = "Interface\\AddOns\\" .. ADDON_NAME .. "\\Media\\"
 
 local function CreateDefaultCategoryRuleSet(categoryID)
@@ -36,6 +38,7 @@ NS.defaults = {
         debug = false,
         features = {
             replaceBlizzardBags = true,
+            replaceBlizzardBank = true,
             autosellGrayJunk = false,
         },
         pins = {
@@ -52,6 +55,20 @@ NS.defaults = {
         },
         pins = {
             displayMode = "top",
+        },
+        bank = {
+            useBagListSettings = true,
+            independentInitialized = false,
+            list = {
+                sortKey = "quality",
+                sortAscending = false,
+                secondarySortKey = "itemLevel",
+                secondarySortAscending = false,
+                groupKey = "category",
+            },
+            pins = {
+                displayMode = "top",
+            },
         },
         display = {
             showCooldownsInName = true,
@@ -114,6 +131,17 @@ NS.defaults = {
             width = 1080,
             height = 560,
             scale = 1,
+        },
+        bankFrame = {
+            point = "CENTER",
+            relativePoint = "CENTER",
+            x = 0,
+            y = 0,
+            width = 1080,
+            height = 560,
+            scale = 1,
+            positionInitialized = false,
+            lastBankType = "character",
         },
     },
 }

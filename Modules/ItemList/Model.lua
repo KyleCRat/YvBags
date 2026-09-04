@@ -625,7 +625,9 @@ function ListModel.BuildRows(items, state)
     end
     local groupKey = ListModel.NormalizeGroupKey(state and state.groupKey)
     local collapsedGroups = state and state.collapsedGroups or {}
-    local pinDisplayMode = Pins.GetDisplayMode()
+    local pinDisplayMode = Pins.NormalizeDisplayMode(
+        state and state.pinDisplayMode
+    )
     local filteredItems = {}
     local newItems = {}
     local regularItems = {}

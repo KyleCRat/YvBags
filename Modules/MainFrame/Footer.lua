@@ -7,8 +7,8 @@ NS.Footer = Footer
 -- Layout
 local FOOTER_LEFT_OFFSET = 3
 local FOOTER_RIGHT_OFFSET = -15
-local FOOTER_BOTTOM_OFFSET = 6
-local FOOTER_HEIGHT = 24
+local FOOTER_BOTTOM_OFFSET = 4
+local FOOTER_HEIGHT = 28
 
 -- Text
 local FOOTER_TEXT_SIZE = 18

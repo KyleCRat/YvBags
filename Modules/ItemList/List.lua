@@ -12,6 +12,7 @@ local Header = NS.ItemListHeader
 local ItemRow = NS.ItemRow
 local Layout = NS.ItemListLayout
 local ListModel = NS.ItemListModel
+local ListSettings = NS.ItemListSettings
 local SearchBox = NS.ItemListSearchBox
 
 local SCROLL_BOX_TEMPLATE = "WowScrollBoxList"
@@ -25,26 +26,54 @@ local EMPTY_TEXT_SIZE = 16
 local EMPTY_TEXT_COLOR_R = 0.5
 local EMPTY_TEXT_COLOR_G = 0.5
 local EMPTY_TEXT_COLOR_B = 0.5
-local EMPTY_LIST_TEXT = "No bag items"
+local DEFAULT_EMPTY_LIST_TEXT = "No items"
 
 local ListController = {}
 ListController.__index = ListController
 
 local function ApplyStoredProfileSettings(list)
-    list.sortKey = ListModel.NormalizeSortKey(NS.db:Get("list", "sortKey"))
-    list.sortAscending = NS.db:Get("list", "sortAscending") ~= false
-    list.secondarySortKey = ListModel.NormalizeSecondarySortKey(NS.db:Get("list", "secondarySortKey"))
-    list.secondarySortAscending = NS.db:Get("list", "secondarySortAscending") ~= false
-    list.groupKey = ListModel.NormalizeGroupKey(NS.db:Get("list", "groupKey"))
+    local scope = list.settingsScope
+    local previousSortKey = list.sortKey
+    local previousSortAscending = list.sortAscending
+    local previousSecondarySortKey = list.secondarySortKey
+    local previousSecondarySortAscending = list.secondarySortAscending
+    local previousGroupKey = list.groupKey
+    local previousPinDisplayMode = list.pinDisplayMode
+
+    list.sortKey = ListModel.NormalizeSortKey(
+        ListSettings.GetListValue(scope, "sortKey")
+    )
+    list.sortAscending =
+        ListSettings.GetListValue(scope, "sortAscending") ~= false
+    list.secondarySortKey = ListModel.NormalizeSecondarySortKey(
+        ListSettings.GetListValue(scope, "secondarySortKey")
+    )
+    list.secondarySortAscending =
+        ListSettings.GetListValue(scope, "secondarySortAscending") ~= false
+    list.groupKey = ListModel.NormalizeGroupKey(
+        ListSettings.GetListValue(scope, "groupKey")
+    )
+    list.pinDisplayMode = NS.ItemPins.NormalizeDisplayMode(
+        ListSettings.GetPinDisplayMode(scope)
+    )
 
     if not ListModel.IsSecondarySortEnabled(list.secondarySortKey, list.sortKey) then
         list.secondarySortKey = ListModel.GetNoSecondarySortKey()
         list.secondarySortAscending = true
     end
+
+    return previousSortKey ~= list.sortKey
+        or previousSortAscending ~= list.sortAscending
+        or previousSecondarySortKey ~= list.secondarySortKey
+        or previousSecondarySortAscending ~= list.secondarySortAscending
+        or previousGroupKey ~= list.groupKey
+        or previousPinDisplayMode ~= list.pinDisplayMode
 end
 
-local function CreateListState()
+local function CreateListState(context)
     local list = setmetatable({}, ListController)
+    list.context = context
+    list.settingsScope = context.settingsScope
     list.items = {}
     list.searchText = ""
     list.collapsedGroups = {}
@@ -73,6 +102,16 @@ end
 function ListController:SetItems(items)
     self.items = items or {}
     self:RefreshDataProvider(true)
+end
+
+function ListController:SetEmptyText(text)
+    self.emptyText:SetText(text or self.context.emptyText or DEFAULT_EMPTY_LIST_TEXT)
+end
+
+function ListController:InvalidateCursorDropTarget()
+    if self.cursorDropOverlay then
+        self.cursorDropOverlay.dropTargetDirty = true
+    end
 end
 
 function ListController:SetHighlightedBagID(bagID)
@@ -130,12 +169,24 @@ function ListController:SetSort(sortKey, sortAscending)
     if not ListModel.IsSecondarySortEnabled(self.secondarySortKey, self.sortKey) then
         self.secondarySortKey = ListModel.GetNoSecondarySortKey()
         self.secondarySortAscending = true
-        NS.db:Set("list", "secondarySortKey", self.secondarySortKey)
-        NS.db:Set("list", "secondarySortAscending", self.secondarySortAscending)
+        ListSettings.SetListValue(
+            self.settingsScope,
+            "secondarySortKey",
+            self.secondarySortKey
+        )
+        ListSettings.SetListValue(
+            self.settingsScope,
+            "secondarySortAscending",
+            self.secondarySortAscending
+        )
     end
 
-    NS.db:Set("list", "sortKey", self.sortKey)
-    NS.db:Set("list", "sortAscending", self.sortAscending)
+    ListSettings.SetListValue(self.settingsScope, "sortKey", self.sortKey)
+    ListSettings.SetListValue(
+        self.settingsScope,
+        "sortAscending",
+        self.sortAscending
+    )
     self:RefreshDataProvider(true)
 end
 
@@ -161,8 +212,16 @@ function ListController:SetSecondarySort(sortKey, sortAscending)
 
     self.secondarySortKey = sortKey
     self.secondarySortAscending = sortAscending == true
-    NS.db:Set("list", "secondarySortKey", self.secondarySortKey)
-    NS.db:Set("list", "secondarySortAscending", self.secondarySortAscending)
+    ListSettings.SetListValue(
+        self.settingsScope,
+        "secondarySortKey",
+        self.secondarySortKey
+    )
+    ListSettings.SetListValue(
+        self.settingsScope,
+        "secondarySortAscending",
+        self.secondarySortAscending
+    )
     self:RefreshDataProvider(true)
 end
 
@@ -173,7 +232,11 @@ function ListController:SetSecondarySortDirection(sortAscending)
     end
 
     self.secondarySortAscending = sortAscending
-    NS.db:Set("list", "secondarySortAscending", self.secondarySortAscending)
+    ListSettings.SetListValue(
+        self.settingsScope,
+        "secondarySortAscending",
+        self.secondarySortAscending
+    )
     self:RefreshDataProvider(true)
 end
 
@@ -185,7 +248,7 @@ function ListController:SetGroup(groupKey)
 
     self.groupKey = groupKey
     self.collapsedGroups = {}
-    NS.db:Set("list", "groupKey", self.groupKey)
+    ListSettings.SetListValue(self.settingsScope, "groupKey", self.groupKey)
     self:RefreshDataProvider(true)
 end
 
@@ -237,13 +300,19 @@ function ListController:RefreshItemLock(bagID, slotIndex, isLocked)
     end
 end
 
-function ListController:RefreshProfileSettings()
-    ApplyStoredProfileSettings(self)
+function ListController:RefreshProfileSettings(forceRefresh)
+    local settingsChanged = ApplyStoredProfileSettings(self)
+    if not forceRefresh and not settingsChanged then
+        return
+    end
+
     self.collapsedGroups = {}
     self:RefreshDataProvider(true)
 end
 
-function ListController:ScheduleProfileSettingsRefresh()
+function ListController:ScheduleProfileSettingsRefresh(forceRefresh)
+    self.profileSettingsRefreshForced =
+        self.profileSettingsRefreshForced or forceRefresh == true
     if self.profileSettingsRefreshScheduled then
         return
     end
@@ -255,7 +324,9 @@ function ListController:ScheduleProfileSettingsRefresh()
         end
 
         self.profileSettingsRefreshScheduled = false
-        self:RefreshProfileSettings()
+        local forced = self.profileSettingsRefreshForced
+        self.profileSettingsRefreshForced = false
+        self:RefreshProfileSettings(forced)
     end)
 end
 
@@ -316,7 +387,7 @@ local function PrewarmItemRows(list)
             list.view.frameFactoryResetter
         )
         row.rightClipPadding = Layout.ScrollBarContentPadding
-        ItemRow.Initialize(row)
+        ItemRow.Initialize(row, list)
         ItemRow.Reset(row)
         rows[index] = row
     end
@@ -331,7 +402,7 @@ local function CreateEmptyText(list)
     emptyText:SetFont(NS.Media.GetPrimaryFont(), EMPTY_TEXT_SIZE)
     emptyText:SetTextColor(EMPTY_TEXT_COLOR_R, EMPTY_TEXT_COLOR_G, EMPTY_TEXT_COLOR_B)
     emptyText:SetPoint("CENTER", list.scrollBox, "CENTER", 0, 0)
-    emptyText:SetText(EMPTY_LIST_TEXT)
+    emptyText:SetText(list.context.emptyText or DEFAULT_EMPTY_LIST_TEXT)
     emptyText:Hide()
     return emptyText
 end
@@ -341,8 +412,17 @@ function ItemList.GetPreferredWidth()
     return Columns.GetContentWidth() + Layout.ScrollBarContentPadding
 end
 
-function ItemList.Create(parent)
-    local list = CreateListState()
+function ItemList.Create(parent, context)
+    context = context or {}
+    context.settingsScope = context.settingsScope
+        or ListSettings.Scopes.Bags
+    context.itemButtonAdapter = context.itemButtonAdapter or NS.ItemRowButton
+    context.emptyText = context.emptyText or "No bag items"
+    context.handleItemEnter = context.handleItemEnter or function()
+        return false
+    end
+
+    local list = CreateListState(context)
 
     local frame = CreateFrame("Frame", nil, parent)
     frame:SetAllPoints(parent)
@@ -369,16 +449,27 @@ function ItemList.Create(parent)
     list.view = view
     PrewarmItemRows(list)
 
-    CursorDrop.Attach(list)
+    if context.cursorDrop then
+        CursorDrop.Attach(list)
+    end
     list.emptyText = CreateEmptyText(list)
 
-    local function OnProfileDataChanged()
+    local function OnProfileLifecycleChanged()
         -- Coalesce lifecycle callbacks after every profile-backed module has
         -- rebuilt its caches; LibSimpleDB does not promise callback-map order.
-        list:ScheduleProfileSettingsRefresh()
+        list:ScheduleProfileSettingsRefresh(true)
     end
 
-    NS.db:RegisterLifecycleCallback("OnDataChanged", OnProfileDataChanged)
-    NS.db:RegisterLifecycleCallback("OnReset", OnProfileDataChanged)
+    local function OnProfileSettingChanged()
+        list:ScheduleProfileSettingsRefresh(false)
+    end
+
+    NS.db:RegisterLifecycleCallback("OnDataChanged", OnProfileLifecycleChanged)
+    NS.db:RegisterLifecycleCallback("OnReset", OnProfileLifecycleChanged)
+    NS.db:RegisterTreeCallback(OnProfileSettingChanged, "list")
+    NS.db:RegisterTreeCallback(OnProfileSettingChanged, "pins")
+    if list.settingsScope == ListSettings.Scopes.Bank then
+        NS.db:RegisterTreeCallback(OnProfileSettingChanged, "bank")
+    end
     return list
 end

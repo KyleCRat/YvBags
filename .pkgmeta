@@ -21,7 +21,6 @@ ignore:
   - .gitattributes
   - .git
   - AGENTS.md
-  - PLAN.md
   - TODO.md
   - "Libs/LibSimpleDB-2.0/benchmarks"
   - "Libs/LibSimpleDB-2.0/tests"
@@ -32,5 +31,4 @@ ignore:
   - "*.png"
   - "Media/Textures/*.png"
   - Media/Textures/Soulbound.tga
-  - Media/Textures/UIGroupManager2x.BLP
   - Media/Textures/Vertex-Border.tga

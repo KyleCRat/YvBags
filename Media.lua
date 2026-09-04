@@ -37,6 +37,8 @@ local Textures = {
 
 local Atlases = {
     warboundBindingIcon = "GM-icon-assist-hover",
+    warbandTransfer = "warbands-transferable-icon",
+    checkmark = "common-icon-checkmark-yellow",
     add = "common-icon-plus",
     remove = "common-icon-minus",
     delete = "common-icon-redx",
@@ -99,6 +101,14 @@ end
 
 function Media.GetWarboundBindingIconAtlas()
     return Atlases.warboundBindingIcon
+end
+
+function Media.GetWarbandTransferAtlas()
+    return Atlases.warbandTransfer
+end
+
+function Media.GetCheckmarkAtlas()
+    return Atlases.checkmark
 end
 
 function Media.GetAddAtlas()

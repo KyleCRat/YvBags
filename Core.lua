@@ -201,6 +201,7 @@ function NS:Initialize()
     end
 
     NS.MainFrame.Create()
+    NS.BankFrame.Create()
 end
 
 local function OnAddonLoaded(self, loadedAddon)
