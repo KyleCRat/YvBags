@@ -2,7 +2,7 @@ local _, NS = ...
 
 -- Shared custom-bank frame geometry.
 local Layout = {
-    MinWidth = 640,
+    MinWidth = 520,
     MinHeight = 420,
     FrameInsetLeft = 4,
     FrameInsetRight = -6,

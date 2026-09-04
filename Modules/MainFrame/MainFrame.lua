@@ -12,7 +12,8 @@ local ListSettings = NS.ItemListSettings
 local FRAME_NAME = NS.FRAME_NAME
 local FRAME_TEMPLATE = "ButtonFrameTemplate"
 local FRAME_STRATA = "HIGH"
-local FRAME_PORTRAIT = "Interface\\Icons\\INV_Misc_Bag_08"
+local FRAME_PORTRAIT =
+    "Interface\\Icons\\INV_Tailoring_Reagent_Bag_Violet_Reagent_Bag"
 local RESIZE_BUTTON_TEMPLATE = "PanelResizeButtonTemplate"
 
 local function ApplyBaseFrameTheme(frame)

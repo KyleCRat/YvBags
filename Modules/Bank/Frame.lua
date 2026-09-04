@@ -13,7 +13,8 @@ local ListSettings = NS.ItemListSettings
 local CHARACTER_BANK = Enum.BankType.Character
 local ACCOUNT_BANK = Enum.BankType.Account
 local FRAME_TEMPLATE = "ButtonFrameTemplate"
-local FRAME_PORTRAIT = "Interface\\Icons\\INV_Misc_Bag_10_Blue"
+local FRAME_PORTRAIT =
+    "Interface\\Icons\\INV_12_Profession_Tailoring_ReagentBag_Violet"
 local FRAME_STRATA = "HIGH"
 local RESIZE_BUTTON_TEMPLATE = "PanelResizeButtonTemplate"
 local TYPE_BUTTON_HEIGHT = 28

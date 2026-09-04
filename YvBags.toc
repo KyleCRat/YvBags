@@ -3,7 +3,7 @@
 ## Notes: List-based player bag and bank replacement.
 ## Author: Yvairel
 ## Version: 12.1.0-2
-## IconTexture: Interface\Icons\INV_Misc_Bag_08
+## IconTexture: Interface\Icons\INV_Tailoring_Reagent_Bag_Violet_Reagent_Bag
 ## OptionalDeps: IconBrowser
 ## SavedVariables: YvBagsDB
 ## SavedVariablesPerCharacter: YvBagsCharacterDB

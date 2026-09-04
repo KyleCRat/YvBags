@@ -47,6 +47,8 @@
 - Restored Mythic Keystones to their own prioritized category and gave keystone pins a stable identity across dungeon and level changes.
 
 ### Changed
+- Updated the bag and bank portraits to distinct violet reagent-bag artwork,
+  and matched the add-on-list icon to the bag portrait.
 - Switched the bag and bank content inset backgrounds to Blizzard's properly
   tiled Midnight frame texture while retaining their inherited outer
   backgrounds.
@@ -56,8 +58,8 @@
   matched the bag and bank-tab buttons to their visible footprint. Deposit
   settings are visually separated from compact minus/plus money-transfer
   controls, and the bank balance remains at the shared right edge.
-- Reduced the bank frame's minimum width now that its footer controls use a
-  compact single-row layout.
+- Reduced the bank frame's minimum width to 520 pixels now that its footer
+  controls use a compact single-row layout.
 - Generalized the virtualized item list around inventory-specific native button,
   tooltip, cursor-drop, empty-state, and profile-setting adapters so bags and
   banks share one presentation model without sharing physical-container logic.
