@@ -3,7 +3,7 @@ local _, NS = ...
 local Money = {}
 NS.Money = Money
 
-local MONEY_DISPLAY_FORMAT = "%s |T%s:0|t"
+local MONEY_DISPLAY_FORMAT = "%s|T%s:0:0:2:0|t"
 local MONEY_EXACT_SEPARATOR = " "
 local MONEY_GOLD_KEY = "gold"
 local MONEY_SILVER_KEY = "silver"

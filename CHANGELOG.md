@@ -86,6 +86,8 @@
 - Classified Utility Curio, Combat Curio, and Relic consumables as Openable instead of general Consumables.
 
 ### Fixed
+- Made compact and exact money displays size directly to their digits, using
+  Blizzard's coin-icon offset instead of an extra fixed text space.
 - Kept purchased bank-tab configuration disabled until both the staged bank
   load and Blizzard's native tab data are ready, then repaired stale native
   tab state so the controls become available without switching bank views.
