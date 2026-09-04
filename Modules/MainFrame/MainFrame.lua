@@ -16,10 +16,16 @@ local FRAME_PORTRAIT = "Interface\\Icons\\INV_Misc_Bag_08"
 local RESIZE_BUTTON_TEMPLATE = "PanelResizeButtonTemplate"
 
 local function ApplyBaseFrameTheme(frame)
-    if frame.TopTileStreaks then
-        frame.TopTileStreaks:Hide()
-        frame.TopTileStreaks:SetAlpha(0)
-    end
+    local insetBackground = frame.Inset.Bg
+    insetBackground:SetTexture(
+        NS.Media.GetInsetBackgroundTexture(),
+        "REPEAT",
+        "REPEAT"
+    )
+    insetBackground:SetHorizTile(true)
+    insetBackground:SetVertTile(true)
+    frame.TopTileStreaks:Hide()
+    frame.TopTileStreaks:SetAlpha(0)
 end
 
 local function ApplyInventoryRefresh(frame, refreshFooter)

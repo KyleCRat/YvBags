@@ -26,6 +26,7 @@ local Fonts = {
 }
 
 local Textures = {
+    insetBackground = "Interface\\FrameGeneral\\UIFrameMidnightBackground",
     sortArrow = ADDON_MEDIA_PATH .. "Textures\\Vertex-Arrow.tga",
     circle = ADDON_MEDIA_PATH .. "Textures\\Vertex-Circle.tga",
     mover = ADDON_MEDIA_PATH .. "Textures\\Vertex-Mover.tga",
@@ -69,6 +70,10 @@ function Media.GetIconBorderTexture()
     end
 
     return Borders.icon.path
+end
+
+function Media.GetInsetBackgroundTexture()
+    return Textures.insetBackground
 end
 
 function Media.GetSortArrowTexture()

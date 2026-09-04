@@ -47,6 +47,14 @@ local function GetBankTypeFromToken(token)
 end
 
 local function ApplyBaseFrameTheme(frame)
+    local insetBackground = frame.Inset.Bg
+    insetBackground:SetTexture(
+        NS.Media.GetInsetBackgroundTexture(),
+        "REPEAT",
+        "REPEAT"
+    )
+    insetBackground:SetHorizTile(true)
+    insetBackground:SetVertTile(true)
     frame.TopTileStreaks:Hide()
     frame.TopTileStreaks:SetAlpha(0)
 end

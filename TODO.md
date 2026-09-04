@@ -14,6 +14,11 @@
 
 ## Future Appearance Settings
 
+- Add a shared inset-background selector for the bag and bank windows. Start
+  with a curated set of compatible Blizzard
+  `Interface/FrameGeneral/UIFrame*Background` file textures, keep the current
+  Midnight inset background as the default, and apply changes to both frames
+  live while preserving their inherited outer backgrounds.
 - Make the shared accent color customizable as a low-priority appearance
   option. Decide addon-global versus profile ownership (addon-global is likely
   the better fit), add a reusable LibModernSettings color control, and replace

@@ -43,12 +43,15 @@ local MONEY_WITHDRAW_TOOLTIP = "Withdraw money from the Warband bank."
 local MONEY_DEPOSIT_TOOLTIP = "Deposit money into the Warband bank."
 
 local MODERN_BUTTON_STYLES = {
-    compact = {
-        height = 24,
-        normal = "common-button-tertiary-normal-small",
-        hover = "common-button-tertiary-hover-small",
-        pressed = "common-button-tertiary-pressed-small",
-        disabled = "common-button-tertiary-disabled-small",
+    command = {
+        height = SQUARE_BUTTON_SIZE,
+        normal = "common-button-tertiary-normal",
+        hover = "common-button-tertiary-hover",
+        pressed = "common-button-tertiary-pressed",
+        disabled = "common-button-tertiary-disabled",
+        normalFont = GameFontNormal,
+        highlightFont = GameFontHighlight,
+        disabledFont = GameFontDisable,
     },
     square = {
         width = SQUARE_BUTTON_SIZE,
@@ -57,6 +60,9 @@ local MODERN_BUTTON_STYLES = {
         hover = "common-button-tertiary-square-hover",
         pressed = "common-button-tertiary-square-pressed",
         disabled = "common-button-tertiary-square-disabled",
+        normalFont = GameFontNormalSmall,
+        highlightFont = GameFontHighlightSmall,
+        disabledFont = GameFontDisableSmall,
     },
 }
 
@@ -83,6 +89,10 @@ local function ApplyModernButtonStyle(button, style)
         button:SetWidth(style.width)
     end
 
+    button:SetNormalFontObject(style.normalFont)
+    button:SetHighlightFontObject(style.highlightFont)
+    button:SetDisabledFontObject(style.disabledFont)
+
     button.modernNormalTexture:SetAtlas(
         button:IsMouseOver() and style.hover or style.normal,
         false
@@ -96,9 +106,6 @@ local function SkinModernButton(button, style)
     button.Middle:Hide()
     button.Right:Hide()
     button:GetHighlightTexture():SetTexture(nil)
-    button:SetNormalFontObject(GameFontNormalSmall)
-    button:SetHighlightFontObject(GameFontHighlightSmall)
-    button:SetDisabledFontObject(GameFontDisableSmall)
 
     button.modernNormalTexture = CreateButtonStateTexture(
         button,
@@ -666,7 +673,7 @@ local function RefreshAutoDepositLayout(frame, bankType)
         depositButton,
         usesWarbandIcon
             and MODERN_BUTTON_STYLES.square
-            or MODERN_BUTTON_STYLES.compact
+            or MODERN_BUTTON_STYLES.command
     )
     depositButton.Text:SetShown(not usesWarbandIcon)
     depositButton.warbandDepositIcon:SetShown(usesWarbandIcon)
@@ -944,7 +951,7 @@ function Footer.Create(frame)
     local autoDepositButton = autoDepositFrame.DepositButton
     SkinModernButton(
         autoDepositButton,
-        MODERN_BUTTON_STYLES.compact
+        MODERN_BUTTON_STYLES.command
     )
     local warbandDepositIcon = CreateButtonIcon(
         autoDepositButton,

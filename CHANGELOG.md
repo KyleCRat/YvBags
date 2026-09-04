@@ -45,6 +45,11 @@
 - Restored Mythic Keystones to their own prioritized category and gave keystone pins a stable identity across dungeon and level changes.
 
 ### Changed
+- Switched the bag and bank content inset backgrounds to Blizzard's properly
+  tiled Midnight frame texture while retaining their inherited outer
+  backgrounds.
+- Restyled the Character bank's Deposit All Reagents action with regular
+  tertiary artwork at the same height as the adjacent square controls.
 - Normalized both footer layouts around compact square tertiary controls and
   matched the bag and bank-tab buttons to their visible footprint. Deposit
   settings are visually separated from compact minus/plus money-transfer
