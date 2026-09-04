@@ -27,6 +27,10 @@ local function GetItemGUID(item)
     end
 
     local itemLocation = ItemLocation:CreateFromBagAndSlot(item.bagID, item.slotIndex)
+    if not itemLocation:IsValid() then
+        return nil
+    end
+
     itemGUID = C_Item.GetItemGUID(itemLocation)
     guidByLocation[locationKey] = itemGUID
     return itemGUID
@@ -38,7 +42,7 @@ local function RemoveStaleEntries(itemsByLocation, now)
     for locationKey, entry in pairs(sessionEntries) do
         local item = itemsByLocation[locationKey]
         local itemGUID = item and GetItemGUID(item) or nil
-        if itemGUID ~= entry.itemGUID then
+        if not item or (itemGUID and itemGUID ~= entry.itemGUID) then
             dismissedGUIDs[entry.itemGUID] = now + MOVE_DISMISS_WINDOW_SECONDS
             staleLocations[#staleLocations + 1] = locationKey
         end
@@ -92,18 +96,20 @@ function NewItems.Reconcile(items, itemsByLocation)
             end
         elseif isNativeNew then
             local itemGUID = GetItemGUID(item)
-            if dismissedGUIDs[itemGUID] then
-                C_NewItems.RemoveNewItem(item.bagID, item.slotIndex)
-                dismissedGUIDs[itemGUID] = nil
-            else
-                sessionEntries[locationKey] = {
-                    itemGUID = itemGUID,
-                    isUnseen = true,
-                }
-                item.isNewThisSession = true
-                item.isNewUnseen = true
-                item.newItemGUID = itemGUID
-                placementChanged = true
+            if itemGUID then
+                if dismissedGUIDs[itemGUID] then
+                    C_NewItems.RemoveNewItem(item.bagID, item.slotIndex)
+                    dismissedGUIDs[itemGUID] = nil
+                else
+                    sessionEntries[locationKey] = {
+                        itemGUID = itemGUID,
+                        isUnseen = true,
+                    }
+                    item.isNewThisSession = true
+                    item.isNewUnseen = true
+                    item.newItemGUID = itemGUID
+                    placementChanged = true
+                end
             end
         end
     end
