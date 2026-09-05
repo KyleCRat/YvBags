@@ -90,6 +90,8 @@
 - Classified Utility Curio, Combat Curio, and Relic consumables as Openable instead of general Consumables.
 
 ### Fixed
+- Fixed committed category-rule edits disappearing after navigating to another
+  category and back.
 - Made compact and exact money displays size directly to their digits, using
   Blizzard's coin-icon offset instead of an extra fixed text space.
 - Kept purchased bank-tab configuration disabled until both the staged bank

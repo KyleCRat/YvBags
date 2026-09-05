@@ -795,20 +795,18 @@ end
 
 local function CommitFocusedValue(editor)
     local committed = true
+    -- LMS may defer a mouse-driven focus-loss commit until the click target
+    -- runs, after HasFocus() is already false. Unfocused inputs are a no-op.
     editor.scrollBox:ForEachFrame(function(row)
-        if row.scalarValueEdit:HasFocus() then
-            local rowCommitted = row.scalarValueEdit:CommitAndClearFocus()
-            if not rowCommitted then
-                committed = false
-            end
+        local rowCommitted = row.scalarValueEdit:CommitAndClearFocus()
+        if not rowCommitted then
+            committed = false
         end
 
         for _, control in ipairs(row.textValueControls) do
-            if control.input:HasFocus() then
-                local rowCommitted = control.input:CommitAndClearFocus()
-                if not rowCommitted then
-                    committed = false
-                end
+            rowCommitted = control.input:CommitAndClearFocus()
+            if not rowCommitted then
+                committed = false
             end
         end
     end)

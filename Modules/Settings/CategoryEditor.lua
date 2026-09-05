@@ -212,7 +212,7 @@ local function RefreshVisibleSelection(editor)
 end
 
 local function RefreshCategoryDetail(editor)
-    local definition = FindDefinition(editor, editor.selectedCategoryID)
+    local definition = Categories.GetDefinition(editor.selectedCategoryID)
 
     if not definition then
         editor.nameEdit:SetValue("")
