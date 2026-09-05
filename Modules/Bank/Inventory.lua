@@ -20,6 +20,7 @@ BankInventory.UpdateReasons = {
     Locks = "locks",
     Pins = "pins",
     Tabs = "tabs",
+    TooltipData = "tooltipData",
     Updated = "updated",
 }
 
@@ -761,6 +762,52 @@ local function OnItemInfoReceived(_, itemID, success)
     end
 end
 
+local function RefreshTooltipItems(items, pendingDataIDs, refreshAll)
+    local refreshed = false
+
+    for index = 1, #items do
+        local item = items[index]
+        local dataInstanceID = item.tooltipDataInstanceID
+        if refreshAll
+            or (dataInstanceID and pendingDataIDs[dataInstanceID]) then
+            if ItemModel.RefreshTooltipData(item) then
+                refreshed = true
+            end
+        end
+    end
+
+    return refreshed
+end
+
+local function RefreshResolvedTooltipData(pendingDataIDs, refreshAll)
+    if not BankInventory.isOpen then
+        return
+    end
+
+    for bankType, state in pairs(BankInventory.states) do
+        local refreshed = RefreshTooltipItems(
+            state.items,
+            pendingDataIDs,
+            refreshAll
+        )
+
+        if state.scanTarget then
+            RefreshTooltipItems(
+                state.scanTarget.items,
+                pendingDataIDs,
+                refreshAll
+            )
+        end
+
+        if refreshed then
+            NotifyUpdateCallbacks(
+                BankInventory.UpdateReasons.TooltipData,
+                bankType
+            )
+        end
+    end
+end
+
 function BankInventory:Initialize()
     if self.initialized then
         return
@@ -776,6 +823,7 @@ function BankInventory:Initialize()
     )
     NS:RegisterEventHandler("ITEM_LOCK_CHANGED", OnItemLockChanged)
     NS:RegisterEventHandler("GET_ITEM_INFO_RECEIVED", OnItemInfoReceived)
+    ItemModel.RegisterTooltipDataCallback(RefreshResolvedTooltipData)
     NS:RegisterEventHandler(
         "PLAYERBANKSLOTS_CHANGED",
         OnPlayerBankSlotsChanged

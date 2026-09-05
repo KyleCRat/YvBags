@@ -14,6 +14,10 @@ local BindingKeys = Binding.Keys
 local UNKNOWN_ITEM_ICON = 134400
 local CAGED_BATTLE_PET_ITEM_ID = 82800
 local tooltipSearchCache = {}
+local tooltipDataUpdateCallbacks = {}
+local pendingTooltipDataIDs = {}
+local refreshAllTooltipData
+local tooltipDataRefreshTimer
 local collectionKindCache = {}
 
 local COLLECTION_KINDS = {
@@ -266,7 +270,7 @@ local function GetTooltipText(value)
     return nil
 end
 
-local function GetTooltipSearchText(item)
+local function GetTooltipSearchText(item, forceRefresh)
     local itemReference = item.link
     if IsSecretValue(itemReference) then
         return ""
@@ -291,23 +295,29 @@ local function GetTooltipSearchText(item)
     end
 
     local cached = tooltipSearchCache[item.locationKey]
-    if cached
+    if not forceRefresh
+        and cached
         and cached.itemReference == itemReference
         and cached.count == item.count
         and cached.bindingKey == item.bindingKey
         and cached.isBound == item.isBound
         and cached.isPendingItemInfo == item.isPendingItemInfo then
-        return cached.text
+        return cached.text, cached.dataInstanceID
     end
 
     local tooltipData = C_TooltipInfo.GetBagItem(item.bagID, item.slotIndex)
     if IsSecretValue(tooltipData) or type(tooltipData) ~= "table" then
-        return ""
+        return "", nil
+    end
+
+    local dataInstanceID = tooltipData.dataInstanceID
+    if IsSecretValue(dataInstanceID) then
+        dataInstanceID = nil
     end
 
     local lines = tooltipData.lines
     if IsSecretValue(lines) or type(lines) ~= "table" then
-        return ""
+        return "", dataInstanceID
     end
 
     local values = {}
@@ -330,9 +340,10 @@ local function GetTooltipSearchText(item)
         bindingKey = item.bindingKey,
         isBound = item.isBound,
         isPendingItemInfo = item.isPendingItemInfo,
+        dataInstanceID = dataInstanceID,
         text = text,
     }
-    return text
+    return text, dataInstanceID
 end
 
 local function GetCurrentBagItemLevel(bagID, slotIndex)
@@ -657,7 +668,8 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
         usedStaticItemInfoFallback = usedStaticFallback,
     }
 
-    item.tooltipSearchText = GetTooltipSearchText(item)
+    item.tooltipSearchText, item.tooltipDataInstanceID =
+        GetTooltipSearchText(item)
     item.ruleName = CategoryRules.NormalizeRuleText(
         hyperlinkDisplayText or fullName or containerItemInfo.itemName
     )
@@ -678,6 +690,27 @@ function ItemModel.RefreshClassification(item)
     RefreshClassification(item)
 end
 
+function ItemModel.RefreshTooltipData(item)
+    local previousText = item.tooltipSearchText
+    local previousRuleText = item.ruleTooltipText
+
+    tooltipSearchCache[item.locationKey] = nil
+    item.tooltipSearchText, item.tooltipDataInstanceID =
+        GetTooltipSearchText(item, true)
+    item.ruleTooltipText = CategoryRules.NormalizeRuleText(
+        item.tooltipSearchText
+    )
+
+    if item.tooltipSearchText == previousText
+        and item.ruleTooltipText == previousRuleText then
+        return false
+    end
+
+    item.searchDocument = nil
+    RefreshCategory(item)
+    return true
+end
+
 function ItemModel.RefreshPin(item)
     return RefreshPin(item)
 end
@@ -685,3 +718,57 @@ end
 function ItemModel.RefreshCategory(item)
     return RefreshCategory(item)
 end
+
+-- Async tooltip cache invalidation
+local function DispatchTooltipDataUpdates()
+    local dataInstanceIDs = pendingTooltipDataIDs
+    local refreshAll = refreshAllTooltipData == true
+
+    pendingTooltipDataIDs = {}
+    refreshAllTooltipData = nil
+
+    for index = 1, #tooltipDataUpdateCallbacks do
+        tooltipDataUpdateCallbacks[index](dataInstanceIDs, refreshAll)
+    end
+end
+
+local function OnTooltipDataUpdate(_, dataInstanceID)
+    if dataInstanceID == nil then
+        wipe(tooltipSearchCache)
+        refreshAllTooltipData = true
+    else
+        for locationKey, cached in pairs(tooltipSearchCache) do
+            if cached.dataInstanceID == dataInstanceID then
+                tooltipSearchCache[locationKey] = nil
+            end
+        end
+        pendingTooltipDataIDs[dataInstanceID] = true
+    end
+
+    if tooltipDataRefreshTimer then
+        return
+    end
+
+    local timer
+    timer = C_Timer.NewTimer(0, function()
+        if tooltipDataRefreshTimer ~= timer then
+            return
+        end
+
+        tooltipDataRefreshTimer = nil
+        DispatchTooltipDataUpdates()
+    end)
+    tooltipDataRefreshTimer = timer
+end
+
+function ItemModel.RegisterTooltipDataCallback(callback)
+    if type(callback) ~= "function" then
+        error("Usage: ItemModel.RegisterTooltipDataCallback(callback)", 2)
+    end
+
+    tooltipDataUpdateCallbacks[#tooltipDataUpdateCallbacks + 1] = callback
+end
+
+NS:RegisterInitCallback(function()
+    NS:RegisterEventHandler("TOOLTIP_DATA_UPDATE", OnTooltipDataUpdate)
+end)

@@ -90,6 +90,9 @@
 - Classified Utility Curio, Combat Curio, and Relic consumables as Openable instead of general Consumables.
 
 ### Fixed
+- Refreshed cached item tooltip text when Blizzard's asynchronous tooltip data
+  resolves, allowing delayed lines such as `Use:` effects to participate in
+  search and category rules without reloading.
 - Fixed committed category-rule edits disappearing after navigating to another
   category and back.
 - Made compact and exact money displays size directly to their digits, using

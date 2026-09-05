@@ -420,6 +420,8 @@ local function RegisterCallbacks(frame)
             NS.BankFooter.HideTransientUI(frame)
             RefreshTypeButtons(frame)
             NS.BankFooter.Refresh(frame)
+        elseif reason == Inventory.UpdateReasons.TooltipData then
+            RequestInventoryRefresh(frame, false)
         else
             RequestInventoryRefresh(frame, true)
         end

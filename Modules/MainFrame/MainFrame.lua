@@ -56,6 +56,7 @@ local function IsPresentationOnlyUpdate(reason)
     return reason == NS.Inventory.UpdateReasons.Categories
         or reason == NS.Inventory.UpdateReasons.NewItemPlacement
         or reason == NS.Inventory.UpdateReasons.Pins
+        or reason == NS.Inventory.UpdateReasons.TooltipData
 end
 
 -- Provider replacement trails native input and remains parked through item locks.

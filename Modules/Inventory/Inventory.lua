@@ -19,6 +19,7 @@ Inventory.UpdateReasons = {
     NewItemPlacement = "newItemPlacement",
     NewItemVisuals = "newItemVisuals",
     Pins = "pins",
+    TooltipData = "tooltipData",
 }
 
 -- Inventory state
@@ -99,6 +100,7 @@ local function TrackPendingItemInfo(item, itemInfo, containerItemInfo)
         battlePetQuality = item.battlePetQuality,
         containerItemName = containerItemInfo.itemName,
         containerQuality = containerItemInfo.quality,
+        tooltipDataInstanceID = item.tooltipDataInstanceID,
         hasContainerHyperlink = containerItemInfo.hyperlink ~= nil,
         itemInfoType = type(itemInfo),
         itemInfoText = tostring(itemInfo or ""),
@@ -319,6 +321,35 @@ local function OnItemInfoReceived(_, itemID, success)
         Inventory.pendingItemIDs[itemID] = nil
         Inventory:ScheduleScan("GET_ITEM_INFO_RECEIVED")
     end
+end
+
+local function RefreshResolvedTooltipData(pendingDataIDs, refreshAll)
+    local refreshed = false
+    for _, item in ipairs(Inventory.items) do
+        local dataInstanceID = item.tooltipDataInstanceID
+        if refreshAll
+            or (dataInstanceID and pendingDataIDs[dataInstanceID]) then
+            if ItemModel.RefreshTooltipData(item) then
+                refreshed = true
+            end
+        end
+    end
+
+    if not refreshed then
+        return
+    end
+
+    for _, pendingItem in ipairs(Inventory.pendingItems) do
+        local item = Inventory.itemsByLocation[pendingItem.locationKey]
+        if item then
+            pendingItem.tooltipDataInstanceID =
+                item.tooltipDataInstanceID
+            pendingItem.categoryKey = item.categoryKey
+            pendingItem.categoryName = item.categoryName
+        end
+    end
+
+    NotifyUpdateCallbacks(Inventory.UpdateReasons.TooltipData)
 end
 
 -- Container discovery
@@ -598,6 +629,7 @@ function Inventory:Initialize()
     NS:RegisterEventHandler("BAG_NEW_ITEMS_UPDATED", OnBagNewItemsUpdated)
     NS:RegisterEventHandler("ITEM_LOCK_CHANGED", OnItemLockChanged)
     NS:RegisterEventHandler("GET_ITEM_INFO_RECEIVED", OnItemInfoReceived)
+    ItemModel.RegisterTooltipDataCallback(RefreshResolvedTooltipData)
 
     Categories.RegisterCallback(function(_, changeType, categoryID)
         self:RefreshCategories(changeType, categoryID)

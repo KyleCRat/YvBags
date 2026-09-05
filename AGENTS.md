@@ -193,6 +193,11 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - Item Name and Tooltip Text Rules may contain multiple text alternatives within one atomic Rule. Equals and Contains match any complete alternative; Does Not Equal and Does Not Contain negate that grouped result and therefore match only when none of the alternatives match. Empty alternatives are ignored.
 - Evaluate configured Categories in order and assign the first match. Skip `other` during evaluation and use it only as the final fallback. Ignore incomplete Rules while they are being configured; a Rule Set with no complete Rules matches nothing. Missing, pending, or secret item data makes a complete Rule evaluate false.
 - Rule evaluation reads normalized item fields only. Settings mutations may rebuild cached choice labels, but reclassification must not call bag, item, tooltip, atlas, or formatting APIs. Tooltip Text rules consume the cached normalized tooltip text built during item-model construction.
+- Cached tooltip text retains Blizzard's tooltip data-instance ID. Invalidate
+  matching cache entries and coalesce `TOOLTIP_DATA_UPDATE` refreshes for only
+  matching active bag and bank records when the event identifies an instance.
+  Refresh all active records only for Blizzard's nil-ID fallback before
+  reclassifying from normalized fields.
 - Rule order is persisted and draggable for organization but has no matching effect. Reordering rules must not trigger inventory reclassification.
 - Mythic Keystones retain their own prioritized category unless pinned. Keystone pin identity is kind-based rather than link- or item-instance-based so it survives dungeon and level changes.
 - Bag/Slot remains an internal, disabled column and is not a user-facing sort or group option.
