@@ -58,6 +58,8 @@
 - Restored Mythic Keystones to their own prioritized category and gave keystone pins a stable identity across dungeon and level changes.
 
 ### Changed
+- Made the Bags and Bank List settings more compact with LMS inline
+  label/dropdown fields, retaining tooltips and complete-field disabled states.
 - Updated the bag and bank portraits to distinct violet reagent-bag artwork,
   and matched the add-on-list icon to the bag portrait.
 - Switched the bag and bank content inset backgrounds to Blizzard's properly

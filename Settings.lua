@@ -18,6 +18,10 @@ local PIN_DISPLAY_GROUP_TOP_LABEL = "Top of Groups"
 local PIN_DISPLAY_NORMAL_LABEL = "Normal Sort Order"
 local PROFILE_ACTION_NONE_TOKEN = "profile-action:none"
 
+-- Inline List field geometry, shared by the bag and bank canvases.
+local LIST_LABEL_WIDTH = 160
+local LIST_FIELD_GAP = 8
+
 local PERMANENT_PROFILE_LABELS = {
     character = "Character",
     spec = "Specialization",
@@ -725,16 +729,16 @@ local function RefreshProfileSettingControls()
     controls.showCooldownsInName:SetValue(
         NS.db:Get("display", "showCooldownsInName") ~= false
     )
-    controls.groupKey:SetValue(
+    controls.groupKey:GetControl():SetValue(
         ListModel.NormalizeGroupKey(GetListValue("groupKey"))
     )
-    controls.pinDisplayMode:SetValue(NS.ItemPins.GetDisplayMode())
-    controls.primarySortKey:SetValue(primarySortKey)
-    controls.primarySortDirection:SetValue(
+    controls.pinDisplayMode:GetControl():SetValue(NS.ItemPins.GetDisplayMode())
+    controls.primarySortKey:GetControl():SetValue(primarySortKey)
+    controls.primarySortDirection:GetControl():SetValue(
         GetListValue("sortAscending") ~= false
     )
-    controls.secondarySortKey:SetValue(secondarySortKey)
-    controls.secondarySortDirection:SetValue(
+    controls.secondarySortKey:GetControl():SetValue(secondarySortKey)
+    controls.secondarySortDirection:GetControl():SetValue(
         GetListValue("secondarySortAscending") ~= false
     )
 
@@ -779,20 +783,20 @@ local function RefreshBankSettingsFrame()
         NS.ItemListSettings.IsBankMirroring()
     )
     bankControls.frameScale:SetValue(GetBankFrameScalePercent())
-    bankControls.groupKey:SetValue(ListModel.NormalizeGroupKey(
+    bankControls.groupKey:GetControl():SetValue(ListModel.NormalizeGroupKey(
         GetBankListValue("groupKey")
     ))
-    bankControls.pinDisplayMode:SetValue(
+    bankControls.pinDisplayMode:GetControl():SetValue(
         NS.ItemPins.NormalizeDisplayMode(
             NS.ItemListSettings.GetPinDisplayMode(BANK_SCOPE)
         )
     )
-    bankControls.primarySortKey:SetValue(primarySortKey)
-    bankControls.primarySortDirection:SetValue(
+    bankControls.primarySortKey:GetControl():SetValue(primarySortKey)
+    bankControls.primarySortDirection:GetControl():SetValue(
         GetBankListValue("sortAscending") ~= false
     )
-    bankControls.secondarySortKey:SetValue(secondarySortKey)
-    bankControls.secondarySortDirection:SetValue(
+    bankControls.secondarySortKey:GetControl():SetValue(secondarySortKey)
+    bankControls.secondarySortDirection:GetControl():SetValue(
         GetBankListValue("secondarySortAscending") ~= false
     )
 
@@ -935,6 +939,24 @@ local function CreateProfileButtonRow(parent)
     end
 end
 
+local function AddListDropdown(flow, options)
+    return flow:AddControl("field", {
+        label = options.label,
+        labelPosition = "left",
+        labelWidth = LIST_LABEL_WIDTH,
+        gap = LIST_FIELD_GAP,
+        controlType = "dropdown",
+        controlOptions = {
+            showLabel = false,
+            leftInset = 0,
+            rightInset = 0,
+            choices = options.choices,
+            tooltip = options.tooltip,
+            onChanged = options.onChanged,
+        },
+    })
+end
+
 local function BuildMainSettingsFrame(frame, measurementFrame)
     local layout = ModernSettings:CreateCanvasLayout(frame, {
         measurementFrame = measurementFrame,
@@ -1017,37 +1039,37 @@ local function BuildMainSettingsFrame(frame, measurementFrame)
     })
 
     columns.right:AddSection("List", { marginTop = 0 })
-    controls.groupKey = columns.right:AddControl("dropdown", {
+    controls.groupKey = AddListDropdown(columns.right, {
         label = "Group By",
         choices = CreateGroupChoices(),
         tooltip = "Choose how the list groups visible bag items.",
         onChanged = SetGroup,
     })
-    controls.pinDisplayMode = columns.right:AddControl("dropdown", {
+    controls.pinDisplayMode = AddListDropdown(columns.right, {
         label = "Pinned Items",
         choices = CreatePinDisplayChoices(),
         tooltip = "Choose how pinned items participate in the active grouping and sort order. Pin state is retained in every mode.",
         onChanged = SetPinDisplayMode,
     })
-    controls.primarySortKey = columns.right:AddControl("dropdown", {
+    controls.primarySortKey = AddListDropdown(columns.right, {
         label = "Primary Sort",
         choices = CreateSortChoices(),
         tooltip = "Choose the primary item sort order.",
         onChanged = SetPrimarySort,
     })
-    controls.primarySortDirection = columns.right:AddControl("dropdown", {
+    controls.primarySortDirection = AddListDropdown(columns.right, {
         label = "Primary Sort Direction",
         choices = CreateDirectionChoices(),
         tooltip = "Choose the primary sort direction.",
         onChanged = SetPrimarySortDirection,
     })
-    controls.secondarySortKey = columns.right:AddControl("dropdown", {
+    controls.secondarySortKey = AddListDropdown(columns.right, {
         label = "Secondary Sort",
         choices = CreateSecondarySortChoices(),
         tooltip = "Choose the secondary item sort order.",
         onChanged = SetSecondarySort,
     })
-    controls.secondarySortDirection = columns.right:AddControl("dropdown", {
+    controls.secondarySortDirection = AddListDropdown(columns.right, {
         label = "Secondary Sort Direction",
         choices = CreateDirectionChoices(),
         tooltip = "Choose the secondary sort direction.",
@@ -1108,14 +1130,14 @@ local function BuildBankSettingsFrame(frame, measurementFrame)
     })
 
     columns.right:AddSection("List", { marginTop = 0 })
-    bankControls.groupKey = columns.right:AddControl("dropdown", {
+    bankControls.groupKey = AddListDropdown(columns.right, {
         label = "Group By",
         choices = CreateGroupChoices(),
         tooltip = "Choose how both bank views group items.",
         onChanged = SetBankGroup,
     })
-    bankControls.pinDisplayMode = columns.right:AddControl(
-        "dropdown",
+    bankControls.pinDisplayMode = AddListDropdown(
+        columns.right,
         {
             label = "Pinned Items",
             choices = CreatePinDisplayChoices(),
@@ -1123,8 +1145,8 @@ local function BuildBankSettingsFrame(frame, measurementFrame)
             onChanged = SetBankPinDisplayMode,
         }
     )
-    bankControls.primarySortKey = columns.right:AddControl(
-        "dropdown",
+    bankControls.primarySortKey = AddListDropdown(
+        columns.right,
         {
             label = "Primary Sort",
             choices = CreateSortChoices(),
@@ -1132,8 +1154,8 @@ local function BuildBankSettingsFrame(frame, measurementFrame)
             onChanged = SetBankPrimarySort,
         }
     )
-    bankControls.primarySortDirection = columns.right:AddControl(
-        "dropdown",
+    bankControls.primarySortDirection = AddListDropdown(
+        columns.right,
         {
             label = "Primary Sort Direction",
             choices = CreateDirectionChoices(),
@@ -1141,8 +1163,8 @@ local function BuildBankSettingsFrame(frame, measurementFrame)
             onChanged = SetBankPrimarySortDirection,
         }
     )
-    bankControls.secondarySortKey = columns.right:AddControl(
-        "dropdown",
+    bankControls.secondarySortKey = AddListDropdown(
+        columns.right,
         {
             label = "Secondary Sort",
             choices = CreateSecondarySortChoices(),
@@ -1150,8 +1172,8 @@ local function BuildBankSettingsFrame(frame, measurementFrame)
             onChanged = SetBankSecondarySort,
         }
     )
-    bankControls.secondarySortDirection = columns.right:AddControl(
-        "dropdown",
+    bankControls.secondarySortDirection = AddListDropdown(
+        columns.right,
         {
             label = "Secondary Sort Direction",
             choices = CreateDirectionChoices(),
