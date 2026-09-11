@@ -5,6 +5,9 @@ local Header = {}
 NS.ItemListHeader = Header
 
 local Columns = NS.ItemListColumns
+local ColumnMenu = NS.ItemListColumnMenu
+local Interaction = NS.ItemListHeaderInteraction
+local ListSettings = NS.ItemListSettings
 local ListModel = NS.ItemListModel
 local Layout = NS.ItemListLayout
 local Media = NS.Media
@@ -97,17 +100,24 @@ end
 
 local function ShowHeaderTooltip(button)
     local column = button.column
-    if not column or not column.sortKey or not GameTooltip then
+    if not column or not GameTooltip then
         return
     end
 
     local title = GetHeaderTooltipTitle(column)
     local sortLabel = column.sortLabel or title or column.sortKey
-    local tooltipText = column.tooltipText or ("Sort by " .. sortLabel)
+    local tooltipText = column.tooltipText or (column.sortKey and ("Sort by " .. sortLabel))
 
     GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
     GameTooltip:SetText(title, 1, 1, 1)
-    GameTooltip:AddLine(tooltipText, HEADER_TOOLTIP_TEXT_COLOR_R, HEADER_TOOLTIP_TEXT_COLOR_G, HEADER_TOOLTIP_TEXT_COLOR_B, true)
+    if tooltipText then
+        GameTooltip:AddLine(tooltipText, HEADER_TOOLTIP_TEXT_COLOR_R, HEADER_TOOLTIP_TEXT_COLOR_G, HEADER_TOOLTIP_TEXT_COLOR_B, true)
+    end
+    if ListSettings.CanEditColumns() then
+        GameTooltip:AddLine("Drag to reorder. Drag a divider to resize. Right-click for column options.", HEADER_TOOLTIP_TEXT_COLOR_R, HEADER_TOOLTIP_TEXT_COLOR_G, HEADER_TOOLTIP_TEXT_COLOR_B, true)
+    else
+        GameTooltip:AddLine("Column editing is unavailable during combat.", HEADER_TOOLTIP_TEXT_COLOR_R, HEADER_TOOLTIP_TEXT_COLOR_G, HEADER_TOOLTIP_TEXT_COLOR_B, true)
+    end
     GameTooltip:Show()
 end
 
@@ -271,16 +281,23 @@ local function AddGroupMenu(rootDescription, list)
     end
 end
 
-local function ShowContextMenu(owner, list)
+local function ShowContextMenu(list, columnKey)
     if not MenuUtil or not MenuUtil.CreateContextMenu then
         return
     end
 
     HideTooltip()
-    MenuUtil.CreateContextMenu(owner, function(_, rootDescription)
+    -- Keep the owner visible even when this menu hides its originating column.
+    MenuUtil.CreateContextMenu(list.header, function(_, rootDescription)
+        if columnKey then
+            ColumnMenu.PopulateColumnActions(rootDescription, list.settingsScope, columnKey)
+            rootDescription:CreateDivider()
+        end
         AddGroupMenu(rootDescription, list)
         AddPrimarySortMenu(rootDescription, list)
         AddSecondarySortMenu(rootDescription, list)
+        rootDescription:CreateDivider()
+        ColumnMenu.Populate(rootDescription:CreateButton("Columns"), list.settingsScope)
     end)
 end
 
@@ -307,7 +324,7 @@ local function UpdateButtonVisualState(button)
 end
 
 local function OnButtonEnter(button)
-    if button:IsEnabled() then
+    if button:IsEnabled() and not button.header.interaction then
         button.isHovered = true
         UpdateButtonVisualState(button)
         ShowHeaderTooltip(button)
@@ -358,6 +375,7 @@ local function CreateSeparator(parent, xOffset, list)
     separator:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     separator:SetFrameLevel(parent:GetFrameLevel() + HEADER_SEPARATOR_FRAME_LEVEL_OFFSET)
     separator.list = list
+    separator.UpdateVisualState = UpdateSeparatorVisualState
 
     local hoverTexture = separator:CreateTexture(nil, "BACKGROUND")
     hoverTexture:SetAllPoints(separator)
@@ -384,11 +402,20 @@ local function CreateSeparator(parent, xOffset, list)
     separator:SetScript("OnEnter", function(self)
         self.isHovered = true
         UpdateSeparatorVisualState(self)
+        if not self.header.interaction then
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText("Resize " .. Columns.GetLabel(self.column))
+            GameTooltip:AddLine(ListSettings.CanEditColumns()
+                and "Drag to resize. Right-click for column options."
+                or "Column editing is unavailable during combat.", 0.86, 0.86, 0.86, true)
+            GameTooltip:Show()
+        end
     end)
     separator:SetScript("OnLeave", function(self)
         self.isHovered = false
         self.isPressed = false
         UpdateSeparatorVisualState(self)
+        HideTooltip()
     end)
     separator:SetScript("OnMouseDown", function(self, mouseButton)
         if mouseButton == "LeftButton" then
@@ -401,7 +428,7 @@ local function CreateSeparator(parent, xOffset, list)
         self.isHovered = self:IsMouseOver()
         UpdateSeparatorVisualState(self)
         if mouseButton == "RightButton" then
-            ShowContextMenu(self, self.list)
+            ShowContextMenu(self.list, self.column.key)
         end
     end)
     UpdateSeparatorVisualState(separator)
@@ -410,21 +437,40 @@ local function CreateSeparator(parent, xOffset, list)
 end
 
 -- Public contract
+function Header.CancelInteraction(header)
+    Interaction.Cancel(header)
+end
+
+function Header.ApplyColumnLayout(header, list)
+    local entries = list.columnLayout.entries
+    local lastEntry = entries[#entries]
+    for index, button in ipairs(header.buttons) do
+        local entry = list.columnLayout.byKey[button.column.key]
+        local separator = header.separators[index]
+        button:SetShown(entry ~= nil)
+        separator:SetShown(entry ~= nil)
+        if entry then
+            button:ClearAllPoints()
+            button:SetPoint("LEFT", header.content, "LEFT", entry.x, 0)
+            button:SetWidth(entry.width)
+            local separatorX = entry.x + entry.width + Columns.GetColumnGap() / 2
+            if entry == lastEntry then
+                -- The trailing handle must remain inside the clipped content.
+                separatorX = entry.x + entry.width - HEADER_SEPARATOR_HANDLE_WIDTH / 2
+            end
+            separator:ClearAllPoints()
+            separator:SetPoint("LEFT", header.content, "LEFT", separatorX - HEADER_SEPARATOR_HANDLE_WIDTH / 2, 0)
+        end
+    end
+    Header.Refresh(header, list)
+end
+
 function Header.Refresh(header, list)
     if not header or not header.buttons then
         return
     end
 
     for _, button in ipairs(header.buttons) do
-        button.text:SetText(GetHeaderText(button.column))
-        if button.headerIcon then
-            if HasHeaderIcon(button.column) then
-                ApplyHeaderIcon(button)
-            else
-                button.headerIcon:Hide()
-            end
-        end
-
         if button.column.sortKey and button.column.sortKey == list.sortKey then
             button.sortIcon:Show()
             if list.sortAscending then
@@ -440,15 +486,22 @@ function Header.Refresh(header, list)
 end
 
 function Header.Create(parent, list)
-    local columns = Columns.GetColumns()
-    local columnGap = Columns.GetColumnGap()
+    local columns = Columns.GetAvailableColumns()
     local header = CreateFrame("Frame", nil, parent)
     header:SetHeight(Layout.HeaderHeight)
     header:SetClipsChildren(true)
+    header:EnableMouse(true)
+    header:SetScript("OnMouseUp", function(_, mouseButton)
+        if mouseButton == "RightButton" then
+            ShowContextMenu(list)
+        end
+    end)
 
     local content = CreateFrame("Frame", nil, header)
-    content:SetAllPoints(header)
+    content:SetPoint("TOPLEFT", header, "TOPLEFT", 0, 0)
+    content:SetPoint("BOTTOMRIGHT", header, "BOTTOMRIGHT", -Layout.ScrollBarContentPadding, 0)
     content:SetClipsChildren(true)
+    header.content = content
 
     local bottomDivider = header:CreateTexture(nil, "BORDER")
     bottomDivider:SetTexture(Media.GetDividerTexture())
@@ -462,18 +515,13 @@ function Header.Create(parent, list)
     header.buttons = {}
     header.separators = {}
 
-    local xOffset = 0
-    for index, column in ipairs(columns) do
-        local buttonWidth = column.width
-        if index == #columns then
-            buttonWidth = buttonWidth + Layout.ScrollBarContentPadding
-        end
-
+    for _, column in ipairs(columns) do
         local button = CreateFrame("Button", nil, content)
-        button:SetPoint("LEFT", content, "LEFT", xOffset, 0)
-        button:SetSize(buttonWidth, Layout.HeaderHeight)
+        button:SetSize(column.width, Layout.HeaderHeight)
         button.column = column
-        button:SetEnabled(column.sortKey ~= nil)
+        button.header = header
+        button.UpdateVisualState = UpdateButtonVisualState
+        -- Display-only headers still support dragging and context actions.
         button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 
         local hoverTexture = button:CreateTexture(nil, "BACKGROUND", nil, -7)
@@ -494,6 +542,8 @@ function Header.Create(parent, list)
         text:SetAllPoints(button)
         text:SetJustifyH("CENTER")
         text:SetJustifyV("MIDDLE")
+        text:SetWordWrap(false)
+        text:SetMaxLines(1)
         text:SetText(GetHeaderText(column))
         button.text = text
 
@@ -516,24 +566,21 @@ function Header.Create(parent, list)
         button:SetScript("OnMouseUp", OnButtonMouseUp)
         button:SetScript("OnClick", function(self, mouseButton)
             if mouseButton == "RightButton" then
-                ShowContextMenu(self, list)
-            elseif self.column.sortKey then
+                ShowContextMenu(list, self.column.key)
+            elseif not self.suppressClick and not header.interaction and self.column.sortKey then
                 list:SetSort(self.column.sortKey)
             end
         end)
 
         header.buttons[#header.buttons + 1] = button
 
-        if index < #columns then
-            local separator = CreateSeparator(content, xOffset + column.width + (columnGap / 2), list)
-            separator.leftColumn = column
-            separator.rightColumn = columns[index + 1]
-            header.separators[#header.separators + 1] = separator
-        end
-
-        xOffset = xOffset + column.width + columnGap
+        local separator = CreateSeparator(content, 0, list)
+        separator.column = column
+        separator.header = header
+        header.separators[#header.separators + 1] = separator
     end
 
-    Header.Refresh(header, list)
+    Header.ApplyColumnLayout(header, list)
+    Interaction.Attach(header, list)
     return header
 end

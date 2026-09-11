@@ -77,6 +77,9 @@ local function CreateListState(context)
     list.items = {}
     list.searchText = ""
     list.collapsedGroups = {}
+    list.columnConfig = ListSettings.GetColumns(list.settingsScope)
+    list.columnLayout = { entries = {}, byKey = {}, revision = 0 }
+    Layout.UpdateColumns(list.columnLayout, list.columnConfig)
     ApplyStoredProfileSettings(list)
 
     return list
@@ -84,6 +87,47 @@ end
 
 function ListController:RefreshHeaderSortState()
     Header.Refresh(self.header, self)
+end
+
+-- Appearance-only updates never rebuild the inventory provider or native bridge.
+function ListController:ApplyColumnLayout(config)
+    Layout.UpdateColumns(self.columnLayout, config)
+    Header.ApplyColumnLayout(self.header, self)
+    for _, row in ipairs(self.view:GetFrames()) do
+        if row.rowInitialized then
+            ItemRow.ApplyColumnLayout(row)
+        end
+    end
+end
+
+function ListController:PreviewColumnWidth(key, width)
+    if not self.columnPreview then
+        self.columnPreview = ListSettings.NormalizeColumns(self.columnConfig)
+    end
+    self.columnPreview.widths[key] = width
+    self:ApplyColumnLayout(self.columnPreview)
+end
+
+function ListController:ClearColumnPreview()
+    if self.columnPreview then
+        self.columnPreview = nil
+        self:ApplyColumnLayout(self.columnConfig)
+    end
+end
+
+function ListController:RefreshColumnSettings()
+    if InCombatLockdown() then
+        self.columnSettingsPending = true
+        return
+    end
+    self.columnSettingsPending = false
+    local config = ListSettings.GetColumns(self.settingsScope)
+    if ListSettings.ColumnsEqual(self.columnConfig, config) then
+        return
+    end
+    self.columnConfig = config
+    self:ApplyColumnLayout(config)
+    self.context.onColumnLayoutChanged()
 end
 
 function ListController:RefreshDataProvider(retainScrollPosition)
@@ -301,6 +345,7 @@ function ListController:RefreshItemLock(bagID, slotIndex, isLocked)
 end
 
 function ListController:RefreshProfileSettings(forceRefresh)
+    self:RefreshColumnSettings()
     local settingsChanged = ApplyStoredProfileSettings(self)
     if not forceRefresh and not settingsChanged then
         return
@@ -408,8 +453,13 @@ local function CreateEmptyText(list)
 end
 
 -- Public module contract
-function ItemList.GetPreferredWidth()
-    return Columns.GetContentWidth() + Layout.ScrollBarContentPadding
+function ItemList.GetPreferredWidth(scope)
+    if not scope then
+        return Columns.GetContentWidth() + Layout.ScrollBarContentPadding
+    end
+    local layout = { entries = {}, byKey = {}, revision = 0 }
+    Layout.UpdateColumns(layout, ListSettings.GetColumns(scope))
+    return layout.width + Layout.ScrollBarContentPadding
 end
 
 function ItemList.Create(parent, context)
@@ -455,12 +505,14 @@ function ItemList.Create(parent, context)
     list.emptyText = CreateEmptyText(list)
 
     local function OnProfileLifecycleChanged()
+        Header.CancelInteraction(header)
         -- Coalesce lifecycle callbacks after every profile-backed module has
         -- rebuilt its caches; LibSimpleDB does not promise callback-map order.
         list:ScheduleProfileSettingsRefresh(true)
     end
 
     local function OnProfileSettingChanged()
+        Header.CancelInteraction(header)
         list:ScheduleProfileSettingsRefresh(false)
     end
 
@@ -471,5 +523,13 @@ function ItemList.Create(parent, context)
     if list.settingsScope == ListSettings.Scopes.Bank then
         NS.db:RegisterTreeCallback(OnProfileSettingChanged, "bank")
     end
+    NS:RegisterEventHandler("PLAYER_REGEN_DISABLED", function()
+        Header.CancelInteraction(header)
+    end)
+    NS:RegisterEventHandler("PLAYER_REGEN_ENABLED", function()
+        if list.columnSettingsPending then
+            list:RefreshColumnSettings()
+        end
+    end)
     return list
 end

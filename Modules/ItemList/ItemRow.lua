@@ -14,7 +14,7 @@ local ICON_FRAME_SIZE = 29
 local PROFESSION_QUALITY_ICON_SIZE = 22
 local BINDING_ICON_SIZE = 22
 local ICON_LEFT_OFFSET = 3
-local NEW_ITEM_MARKER_SIZE = 20
+local NEW_ITEM_MARKER_SIZE = NS.ItemListLayout.ItemMarkerWidth
 local PIN_MARKER_SIZE = 16
 local ICON_TEX_COORD_LEFT = 0.08
 local ICON_TEX_COORD_RIGHT = 0.92
@@ -134,20 +134,26 @@ end
 
 -- Row construction and layout
 local function LayoutRow(row)
-    local columns = Columns.GetColumns()
-    local columnGap = Columns.GetColumnGap()
-    local xOffset = 0
+    local layout = row.list.columnLayout
+    if row.columnLayout == layout and row.columnLayoutRevision == layout.revision then
+        return
+    end
 
-    row.contentClip:ClearAllPoints()
-    row.contentClip:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
-    row.contentClip:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -GetRightClipPadding(row), 0)
-    Cooldown.LayoutShade(row)
+    for key, text in pairs(row.text) do
+        text:SetShown(layout.byKey[key] ~= nil)
+    end
+    row.icon:SetShown(row.item ~= nil and layout.byKey.icon ~= nil)
+    row.iconBorder:SetShown(row.item ~= nil and layout.byKey.icon ~= nil)
+    row.bindingIcon:SetShown(row.hasBindingIcon == true and layout.byKey.binding ~= nil)
+    row.professionQualityIcon:SetShown(row.hasProfessionQualityIcon == true and layout.byKey.professionQuality ~= nil)
 
-    for _, column in ipairs(columns) do
-        local columnCenterX = xOffset + (column.width / 2)
+    for _, entry in ipairs(layout.entries) do
+        local column = entry.column
+        local xOffset = entry.x
+        local columnCenterX = xOffset + (entry.width / 2)
 
         if column.key == "icon" then
-            local iconCenterX = xOffset + ICON_LEFT_OFFSET + (ICON_FRAME_SIZE / 2)
+            local iconCenterX = columnCenterX + ICON_LEFT_OFFSET + (ICON_FRAME_SIZE - column.width) / 2
             row.iconBorder:ClearAllPoints()
             row.iconBorder:SetPoint("CENTER", row.contentClip, "LEFT", iconCenterX, 0)
             row.iconBorder:SetSize(ICON_FRAME_SIZE, ICON_FRAME_SIZE)
@@ -166,12 +172,12 @@ local function LayoutRow(row)
             local text = row.text[column.key]
             text:ClearAllPoints()
             text:SetPoint("LEFT", row.contentClip, "LEFT", xOffset, 0)
-            text:SetSize(column.width, ROW_HEIGHT)
+            text:SetSize(entry.width, ROW_HEIGHT)
             text:SetJustifyH(column.justify or "LEFT")
         end
-
-        xOffset = xOffset + column.width + columnGap
     end
+    row.columnLayout = layout
+    row.columnLayoutRevision = layout.revision
 end
 
 local function CreateTextColumns(row, columns)
@@ -215,7 +221,7 @@ end
 local function InitializeRow(row, list)
     row.list = list
     row.itemButtonAdapter = list.context.itemButtonAdapter
-    local columns = Columns.GetColumns()
+    local columns = Columns.GetAvailableColumns()
 
     row:SetHeight(ROW_HEIGHT)
     row:SetClipsChildren(true)
@@ -240,6 +246,8 @@ local function InitializeRow(row, list)
 
     row.contentClip = CreateFrame("Frame", nil, row)
     row.contentClip:SetClipsChildren(true)
+    row.contentClip:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
+    row.contentClip:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -GetRightClipPadding(row), 0)
 
     row.newItemMarker = row.contentClip:CreateTexture(nil, ITEM_MARKER_LAYER)
     row.newItemMarker:SetDrawLayer(ITEM_MARKER_LAYER, ITEM_MARKER_SUBLEVEL)
@@ -266,6 +274,7 @@ local function InitializeRow(row, list)
     row.iconBorder:Hide()
 
     Cooldown.CreateShade(row)
+    Cooldown.LayoutShade(row)
     row.itemButton = row.itemButtonAdapter.Create(row, list)
     CreateTextColumns(row, columns)
 
@@ -285,9 +294,10 @@ end
 
 local function RenderProfessionQuality(row, item)
     local atlas = Columns.GetProfessionQualityAtlas(item)
+    row.hasProfessionQualityIcon = atlas and true or false
     if atlas then
         row.professionQualityIcon:SetAtlas(atlas, false)
-        row.professionQualityIcon:Show()
+        row.professionQualityIcon:SetShown(row.list.columnLayout.byKey.professionQuality ~= nil)
     else
         row.professionQualityIcon:Hide()
     end
@@ -295,6 +305,7 @@ end
 
 local function RenderBinding(row, item)
     local iconInfo = Columns.GetBindingIconInfo(item)
+    row.hasBindingIcon = iconInfo ~= nil
     if not iconInfo then
         row.bindingIcon:Hide()
         return
@@ -315,11 +326,11 @@ local function RenderBinding(row, item)
     else
         row.bindingIcon:SetVertexColor(1, 1, 1, 1)
     end
-    row.bindingIcon:Show()
+    row.bindingIcon:SetShown(row.list.columnLayout.byKey.binding ~= nil)
 end
 
 local function RenderText(row, item)
-    for _, column in ipairs(Columns.GetColumns()) do
+    for _, column in ipairs(Columns.GetAvailableColumns()) do
         if IsTextColumn(column) then
             local text = row.text[column.key]
             if column.key == "name" then
@@ -341,6 +352,10 @@ function ItemRow.Initialize(row, list)
     if not row.rowInitialized then
         InitializeRow(row, list)
     end
+end
+
+function ItemRow.ApplyColumnLayout(row)
+    LayoutRow(row)
 end
 
 function ItemRow.ClearCooldownCache()
@@ -382,6 +397,7 @@ function ItemRow.Render(row, item, list)
     ItemRow.Initialize(row, list)
 
     row.item = item
+    LayoutRow(row)
     if list then
         row.highlightedBagID = list.highlightedBagID
     end
@@ -390,11 +406,12 @@ function ItemRow.Render(row, item, list)
     UpdateContainerHighlight(row)
     UpdateNewItemVisuals(row, item)
     UpdateIconBorderColor(row, item)
+    row.iconBorder:SetShown(list.columnLayout.byKey.icon ~= nil)
     row.itemButtonAdapter.Update(row.itemButton, item)
 
     row.icon:SetTexture(item.icon or FALLBACK_ITEM_ICON)
     row.icon:SetDesaturated(item.isLocked)
-    row.icon:Show()
+    row.icon:SetShown(list.columnLayout.byKey.icon ~= nil)
 
     RenderProfessionQuality(row, item)
     RenderBinding(row, item)
@@ -404,6 +421,8 @@ end
 
 function ItemRow.Reset(row)
     row.item = nil
+    row.hasBindingIcon = false
+    row.hasProfessionQualityIcon = false
     row.highlightedBagID = nil
     row:SetID(0)
     StopNewItemAnimation(row)

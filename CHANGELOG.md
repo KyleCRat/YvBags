@@ -3,6 +3,17 @@
 ## Unreleased
 
 ### Added
+- Added profile-owned column visibility, header drag-and-drop ordering, and
+  live drag resizing to bags and both bank views. Any displayed column can be
+  hidden and restored through header or Settings menus, with direct Hide/Reset
+  actions for the clicked header, width and layout resets, preserved fixed-width
+  defaults, and the existing right-edge clipping. Drag resizing stops at the
+  inner list edge so its separator stays accessible.
+- Added an optional Bag/Slot column to bag and bank column menus. It stays hidden
+  by default and after Reset Columns, with saved visibility, order, and width.
+- Extended bidirectional bag/bank mirroring to column layouts and preserved
+  detached bank layouts across re-enable/disable cycles. Column edits update
+  custom cell geometry without rebuilding item rows and are disabled in combat.
 - Added an independently toggleable custom bank window with separate Character
   and Warband views, each combining every purchased physical bank tab into the
   shared virtualized item list.

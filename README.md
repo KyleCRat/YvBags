@@ -21,6 +21,10 @@ Character bank, and Warband bank as sortable, searchable lists instead of grids.
 - Classifies Blizzard loot containers plus Utility Curio, Combat Curio, and Relic consumables as Openable.
 - Groups Blizzard-recognized Toy, Mount, learnable Pet, and caged Battle Pet items into Collectables without relying on tooltip text.
 - Displays quantity, binding, rarity/icon, profession quality, name, expansion, sell value, item level, required level, type, and subtype columns.
+- Supports profile-owned column visibility, drag-and-drop header ordering,
+  and drag-to-resize widths, with optional bag/bank layout mirroring.
+- Offers an optional Bag/Slot column, hidden by default, showing each item's
+  physical bag or bank-tab ID and slot number.
 - Shows item rarity through name color and icon border color.
 - Shows equipped bag buttons for bag swapping and right-click emptying.
 - Supports dropping cursor-held items into available bag space.
@@ -50,6 +54,19 @@ While the YvBags frame is open and you are out of combat, press `Ctrl+F` to focu
 
 Right-click a column header to change grouping, primary sort, or secondary sort. Left-click sortable headers to sort by that column.
 
+To customize columns outside combat, drag a header to reorder it or drag its
+divider to resize it. Resizing stops at the inner list's right edge; widen the
+window first if you need more room. Right-click a header for **Hide [column]**
+and **Reset [column]** (restore its default width). Open **Columns** in that
+menu to hide/show any column or reset the complete column layout.
+Hidden columns keep their order and width; hiding a column does not change
+sorting or search. Press `Escape` to cancel an unfinished drag or resize.
+
+Columns keep fixed widths and clip at the right edge, just as in the original
+layout. Widen the window or hide/narrow preceding columns to reveal more;
+there is no horizontal scrolling. Even if every column is hidden, right-click
+the empty header or use **Columns** in Settings to restore them.
+
 The footer includes:
 
 - Bag space: left-click to run Blizzard's bag cleanup.
@@ -78,15 +95,21 @@ Settings include:
 - Pinned Items presentation
 - Primary Sort and direction
 - Secondary Sort and direction
+- Columns visibility and layout reset
 - Categories subpage with category and Rule Set management
 - Bank subpage with replacement, frame scale, list mirroring, grouping, pin
-  presentation, and sorting controls
+  presentation, sorting, and column controls
 
-Profile settings include bag grouping and sorting, bank list mirroring or its
+Profile settings include bag grouping, sorting, and column layout, bank list mirroring or its
 independent list configuration, pinned-item presentation, cooldown-name
 display, and the complete shared category registry. Bag and bank replacement,
 gray-junk selling, and pinned item identities remain shared across the addon.
 Bag and bank frame position, size, and scale remain stored per character.
+
+**Use Bag List Settings** also mirrors column visibility, order, and widths.
+Changes from either window update both while enabled. Disabling it initially
+copies the bag layout; subsequent re-enable/disable cycles preserve the bank's
+independent layout. Both Character and Warband views use the same Bank settings.
 
 ## Categories And Rules
 
@@ -164,7 +187,9 @@ browser replaces the native icon list in YvBags' bank-tab configurator.
 - Guild banks, void storage, cached-character inventories, and currency-list
   replacement are not included.
 - Grid mode is not included.
-- Column visibility, resizing, and reordering are not included.
+- Column editing is unavailable during combat; pending profile layout changes
+  apply afterward. Bag/Slot is display-only; use Manual sorting for physical
+  bag/slot order.
 
 ## Author
 

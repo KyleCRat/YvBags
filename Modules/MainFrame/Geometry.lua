@@ -82,8 +82,22 @@ function Geometry.SetScale(scale)
 end
 
 function Geometry.GetMaxWidth()
-    local listWidth = NS.ItemList.GetPreferredWidth()
-    return math.max(Layout.MinWidth, listWidth + Layout.GetHorizontalChromeWidth())
+    local listWidth = math.max(
+        NS.ItemList.GetPreferredWidth(),
+        NS.ItemList.GetPreferredWidth(NS.ItemListSettings.Scopes.Bags)
+    )
+    return math.max(
+        Layout.MinWidth,
+        listWidth + Layout.GetHorizontalChromeWidth(),
+        NS.charDB:GetRaw("frame", "width") or 0,
+        NS.frame and NS.frame:GetWidth() or 0
+    )
+end
+
+function Geometry.RefreshResizeBounds(frame)
+    local maxWidth = Geometry.GetMaxWidth()
+    frame:SetResizeBounds(Layout.MinWidth, Layout.MinHeight, maxWidth, nil)
+    frame.resizeButton:SetMaxWidth(maxWidth)
 end
 
 function Geometry.SnapSize(frame)

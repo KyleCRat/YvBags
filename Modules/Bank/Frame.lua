@@ -173,6 +173,9 @@ local function CreateContent(frame)
     frame.content = content
     frame.itemList = NS.ItemList.Create(content, {
         settingsScope = ListSettings.Scopes.Bank,
+        onColumnLayoutChanged = function()
+            Geometry.RefreshResizeBounds(frame)
+        end,
         itemButtonAdapter = NS.BankItemRowButton,
         inventory = Inventory,
         tooltipFrame = frame,

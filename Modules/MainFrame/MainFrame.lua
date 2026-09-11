@@ -117,6 +117,9 @@ local function CreateContent(frame)
     frame.content = content
     frame.itemList = NS.ItemList.Create(content, {
         settingsScope = ListSettings.Scopes.Bags,
+        onColumnLayoutChanged = function()
+            Geometry.RefreshResizeBounds(frame)
+        end,
         itemButtonAdapter = NS.ItemRowButton,
         tooltipFrame = frame,
         emptyText = "No bag items",

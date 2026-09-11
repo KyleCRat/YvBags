@@ -43,6 +43,8 @@ Modules\Bank\ItemButton.lua
 Modules\ItemList\GroupRow.lua
 Modules\ItemList\DividerRow.lua
 Modules\ItemList\ItemRow.lua
+Modules\ItemList\ColumnMenu.lua
+Modules\ItemList\HeaderInteraction.lua
 Modules\ItemList\Header.lua
 Modules\ItemList\SearchBox.lua
 Modules\ItemList\CursorDrop.lua

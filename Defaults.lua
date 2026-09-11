@@ -47,6 +47,7 @@ NS.defaults = {
     },
     profile = {
         list = {
+            columns = { order = {}, hidden = {}, widths = {} },
             sortKey = "quality",
             sortAscending = false,
             secondarySortKey = "itemLevel",
@@ -60,6 +61,7 @@ NS.defaults = {
             useBagListSettings = true,
             independentInitialized = false,
             list = {
+                columns = { order = {}, hidden = {}, widths = {} },
                 sortKey = "quality",
                 sortAscending = false,
                 secondarySortKey = "itemLevel",

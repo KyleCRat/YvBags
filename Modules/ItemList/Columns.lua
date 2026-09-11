@@ -1,6 +1,6 @@
 local _, NS = ...
 
--- Fixed-column definitions, formatting, and column-owned visual metadata.
+-- Available-column definitions, formatting, and column-owned visual metadata.
 local Columns = {}
 NS.ItemListColumns = Columns
 
@@ -9,6 +9,7 @@ local Media = NS.Media
 local ACCENT_COLOR_R, ACCENT_COLOR_G, ACCENT_COLOR_B = Media.GetAccentColor()
 
 local COLUMN_GAP = 6
+local MAX_COLUMN_WIDTH = 1024
 local DEFAULT_TEXT_COLOR_R = 0.86
 local DEFAULT_TEXT_COLOR_G = 0.86
 local DEFAULT_TEXT_COLOR_B = 0.86
@@ -53,7 +54,8 @@ local EXPANSION_LABELS = {
 }
 
 local professionQualityAtlasCache = {}
-local enabledColumns
+local availableColumns
+local columnsByKey
 
 local function GetQualityColor(quality, fallbackR, fallbackG, fallbackB)
     local color = ColorManager and ColorManager.GetColorDataForItemQuality and ColorManager.GetColorDataForItemQuality(quality)
@@ -94,13 +96,13 @@ local warboundBindingIconInfo = {
 }
 local goldHeaderLabel = NS.Money.GetGoldIconMarkup(HEADER_GOLD_ICON_SIZE)
 
--- Fixed v1 columns. Later column customization can replace this table without
--- changing row rendering or list controller code.
+-- Canonical order and widths also define Reset Columns. Visibility is per list.
 local COLUMNS = {
     {
         key = "count",
         label = "#",
         width = 40,
+        minWidth = 32,
         justify = "RIGHT",
         sortKey = "quantity",
         sortLabel = "quantity",
@@ -114,6 +116,7 @@ local COLUMNS = {
         headerIconSize = BINDING_HEADER_ICON_SIZE,
         headerIconColor = accentIconColor,
         width = COMPACT_ICON_COLUMN_WIDTH,
+        minWidth = COMPACT_ICON_COLUMN_WIDTH,
         justify = "CENTER",
         sortKey = "binding",
         sortLabel = "binding status",
@@ -126,6 +129,8 @@ local COLUMNS = {
         headerIconSize = RARITY_HEADER_ICON_SIZE,
         headerIconColor = rarityIconColor,
         width = ITEM_ICON_COLUMN_WIDTH,
+        minWidth = ITEM_ICON_COLUMN_WIDTH,
+        menuLabel = "Item Icon (Rarity)",
         sortKey = "quality",
         sortLabel = "rarity",
         tooltipTitle = "Rarity",
@@ -137,6 +142,7 @@ local COLUMNS = {
         headerAtlas = PROFESSION_QUALITY_HEADER_ATLAS,
         headerIconSize = PROFESSION_QUALITY_HEADER_ICON_SIZE,
         width = COMPACT_ICON_COLUMN_WIDTH,
+        minWidth = COMPACT_ICON_COLUMN_WIDTH,
         justify = "CENTER",
         sortKey = "professionQuality",
         sortLabel = "profession quality",
@@ -147,6 +153,7 @@ local COLUMNS = {
         key = "name",
         label = NAME or "Name",
         width = 220,
+        minWidth = 60,
         sortKey = "name",
         sortLabel = "name",
         tooltipTitle = NAME or "Name",
@@ -155,6 +162,7 @@ local COLUMNS = {
         key = "expansion",
         label = "Xpac",
         width = 48,
+        minWidth = 32,
         justify = "CENTER",
         sortKey = "expansion",
         sortLabel = "expansion",
@@ -165,6 +173,7 @@ local COLUMNS = {
         key = "sellValue",
         label = goldHeaderLabel,
         width = 82,
+        minWidth = 48,
         justify = "RIGHT",
         sortKey = "sellValue",
         sortLabel = "sell price",
@@ -175,6 +184,7 @@ local COLUMNS = {
         key = "itemLevel",
         label = "ilvl",
         width = 44,
+        minWidth = 32,
         justify = "RIGHT",
         sortKey = "itemLevel",
         sortLabel = "item level",
@@ -185,6 +195,7 @@ local COLUMNS = {
         key = "requiredLevel",
         label = "Req",
         width = 44,
+        minWidth = 32,
         justify = "RIGHT",
         sortKey = "requiredLevel",
         sortLabel = "required level",
@@ -195,6 +206,7 @@ local COLUMNS = {
         key = "type",
         label = TYPE or "Type",
         width = 78,
+        minWidth = 48,
         sortKey = "type",
         sortLabel = "type",
         tooltipTitle = TYPE or "Type",
@@ -203,17 +215,20 @@ local COLUMNS = {
         key = "subtype",
         label = "Subtype",
         width = 100,
+        minWidth = 48,
         sortKey = "subtype",
         sortLabel = "subtype",
         tooltipTitle = "Subtype",
     },
-    -- Disabled for v1; retained for future optional column visibility.
+    -- Optional physical-location display; native routing always retains it.
     {
         key = "location",
-        enabled = false,
+        defaultHidden = true,
         label = "Bag/Slot",
         width = 68,
+        minWidth = 68,
         tooltipTitle = "Bag/Slot",
+        tooltipText = "Physical bag or bank-tab ID and slot number.",
     },
 }
 
@@ -246,23 +261,19 @@ local function FormatExpansion(expansionID)
     return EXPANSION_LABELS[expansionID] or tostring(expansionID)
 end
 
-local function IsColumnEnabled(column)
-    return column.enabled ~= false
-end
-
-local function GetEnabledColumns()
-    if enabledColumns then
-        return enabledColumns
+local function GetAvailableColumns()
+    if availableColumns then
+        return availableColumns
     end
 
-    enabledColumns = {}
+    availableColumns = {}
+    columnsByKey = {}
     for _, column in ipairs(COLUMNS) do
-        if IsColumnEnabled(column) then
-            enabledColumns[#enabledColumns + 1] = column
-        end
+        availableColumns[#availableColumns + 1] = column
+        columnsByKey[column.key] = column
     end
 
-    return enabledColumns
+    return availableColumns
 end
 
 -- Column visual state
@@ -286,13 +297,31 @@ local function SetSellValueTextColor(fontString, item)
 end
 
 -- Public column contract
-function Columns.GetColumns()
-    return GetEnabledColumns()
+function Columns.GetAvailableColumns()
+    return GetAvailableColumns()
+end
+
+function Columns.GetColumn(key)
+    GetAvailableColumns()
+    return columnsByKey[key]
+end
+
+function Columns.GetLabel(column)
+    return column.menuLabel or column.tooltipTitle
+end
+
+function Columns.ClampWidth(column, width)
+    if type(width) ~= "number" or width ~= width
+        or width == math.huge or width == -math.huge then
+        return column.width
+    end
+
+    return math.floor(math.max(column.minWidth, math.min(MAX_COLUMN_WIDTH, width)) + 0.5)
 end
 
 function Columns.GetColumnBySortKey(sortKey)
-    for _, column in ipairs(GetEnabledColumns()) do
-        if column.sortKey == sortKey then
+    for _, column in ipairs(GetAvailableColumns()) do
+        if column.sortKey and column.sortKey == sortKey then
             return column
         end
     end
@@ -324,12 +353,15 @@ end
 
 function Columns.GetContentWidth()
     local width = 0
-    local columns = GetEnabledColumns()
+    local columns = GetAvailableColumns()
 
-    for index, column in ipairs(columns) do
-        width = width + column.width
-        if index < #columns then
-            width = width + COLUMN_GAP
+    -- Default frame sizing excludes optional, initially hidden columns.
+    for _, column in ipairs(columns) do
+        if not column.defaultHidden then
+            if width > 0 then
+                width = width + COLUMN_GAP
+            end
+            width = width + column.width
         end
     end
 

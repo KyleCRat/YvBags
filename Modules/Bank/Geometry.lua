@@ -56,8 +56,19 @@ end
 function Geometry.GetMaxWidth()
     return math.max(
         Layout.MinWidth,
-        NS.ItemList.GetPreferredWidth() + Layout.GetHorizontalChromeWidth()
+        math.max(
+            NS.ItemList.GetPreferredWidth(),
+            NS.ItemList.GetPreferredWidth(NS.ItemListSettings.Scopes.Bank)
+        ) + Layout.GetHorizontalChromeWidth(),
+        NS.charDB:GetRaw(DB_SECTION, "width") or 0,
+        NS.bankFrame and NS.bankFrame:GetWidth() or 0
     )
+end
+
+function Geometry.RefreshResizeBounds(frame)
+    local maxWidth = Geometry.GetMaxWidth()
+    frame:SetResizeBounds(Layout.MinWidth, Layout.MinHeight, maxWidth, nil)
+    frame.resizeButton:SetMaxWidth(maxWidth)
 end
 
 function Geometry.SnapSize(frame)

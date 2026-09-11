@@ -874,6 +874,7 @@ local function ResetMainSettings()
     SetPrimarySortDirection(listDefaults.sortAscending)
     SetSecondarySort(listDefaults.secondarySortKey)
     SetSecondarySortDirection(listDefaults.secondarySortAscending)
+    NS.ItemListSettings.ResetColumns(NS.ItemListSettings.Scopes.Bags)
 end
 
 local function ResetBankSettings()
@@ -1052,6 +1053,13 @@ local function BuildMainSettingsFrame(frame, measurementFrame)
         tooltip = "Choose the secondary sort direction.",
         onChanged = SetSecondarySortDirection,
     })
+    controls.columns = columns.right:AddControl("button", {
+        text = "Columns",
+        tooltip = "Show, hide, or reset columns. Drag list headers to reorder and their dividers to resize. Column editing is unavailable during combat.",
+        onClick = function(button)
+            NS.ItemListColumnMenu.Open(button, NS.ItemListSettings.Scopes.Bags)
+        end,
+    })
 
     columns:Finish()
     layout:Finalize()
@@ -1085,7 +1093,7 @@ local function BuildBankSettingsFrame(frame, measurementFrame)
         "checkbox",
         {
             label = "Use Bag List Settings",
-            tooltip = "Keep bank grouping, sorting, directions, and pinned-item presentation synchronized with the bag list. Changes made from either window update both while enabled.",
+            tooltip = "Keep bank grouping, sorting, directions, columns, and pinned-item presentation synchronized with the bag list. Changes made from either window update both while enabled.",
             onChanged = SetBankMirroring,
         }
     )
@@ -1151,6 +1159,13 @@ local function BuildBankSettingsFrame(frame, measurementFrame)
             onChanged = SetBankSecondarySortDirection,
         }
     )
+    bankControls.columns = columns.right:AddControl("button", {
+        text = "Columns",
+        tooltip = "Show, hide, or reset columns for both bank views. Drag list headers to reorder and their dividers to resize. Column editing is unavailable during combat.",
+        onClick = function(button)
+            NS.ItemListColumnMenu.Open(button, NS.ItemListSettings.Scopes.Bank)
+        end,
+    })
 
     columns:Finish()
     layout:Finalize()

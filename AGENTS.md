@@ -80,14 +80,16 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - `Modules/Bags/BagManagement.lua`: bag pickup/swap, compatible item placement, empty-bag state machine, and Blizzard bag cleanup. Keep the asynchronous emptying state machine together.
 - `Modules/Bags/BlizzardBags.lua`: replacement wrappers for Blizzard bag open, close, toggle, and restore behavior.
 - `Modules/Bags/JunkAutosell.lua`: optional use of Blizzard's native gray-junk selling API.
-- `Modules/ItemList/Columns.lua`: fixed/disabled column definitions, header metadata, cell formatting, and column-owned visual metadata.
+- `Modules/ItemList/Columns.lua`: available column definitions, canonical visibility/width defaults and resize constraints, header metadata, cell formatting, and column-owned visual metadata.
 - `Modules/ItemList/Settings.lua`: effective bag/bank list-setting ownership,
-  bidirectional mirroring, and first-detach snapshots.
+  bidirectional mirroring, first-detach snapshots, and normalized column-layout transactions.
 - `Modules/ItemList/Model.lua`: search, grouping, primary sorting, secondary sorting, manual ordering, and display-row construction. Cache sort values here rather than in row rendering.
 - `Modules/ItemList/List.lua`: inventory-adapted list state, ScrollBox
   composition, data-provider refreshes, and coordination between list-owned
   modules.
 - `Modules/ItemList/Header.lua`: header visuals, sorting/grouping context menus, sort indicators, and separator interactions.
+- `Modules/ItemList/HeaderInteraction.lua`: column reorder/resize previews, drag completion, and cancellation on Escape, combat, and lifecycle changes.
+- `Modules/ItemList/ColumnMenu.lua`: scope-aware visibility and reset actions shared by headers and Settings.
 - `Modules/ItemList/SearchBox.lua`: search-box creation and list search dispatch.
 - `Modules/ItemList/CursorDrop.lua`: cursor-item drop targets, insertion overlay, and active cursor polling.
 - `Modules/ItemList/ItemRow.lua`: pooled item-row layout and custom visual rendering.
@@ -200,13 +202,35 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
   reclassifying from normalized fields.
 - Rule order is persisted and draggable for organization but has no matching effect. Reordering rules must not trigger inventory reclassification.
 - Mythic Keystones retain their own prioritized category unless pinned. Keystone pin identity is kind-based rather than link- or item-instance-based so it survives dungeon and level changes.
-- Bag/Slot remains an internal, disabled column and is not a user-facing sort or group option.
+- Bag/Slot is an optional display column, hidden by default and after Reset
+  Columns. It is not a separate sort or group option; Manual sorting retains
+  physical bag/slot order. Its header still supports dragging and context menus.
 - In sorted modes, a cursor-held item shows a full-list insertion overlay backed by a native container item button bound to one actual compatible empty slot.
 - In Manual mode, rows remain available for normal item swapping and a bottom insertion area exposes that same native empty-slot target.
 - Cursor-drop visuals never call `PickupContainerItem` or distribute a cursor stack through custom Lua. Blizzard's native item-button scripts own the single physical-slot drop in and out of combat.
 - The bank cursor overlay binds to a real empty slot in the active bank type and
   validates the cursor item with `C_Bank.IsItemAllowedInBankType`.
 - Header context menus intentionally stay open and return refresh responses when choices change.
+- Column visibility, stable-key order, and fixed widths are profile-owned and
+  participate in bag/bank mirroring. Every displayed column can be hidden;
+  retain the empty header's menu and Settings recovery path. Hidden columns
+  retain their order/width and do not alter sorting,
+  grouping, search, or normalized inventory data.
+- Resolve missing visibility from column definitions. Preserve explicit false
+  in the hidden map when a user shows a default-hidden column, including across
+  normalization, profile persistence, and bag/bank mirroring.
+- Preserve default column widths/order/gaps and right-edge clipping. Do not
+  add horizontal scrolling or automatic width redistribution. Keep the current
+  Quantity-first left edge; reserve marker space when another column leads.
+  Cap interactive expansion at the inner list's right edge, keeping the resize
+  handle reachable; this does not clamp stored layouts to each window's width.
+- Headers and cells consume `ItemListLayout`'s shared column bounds. Precreate
+  all supported custom cells in each viewport pool, even if hidden. Layout-only
+  changes must not replace the data provider, rebind native item buttons, clear
+  cooldowns, or rescan items. Apply the latest layout revision to recycled rows.
+- Column editing is out-of-combat only. Save a gesture once on release; cancel
+  it on Escape, close, combat entry, or profile/mirroring changes. Defer pending
+  profile column layouts until combat ends. Preserve native row interaction.
 
 ### Bag Management
 
@@ -249,7 +273,7 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
   frames' position, size, and scale plus the last selected bank type.
 - `YvBagsDB.profiles` is exclusively owned by `LibSimpleDBProfiles-1.0`; profile selections and payloads must be accessed through `NS.profileManager` and `NS.db`.
 - Account-wide pins live under the addon-global `pins.items`; regular item pins use item-ID identities and keystones use the stable `kind:keystone` identity. Pin presentation belongs to the active profile.
-- Profile-owned settings are bag list grouping/sorting, bank mirroring or its
+- Profile-owned settings are bag list grouping/sorting/columns, bank mirroring or its
   independent list settings, pin presentation, cooldown-name display, and the
   complete shared category registry. Bag replacement, bank replacement, and
   gray-junk selling remain addon-global.
@@ -264,7 +288,7 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
   refreshes for structural changes so moving focus between text inputs does not
   discard the newly focused control.
 - Add defaults in `Defaults.lua` before reading new settings. Use `Get` and `Set`, and register callbacks when a setting must refresh live UI.
-- Expose user settings and profile management through Blizzard's standard Settings API. Column editors remain future work.
+- Expose user settings and profile management through Blizzard's standard Settings API. Columns menus share actions with the direct header controls.
 - UI that displays active profile identity or profile descriptors listens to manager lifecycle callbacks. `OnCharacterInfoChanged` refreshes identity-backed permanent descriptors even when the active profile does not change. Features that apply effective profile data listen to active-DB `OnDataChanged`/`OnReset`; do not refresh one feature through both manager and active-DB paths.
 - A character without a stored selection performs the manager's one-time Character > Specialization > Class > Realm > Faction > Global search. If specialization identity is still loading, the manager completes that search during login without deferring construction. The persisted result is not promoted later.
 - Preserve the frame's reported point, relative point, x, and y. `SetDontSavePosition(true)` and `SetUserPlaced(false)` prevent the client from applying a second saved position.
@@ -306,6 +330,10 @@ Use the relevant subset for small changes and the full list before release:
 - Drop cursor items in sorted and Manual modes, including stack merging and specialty-bag compatibility.
 - Check free-space totals, Blizzard cleanup, money, tracked currencies, tooltips, and currency fitting at narrow widths.
 - Test settings live refresh and persistence.
+- Hide all columns and recover through the empty header and Settings. Reorder
+  and resize headers, cancel gestures, reload, and test bank mirroring/detach.
+  Confirm fixed-width clipping, marker spacing, header/row alignment, and no
+  provider rebuilds or protected item-button changes during layout edits.
 - Test gray-junk autosell at a merchant with the setting both disabled and enabled.
 - Open and close the bank with replacement enabled and disabled; verify player
   bags follow the native bank lifecycle in both configurations.

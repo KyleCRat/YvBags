@@ -3,14 +3,15 @@
   consumables). The current bank implementation deliberately uses Blizzard's
   native Deposit All behavior unchanged.
 
-## Next Major Feature: Column Customization
+## Column Customization: In-Game Validation
 
-- Create a dedicated implementation plan before coding profile-owned column
-  customization. The plan must cover column visibility, drag-and-drop ordering
-  directly from the YvBags headers, drag-to-resize column widths, profile
-  persistence and reset behavior, fixed or internal columns, responsive layout
-  constraints, header and row alignment, virtualization, and safe live
-  refreshes.
+- Implementation and remaining validation: [PLAN.md](PLAN.md). Basic reorder,
+  resize, and visibility toggles pass in bags and bank. Check the resize-edge
+  cap, direct header Hide/Reset actions, optional Bag/Slot visibility, hide-all
+  recovery, profile persistence and bank mirroring,
+  default-layout preservation, marker/header/cell alignment, and combat/close
+  cancellation. Columns keep fixed widths and right-edge clipping with no
+  horizontal scrolling. Remove this entry after in-game checks pass.
 
 ## Future Appearance Settings
 

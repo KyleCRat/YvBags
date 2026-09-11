@@ -412,7 +412,7 @@ local function AppendSearchValue(values, value)
 end
 
 local function AppendFormattedColumns(values, item)
-    for _, column in ipairs(Columns.GetColumns()) do
+    for _, column in ipairs(Columns.GetAvailableColumns()) do
         local formatted = Columns.FormatColumn(item, column.key)
         if not IsSecretValue(formatted) and formatted and formatted ~= "" and formatted ~= "-" then
             AppendSearchValue(values, formatted)
