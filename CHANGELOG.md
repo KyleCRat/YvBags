@@ -58,6 +58,14 @@
 - Restored Mythic Keystones to their own prioritized category and gave keystone pins a stable identity across dungeon and level changes.
 
 ### Changed
+- Restyled bag and bank settings and scale controls as matching compact square
+  tertiary buttons, with the Vertex-Scale control beside the cog and one shared
+  gap between toolbar buttons and search. Preserved the drag-to-scale popup and current percentage
+  tooltip.
+- Matched bag and bank search backgrounds to the settings inputs' recessed
+  tertiary artwork and anchored their height to the toolbar buttons, with
+  13px text matching the bank tabs and aligned search/clear icons. Retained
+  Blizzard's clear-button interaction, focus behavior, and live filtering.
 - Made the Bags and Bank List settings more compact with LMS inline
   label/dropdown fields, retaining tooltips and complete-field disabled states.
 - Updated the bag and bank portraits to distinct violet reagent-bag artwork,

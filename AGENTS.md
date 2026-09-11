@@ -103,7 +103,7 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - `Modules/ItemList/Layout.lua`: geometry shared by the list, header, scrollbar, and drop overlay.
 - `Modules/MainFrame/MainFrame.lua`: top-level frame lifecycle, composition, and reason-scoped inventory refresh routing.
 - `Modules/MainFrame/Geometry.lua`: frame scale, size, position persistence, pixel snapping, and position diagnostics.
-- `Modules/MainFrame/Controls.lua`: title-bar scale control and subheader settings/search controls.
+- `Modules/MainFrame/Controls.lua`: shared subheader settings, square scale, and search controls for bags and bank.
 - `Modules/MainFrame/Layout.lua`: geometry shared by main-frame modules.
 - `Modules/MainFrame/Footer.lua`: bag buttons, bag-space display, money, footer layout, and related tooltips.
 - `Modules/MainFrame/FooterCurrencies.lua`: tracked backpack currencies, responsive fitting, currency tooltips, and untracking.

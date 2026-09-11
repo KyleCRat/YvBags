@@ -30,6 +30,8 @@ local Textures = {
     sortArrow = ADDON_MEDIA_PATH .. "Textures\\Vertex-Arrow.tga",
     circle = ADDON_MEDIA_PATH .. "Textures\\Vertex-Circle.tga",
     mover = ADDON_MEDIA_PATH .. "Textures\\Vertex-Mover.tga",
+    settings = "Interface\\WorldMap\\GEAR_64GREY",
+    scale = ADDON_MEDIA_PATH .. "Textures\\Vertex-Scale.tga",
     newItem = ADDON_MEDIA_PATH .. "Textures\\Vertex-New.tga",
     pinned = ADDON_MEDIA_PATH .. "Textures\\Vertex-Pinned.tga",
     soulboundBindingIcon = ADDON_MEDIA_PATH .. "Textures\\Vertex-Lock.tga",
@@ -37,6 +39,7 @@ local Textures = {
 }
 
 local Atlases = {
+    textInputBackground = "common-button-tertiary-depressed-normal",
     warboundBindingIcon = "GM-icon-assist-hover",
     warbandTransfer = "warbands-transferable-icon",
     checkmark = "common-icon-checkmark-yellow",
@@ -90,6 +93,18 @@ end
 
 function Media.GetMoverColor()
     return NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b
+end
+
+function Media.GetSettingsTexture()
+    return Textures.settings
+end
+
+function Media.GetScaleTexture()
+    return Textures.scale
+end
+
+function Media.GetTextInputBackgroundAtlas()
+    return Atlases.textInputBackground
 end
 
 function Media.GetNewItemTexture()

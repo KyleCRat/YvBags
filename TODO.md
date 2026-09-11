@@ -3,15 +3,12 @@
   consumables). The current bank implementation deliberately uses Blizzard's
   native Deposit All behavior unchanged.
 
-## Column Customization: In-Game Validation
+## Current Feature Plan: Shared Skins
 
-- Implementation and remaining validation: [PLAN.md](PLAN.md). Basic reorder,
-  resize, and visibility toggles pass in bags and bank. Check the resize-edge
-  cap, direct header Hide/Reset actions, optional Bag/Slot visibility, hide-all
-  recovery, profile persistence and bank mirroring,
-  default-layout preservation, marker/header/cell alignment, and combat/close
-  cancellation. Columns keep fixed widths and right-edge clipping with no
-  horizontal scrolling. Remove this entry after in-game checks pass.
+- [PLAN.md](PLAN.md) proposes LibYvSkins development in a YvBags Libs submodule,
+  pixel-perfect list dividers, Modern/Flat skins, and optional reload-bound
+  EllesmereUI integration. Masque is deferred; preserve its separate icon
+  ownership extension point without implementing an adapter yet.
 
 ## Future Appearance Settings
 

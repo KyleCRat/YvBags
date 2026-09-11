@@ -227,7 +227,6 @@ function MainFrame.Create()
     frame:SetPortraitTexCoord(0, 1, 0, 1)
 
     Geometry.RestorePosition(frame)
-    Controls.CreateTitle(frame)
 
     frame.Inset:ClearAllPoints()
     frame.Inset:SetPoint("TOPLEFT", frame, "TOPLEFT", Layout.FrameInsetLeft, Layout.FrameInsetTop)
@@ -246,6 +245,8 @@ function MainFrame.Create()
     end)
 
     CreateContent(frame)
+    Controls.CreateSettingsButton(frame)
+    Controls.CreateScaleButton(frame)
     Controls.CreateSearch(frame)
     NS.Footer.Create(frame)
     CreateResizeButton(frame)

@@ -1,52 +1,42 @@
 local _, NS = ...
 
--- Main-frame title and subheader control construction contract.
-local Controls = {}
+-- Shared bag/bank subheader control construction contract.
+local Controls = {
+    SubheaderControlGap = 2,
+}
 NS.MainFrameControls = Controls
 
 local Geometry = NS.MainFrameGeometry
 local ADDON_NAME = NS.ADDON_NAME
 
+-- Shared square header buttons
+local SQUARE_BUTTON_SIZE = 28
+local SQUARE_BUTTON_ICON_SIZE = 18
+local SQUARE_BUTTON_DISABLED_ICON_ALPHA = 0.5
+local SQUARE_BUTTON_NORMAL_ATLAS = "common-button-tertiary-square-normal"
+local SQUARE_BUTTON_HOVER_ATLAS = "common-button-tertiary-square-hover"
+local SQUARE_BUTTON_PRESSED_ATLAS = "common-button-tertiary-square-pressed"
+local SQUARE_BUTTON_DISABLED_ATLAS = "common-button-tertiary-square-disabled"
+local SUBHEADER_FRAME_LEVEL_OFFSET = 8
+
 -- Scale control
-local TITLE_BUTTON_GAP = 4
-local TITLE_BUTTON_FRAME_LEVEL_OFFSET = 20
-local SCALE_BUTTON_WIDTH = 92
-local SCALE_BUTTON_HEIGHT = 25
-local SCALE_BUTTON_FONT_SIZE = 12
-local SCALE_BUTTON_FONT_FLAGS = "OUTLINE"
-local SCALE_BUTTON_TEXT_Y_OFFSET = 1
-local SCALE_BUTTON_NORMAL_ATLAS = "common-button-tertiary-normal-small"
-local SCALE_BUTTON_HOVER_ATLAS = "common-button-tertiary-hover-small"
-local SCALE_BUTTON_PRESSED_ATLAS = "common-button-tertiary-pressed-small"
-local SCALE_BUTTON_DISABLED_ATLAS = "common-button-tertiary-disabled-small"
 local SCALE_MIN_PERCENT = 50
 local SCALE_MAX_PERCENT = 150
 local SCALE_STEP_PERCENT = 5
 local SCALE_POPUP_WIDTH = 48
 local SCALE_POPUP_HEIGHT = 180
 local SCALE_POPUP_FONT_SIZE = 12
+local SCALE_POPUP_FONT_FLAGS = "OUTLINE"
 
 -- Settings and search controls
-local SETTINGS_BUTTON_ICON = "Interface\\WorldMap\\GEAR_64GREY"
-local SETTINGS_BUTTON_SIZE = 28
-local SETTINGS_BUTTON_ICON_SIZE = 22
-local SETTINGS_BUTTON_NORMAL_ALPHA = 0.72
-local SETTINGS_BUTTON_HOVER_ALPHA = 1
-local SETTINGS_BUTTON_PUSHED_OFFSET = -1
 local SETTINGS_BUTTON_LEFT_OFFSET = 58
-local SETTINGS_BUTTON_SEARCH_GAP = 6
 local SEARCH_BOX_RIGHT_OFFSET = -6
 local SEARCH_BOX_TOP_OFFSET = -28
-local SEARCH_BOX_FRAME_LEVEL_OFFSET = 8
 local SEARCH_FOCUS_KEY = "F"
 local SEARCH_SHORTCUT_LISTENER_TEMPLATE = "InsecureKeyboardInputPropagatorTemplate"
 
 local function FormatScalePercent(value)
     return ("%d%%"):format(math.floor((tonumber(value) or 0) + 0.5))
-end
-
-local function FormatScaleButtonText(scale)
-    return ("Scale: %s"):format(FormatScalePercent((tonumber(scale) or 1) * 100))
 end
 
 local function ShowTooltip(button, title, description)
@@ -58,95 +48,88 @@ local function ShowTooltip(button, title, description)
     GameTooltip:Show()
 end
 
-local function SetTitleButtonFrameLevel(frame, button)
-    local frameLevel = math.max(
-        frame:GetFrameLevel(),
-        frame.TitleContainer:GetFrameLevel(),
-        frame.CloseButton:GetFrameLevel()
-    )
-    button:SetFrameLevel(frameLevel + TITLE_BUTTON_FRAME_LEVEL_OFFSET)
-end
-
-local function CreateScaleButtonTexture(button, layer, atlas)
+local function CreateSquareButtonTexture(button, layer, atlas)
     local texture = button:CreateTexture(nil, layer)
     texture:SetAllPoints(button)
     texture:SetAtlas(atlas, false)
     return texture
 end
 
-local function UpdateScaleButtonVisualState(button)
-    button.disabledTexture:SetShown(not button:IsEnabled())
-    button.pressedTexture:SetShown(button:IsEnabled() and button.isPressed == true)
-    button.hoverTexture:SetShown(button:IsEnabled() and button.isHovered == true and button.isPressed ~= true)
+local function UpdateSquareButtonVisualState(button)
+    local enabled = button:IsEnabled()
+    button.disabledTexture:SetShown(not enabled)
+    button.pressedTexture:SetShown(enabled and button.isPressed == true)
+    button.hoverTexture:SetShown(enabled and button.isHovered == true and button.isPressed ~= true)
+    button.icon:SetAlpha(enabled and 1 or SQUARE_BUTTON_DISABLED_ICON_ALPHA)
 end
 
-function Controls.RefreshScale(frame, scale)
-    if not frame.scaleButton then
-        return
-    end
-
-    frame.scaleButton.text:SetText(FormatScaleButtonText(scale))
-    if frame.scalePopup then
-        frame.scalePopup:SetValue(scale * 100, true)
-    end
-end
-
-function Controls.CreateTitle(frame, options)
-    options = options or {}
-    local geometry = options.geometry or Geometry
-    local frameLabel = options.frameLabel or ADDON_NAME
+local function CreateSquareIconButton(frame, iconTexture)
     local button = CreateFrame("Button", nil, frame)
-    button:SetSize(SCALE_BUTTON_WIDTH, SCALE_BUTTON_HEIGHT)
-    button:SetPoint("RIGHT", frame.CloseButton, "LEFT", -TITLE_BUTTON_GAP, 0)
-    SetTitleButtonFrameLevel(frame, button)
+    button:SetSize(SQUARE_BUTTON_SIZE, SQUARE_BUTTON_SIZE)
+    button:SetFrameLevel(frame:GetFrameLevel() + SUBHEADER_FRAME_LEVEL_OFFSET)
     button:EnableMouse(true)
     button:SetHitRectInsets(0, 0, 0, 0)
 
-    button.normalTexture = CreateScaleButtonTexture(button, "BACKGROUND", SCALE_BUTTON_NORMAL_ATLAS)
-    button.hoverTexture = CreateScaleButtonTexture(button, "BORDER", SCALE_BUTTON_HOVER_ATLAS)
-    button.pressedTexture = CreateScaleButtonTexture(button, "BORDER", SCALE_BUTTON_PRESSED_ATLAS)
-    button.disabledTexture = CreateScaleButtonTexture(button, "BORDER", SCALE_BUTTON_DISABLED_ATLAS)
+    button.normalTexture = CreateSquareButtonTexture(button, "BACKGROUND", SQUARE_BUTTON_NORMAL_ATLAS)
+    button.hoverTexture = CreateSquareButtonTexture(button, "BORDER", SQUARE_BUTTON_HOVER_ATLAS)
+    button.pressedTexture = CreateSquareButtonTexture(button, "BORDER", SQUARE_BUTTON_PRESSED_ATLAS)
+    button.disabledTexture = CreateSquareButtonTexture(button, "BORDER", SQUARE_BUTTON_DISABLED_ATLAS)
     button.hoverTexture:Hide()
     button.pressedTexture:Hide()
     button.disabledTexture:Hide()
 
-    local text = button:CreateFontString(nil, "OVERLAY")
-    text:SetPoint("CENTER", button, "CENTER", 0, SCALE_BUTTON_TEXT_Y_OFFSET)
-    text:SetFont(NS.Media.GetPrimaryFont(), SCALE_BUTTON_FONT_SIZE, SCALE_BUTTON_FONT_FLAGS)
-    text:SetTextColor(1, 1, 1)
-    text:SetShadowColor(0, 0, 0, 0.9)
-    text:SetShadowOffset(1, -1)
-    text:SetJustifyH("CENTER")
-    text:SetJustifyV("MIDDLE")
-    button.text = text
+    local icon = button:CreateTexture(nil, "ARTWORK")
+    icon:SetPoint("CENTER", button, "CENTER", 0, 0)
+    icon:SetSize(SQUARE_BUTTON_ICON_SIZE, SQUARE_BUTTON_ICON_SIZE)
+    icon:SetTexture(iconTexture)
+    button.icon = icon
 
-    frame.scaleButton = button
-    Controls.RefreshScale(frame, geometry.GetSavedScale())
     button:SetScript("OnEnter", function(self)
         self.isHovered = true
-        UpdateScaleButtonVisualState(self)
-        ShowTooltip(
-            self,
-            "Scale",
-            ("Click and drag to resize the %s frame."):format(frameLabel)
-        )
+        UpdateSquareButtonVisualState(self)
     end)
     button:SetScript("OnLeave", function(self)
         self.isHovered = false
         self.isPressed = false
-        UpdateScaleButtonVisualState(self)
+        UpdateSquareButtonVisualState(self)
         GameTooltip:Hide()
     end)
     button:SetScript("OnMouseDown", function(self, mouseButton)
         if mouseButton == "LeftButton" then
             self.isPressed = true
-            UpdateScaleButtonVisualState(self)
+            UpdateSquareButtonVisualState(self)
         end
     end)
     button:SetScript("OnMouseUp", function(self)
         self.isPressed = false
         self.isHovered = self:IsMouseOver()
-        UpdateScaleButtonVisualState(self)
+        UpdateSquareButtonVisualState(self)
+    end)
+    button:SetScript("OnEnable", UpdateSquareButtonVisualState)
+    button:SetScript("OnDisable", UpdateSquareButtonVisualState)
+    return button
+end
+
+function Controls.RefreshScale(frame, scale)
+    if frame.scalePopup then
+        frame.scalePopup:SetValue(scale * 100, true)
+    end
+end
+
+function Controls.CreateScaleButton(frame, options)
+    options = options or {}
+    local geometry = options.geometry or Geometry
+    local frameLabel = options.frameLabel or ADDON_NAME
+    local button = CreateSquareIconButton(frame, NS.Media.GetScaleTexture())
+    button:SetPoint("LEFT", frame.settingsButton, "RIGHT", Controls.SubheaderControlGap, 0)
+    frame.scaleButton = button
+
+    button:HookScript("OnEnter", function(self)
+        ShowTooltip(
+            self,
+            ("Scale: %s"):format(FormatScalePercent(geometry.GetSavedScale() * 100)),
+            ("Click and drag to resize the %s frame."):format(frameLabel)
+        )
     end)
 
     local LibPopupSlider = LibStub("LibPopupSlider-1.0", true)
@@ -163,21 +146,19 @@ function Controls.CreateTitle(frame, options)
             sliderHeight = SCALE_POPUP_HEIGHT,
             popupWidth = SCALE_POPUP_WIDTH,
             font = NS.Media.GetPrimaryFont(),
-            fontFlags = SCALE_BUTTON_FONT_FLAGS,
+            fontFlags = SCALE_POPUP_FONT_FLAGS,
             fontSize = SCALE_POPUP_FONT_SIZE,
         })
         popup:SetValue(geometry.GetSavedScale() * 100, true)
         frame.scalePopup = popup
     else
         button:Disable()
-        UpdateScaleButtonVisualState(button)
     end
 end
 
 function Controls.CreateSettingsButton(frame, options)
     options = options or {}
-    local button = CreateFrame("Button", nil, frame)
-    button:SetSize(SETTINGS_BUTTON_SIZE, SETTINGS_BUTTON_SIZE)
+    local button = CreateSquareIconButton(frame, NS.Media.GetSettingsTexture())
     button:SetPoint(
         "TOPLEFT",
         frame,
@@ -185,43 +166,15 @@ function Controls.CreateSettingsButton(frame, options)
         options.leftOffset or SETTINGS_BUTTON_LEFT_OFFSET,
         options.topOffset or SEARCH_BOX_TOP_OFFSET
     )
-    button:SetFrameLevel(frame:GetFrameLevel() + SEARCH_BOX_FRAME_LEVEL_OFFSET)
     button:RegisterForClicks("LeftButtonUp")
 
-    local icon = button:CreateTexture(nil, "ARTWORK")
-    icon:SetPoint("CENTER", button, "CENTER", 0, 0)
-    icon:SetSize(SETTINGS_BUTTON_ICON_SIZE, SETTINGS_BUTTON_ICON_SIZE)
-    icon:SetTexture(SETTINGS_BUTTON_ICON)
-    icon:SetAlpha(SETTINGS_BUTTON_NORMAL_ALPHA)
-    button.icon = icon
-
-    local highlight = button:CreateTexture(nil, "HIGHLIGHT")
-    highlight:SetAllPoints(button)
-    highlight:SetColorTexture(1, 1, 1, 0.12)
-    highlight:SetBlendMode("ADD")
-
-    button:SetScript("OnMouseDown", function(self)
-        self.icon:ClearAllPoints()
-        self.icon:SetPoint("CENTER", self, "CENTER", 0, SETTINGS_BUTTON_PUSHED_OFFSET)
-    end)
-    button:SetScript("OnMouseUp", function(self)
-        self.icon:ClearAllPoints()
-        self.icon:SetPoint("CENTER", self, "CENTER", 0, 0)
-    end)
-    button:SetScript("OnEnter", function(self)
-        self.icon:SetAlpha(SETTINGS_BUTTON_HOVER_ALPHA)
+    button:HookScript("OnEnter", function(self)
         ShowTooltip(
             self,
             "Settings",
             options.tooltip
                 or ("Open %s settings."):format(ADDON_NAME)
         )
-    end)
-    button:SetScript("OnLeave", function(self)
-        self.icon:SetAlpha(SETTINGS_BUTTON_NORMAL_ALPHA)
-        self.icon:ClearAllPoints()
-        self.icon:SetPoint("CENTER", self, "CENTER", 0, 0)
-        GameTooltip:Hide()
     end)
     button:SetScript("OnClick", function()
         if options.onClick then
@@ -282,17 +235,24 @@ function Controls.RegisterSearchShortcut(frame)
     frame.searchShortcutListener = listener
 end
 
-function Controls.CreateSearch(frame, options)
-    local options = options or {}
-    local settingsButton = options.settingsButton
-        or Controls.CreateSettingsButton(frame, options.settingsButtonOptions)
-    local searchBox = frame.itemList:CreateSearchBox(frame)
+function Controls.LayoutSearch(frame, options)
+    options = options or {}
+    local searchBox = frame.searchBox
+    local leftAnchor = options.leftAnchor or frame.scaleButton
+    local gap = Controls.SubheaderControlGap
     searchBox:ClearAllPoints()
     searchBox:SetPoint(
         "TOPLEFT",
-        options.leftAnchor or settingsButton,
+        leftAnchor,
         "TOPRIGHT",
-        options.leftGap or SETTINGS_BUTTON_SEARCH_GAP,
+        gap,
+        0
+    )
+    searchBox:SetPoint(
+        "BOTTOMLEFT",
+        leftAnchor,
+        "BOTTOMRIGHT",
+        gap,
         0
     )
     searchBox:SetPoint(
@@ -302,6 +262,11 @@ function Controls.CreateSearch(frame, options)
         options.rightOffset or SEARCH_BOX_RIGHT_OFFSET,
         options.topOffset or SEARCH_BOX_TOP_OFFSET
     )
-    searchBox:SetFrameLevel(frame:GetFrameLevel() + SEARCH_BOX_FRAME_LEVEL_OFFSET)
+end
+
+function Controls.CreateSearch(frame, options)
+    local searchBox = frame.itemList:CreateSearchBox(frame)
+    searchBox:SetFrameLevel(frame:GetFrameLevel() + SUBHEADER_FRAME_LEVEL_OFFSET)
     frame.searchBox = searchBox
+    Controls.LayoutSearch(frame, options)
 end

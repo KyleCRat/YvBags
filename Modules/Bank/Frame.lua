@@ -18,16 +18,12 @@ local FRAME_PORTRAIT =
 local FRAME_STRATA = "HIGH"
 local RESIZE_BUTTON_TEMPLATE = "PanelResizeButtonTemplate"
 local TYPE_BUTTON_HEIGHT = 28
-local TYPE_BUTTON_GAP = 5
 local TYPE_BUTTON_TEXT_SIZE = 13
 local TYPE_BUTTON_NORMAL_ATLAS = "common-button-tertiary-normal"
 local TYPE_BUTTON_HOVER_ATLAS = "common-button-tertiary-hover"
 local TYPE_BUTTON_PRESSED_ATLAS = "common-button-tertiary-pressed"
 local TYPE_BUTTON_SELECTED_ATLAS = "common-button-tertiary-selected"
 local TYPE_BUTTON_SELECTED_OUTSET = 3
-local SEARCH_GAP = 6
-local SEARCH_RIGHT_OFFSET = -6
-local SEARCH_TOP_OFFSET = -28
 local EMPTY_ITEMS = {}
 
 local LOCKED_MESSAGES = {
@@ -338,7 +334,7 @@ end
 
 local function RefreshTypeButtons(frame)
     local activeBankType = Inventory:GetActiveBankType()
-    local previous = frame.settingsButton
+    local previous = frame.scaleButton
     local buttons = {
         frame.characterBankButton,
         frame.accountBankButton,
@@ -354,7 +350,7 @@ local function RefreshTypeButtons(frame)
                 "LEFT",
                 previous,
                 "RIGHT",
-                TYPE_BUTTON_GAP,
+                Controls.SubheaderControlGap,
                 0
             )
             previous = button
@@ -362,23 +358,19 @@ local function RefreshTypeButtons(frame)
         end
     end
 
-    frame.searchBox:ClearAllPoints()
-    frame.searchBox:SetPoint("TOPLEFT", previous, "TOPRIGHT", SEARCH_GAP, 0)
-    frame.searchBox:SetPoint(
-        "TOPRIGHT",
-        frame,
-        "TOPRIGHT",
-        SEARCH_RIGHT_OFFSET,
-        SEARCH_TOP_OFFSET
-    )
+    Controls.LayoutSearch(frame, { leftAnchor = previous })
 end
 
 local function CreateSubheaderControls(frame)
-    local settingsButton = Controls.CreateSettingsButton(frame, {
+    Controls.CreateSettingsButton(frame, {
         tooltip = "Open YvBags bank settings.",
         onClick = function()
             NS.Settings.OpenBank()
         end,
+    })
+    Controls.CreateScaleButton(frame, {
+        geometry = Geometry,
+        frameLabel = "bank",
     })
 
     frame.characterBankButton = CreateTypeButton(
@@ -395,7 +387,6 @@ local function CreateSubheaderControls(frame)
     )
 
     Controls.CreateSearch(frame, {
-        settingsButton = settingsButton,
         leftAnchor = frame.accountBankButton,
     })
 end
@@ -474,10 +465,6 @@ function BankFrameController.Create()
     frame:SetPortraitTexCoord(0, 1, 0, 1)
 
     Geometry.RestorePosition(frame)
-    Controls.CreateTitle(frame, {
-        geometry = Geometry,
-        frameLabel = "bank",
-    })
 
     frame.Inset:ClearAllPoints()
     frame.Inset:SetPoint(
