@@ -15,6 +15,12 @@
 
 ## Future Appearance Settings
 
+- After LibYvSkins' Modern/Flat controls are stable, plan opt-in LMS use of
+  LYS for visuals, including Flat settings controls. LMS retains fields,
+  layout, value synchronization, and input commits; LYS stays independent of
+  LMS. Scope appearance per addon/canvas, preserve existing LMS APIs and
+  default Modern behavior, and leave unrelated addons and Blizzard's Settings
+  shell untouched. Include dropdown menus, sliders, tables, and focus states.
 - Add a shared inset-background selector for the bag and bank windows. Start
   with a curated set of compatible Blizzard
   `Interface/FrameGeneral/UIFrame*Background` file textures, keep the current

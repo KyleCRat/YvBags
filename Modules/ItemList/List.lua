@@ -94,7 +94,7 @@ function ListController:RefreshVisiblePixelGeometry()
     -- ScrollBox has positioned its scroll target before OnScroll. Only adjust
     -- custom strokes on active rows, never the pooled native item buttons.
     for _, row in ipairs(self.view:GetFrames()) do
-        if row.groupInitialized or row.sectionDividerInitialized then
+        if row.sectionDividerInitialized then
             row.divider:RefreshGeometry()
         end
     end

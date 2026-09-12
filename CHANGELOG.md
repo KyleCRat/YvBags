@@ -58,6 +58,11 @@
 - Restored Mythic Keystones to their own prioritized category and gave keystone pins a stable identity across dungeon and level changes.
 
 ### Changed
+- Restyled bag and bank accordion headers with full-width Modern tertiary
+  bars and right-aligned expand/collapse arrows. Removed the leading boxed
+  toggle, reserved icon space, and separate divider while retaining row
+  heights, accent-colored titles, counts, and collapse behavior. Reduced title
+  text to 16px to fit the new bars.
 - Integrated bags and bank directly with LibYvSkins-created window shells,
   header/content/footer areas, resize controls, and separator factories.
   Removed the temporary appearance adapters and duplicated chrome construction

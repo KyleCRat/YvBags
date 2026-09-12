@@ -306,7 +306,7 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
   library; do not introduce YvBags existing-window adapters or part-discovery
   maps. Keep raw native controls directly accessible and domain behavior,
   position/size/scale persistence, and item-button bridges addon-owned.
-- Header, column, category, and new/pinned-section separators use LibYvSkins
+- Header, column, and new/pinned-section separators use LibYvSkins
   solid one-physical-pixel strokes, not stretched/rotated divider textures.
   Use physical-pixel insets for adjoining strokes so joins do not separate
   when scaled. The header line, titles, and controls own the full inner-frame
@@ -314,6 +314,10 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
   Preserve row extents and resize hit targets. Refresh only visible custom
   strokes from ScrollBox placement callbacks; never alter native item-button
   geometry, data providers, or normalized item data to refresh appearance.
+- Group/category accordion bars use `NS.Skins:CreateExpandableHeader`, with
+  no leading icon slot or separate divider. The addon owns group collapse and
+  counts; the library owns bar/arrow state. Reset pooled header visibility,
+  expansion, and text, and keep group rows out of pixel-divider refreshes.
 - Skin development is gated by `PLAN.md`. The pixel and canonical window
   foundations are implemented; remaining Modern control factories and
   Flat/EllesmereUI ownership/selection are not yet active.

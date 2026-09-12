@@ -18,6 +18,12 @@ passing); all 106 Lua files pass syntax checks, and TOC/embed paths and
 whitespace checks pass. The accepted in-game foundation check does not replace
 the broader regression matrix required after the remaining skin work.
 
+Follow-up: group/category accordion headers now use a direct LibYvSkins
+expandable-header factory matching LMS's Modern tertiary bar and right-side
+arrow. No leading icon slot or separate category divider remains. Row heights,
+counts, and addon-owned collapse behavior are unchanged. This focused control
+conversion precedes the rest of Phase 2 and awaits in-game visual validation.
+
 ## Outcome And Scope
 
 Build a small reusable skinning library, developed directly inside YvBags as
@@ -148,8 +154,10 @@ Important implementation findings:
   close/resize controls, and geometry lifecycle. YvBags no longer duplicates
   this construction. Toolbar interior layout and bank tab refreshes still need
   conversion when the remaining control factories are implemented.
-- Header/category/section and column separators now use the library's direct
-  physical-pixel separator factory without changing their hit areas.
+- Header, column, and new/pinned-section separators use the library's direct
+  physical-pixel separator factory without changing their hit areas. Group/
+  category headers now use its expandable-header factory; the Modern bar
+  replaces their previous separate pixel divider.
 - Item rows use 23-unit icons inside 29-unit textured borders and custom
   noninteractive regions beside native full-row interaction buttons. Footer
   container/tab icons are 18 units within 24-unit controls; bank tertiary
@@ -511,6 +519,10 @@ does not imply the remaining control skins are done.
 
 - [x] Establish the common window constructor and direct first-consumer path
   in Phase 1.5. No legacy-window adapter is required.
+- [x] Convert group/category accordion bars through the library's expandable
+  header constructor, with native click/text access, visual expansion state,
+  context-owned appearance, and pooled-state/load-order tests. Match LMS's
+  Modern bar without leading icons or separate category dividers.
 - [ ] Implement the remaining concrete control factories and supported state
   handles. Preserve independent layout and skin selection.
 - [ ] Move generic Modern assets/state drawing out of addon-owned controls.
