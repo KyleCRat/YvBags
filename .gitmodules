@@ -10,3 +10,7 @@
 	path = Libs/LibModernSettings-1.0
 	url = git@github.com:KyleCRat/LibModernSettings.git
 	branch = main
+[submodule "Libs/LibYvSkins-1.0"]
+	path = Libs/LibYvSkins-1.0
+	url = git@github.com:KyleCRat/LibYvSkins.git
+	branch = main

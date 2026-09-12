@@ -88,7 +88,7 @@ native search/clear controls with a tertiary-depressed background and anchors
 to the adjacent button's height. Hide only bank types the bank controller
 reports unavailable; do not move or merge their inventory states.
 
-Start with a 36 UI-unit compact header band, 28-unit controls, 6-unit gaps,
+Start with a 36 UI-unit compact header band, 28-unit controls, 2-unit gaps,
 8-unit horizontal padding, and a minimum 96-unit search width. These are
 scale-aware layout units, not fixed physical-pixel sizes. Keep existing footer
 height and icon/control sizes, and current 420/520 bag/bank minimum widths as
@@ -104,9 +104,6 @@ hovered, pressed, focused, disabled, and disabled-checked states distinguishable
 
 ## Inspected Baseline
 
-- YvBags baseline: `498db6f` (`Complete column editor feature`); worktree clean
-  when planning began. The previous PLAN.md is absent. Preserve the outstanding
-  column-validation checklist in TODO independently of this plan.
 - LibYvSkins remote is reachable, but read-only `ls-remote` returned no HEAD,
   branch, or tag refs. Treat initial-commit bootstrap as a required checkpoint.
 - Existing sibling reference: RaidGroupManager `bee6287`, especially
@@ -401,7 +398,9 @@ presentation options and a declared surface adapter. RGM has a `showBorder`
 extension absent from YvBags' current embedded copy; reconcile that owned
 library change deliberately if required. Any additional visual-parts contract
 belongs upstream in that library, with its tests/version/package workflow,
-not an addon-side dependency on undocumented popup internals.
+not an addon-side dependency on undocumented popup internals. The scale popup
+should be fully skinned to match whichever skin is selected, do not ignore just
+because it may require upstream changes to make functional.
 
 ## Implementation Phases And Gates
 
