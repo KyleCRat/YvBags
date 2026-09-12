@@ -10,7 +10,7 @@ local GLOBAL_NAME_PREFIX = NS.ITEM_BUTTON_GLOBAL_NAME_PREFIX
 
 local buttonCount = 0
 local buttonRows = setmetatable({}, { __mode = "k" })
-local emptySlotTargets = setmetatable({}, { __mode = "k" })
+local dropTargets = setmetatable({}, { __mode = "k" })
 
 local function ClearNativeTexture(texture)
     if not texture then
@@ -112,32 +112,38 @@ function ItemButton.Create(row, list)
     return button
 end
 
-function ItemButton.CreateEmptySlotTarget(parent)
+function ItemButton.CreateDropTarget(parent)
     local button = CreateNativeButton(parent)
-    emptySlotTargets[button] = {}
+    dropTargets[button] = {}
     button:RegisterForClicks("LeftButtonUp")
     button:RegisterForDrag("LeftButton")
     SetItemButtonCount(button, 0)
     button:SetHasItem(false)
     button:SetReadable(nil)
     button.Cooldown:Hide()
+    -- The overlay is not an item row: no tooltip or new-item acknowledgement.
+    button:SetScript("OnEnter", nil)
+    button:SetScript("OnLeave", nil)
     return button
 end
 
-function ItemButton.SetEmptySlotTarget(button, bagID, slotIndex)
-    local target = emptySlotTargets[button]
-    if target.bagID == bagID and target.slotIndex == slotIndex then
+function ItemButton.SetDropTarget(button, bagID, slotIndex, info)
+    local target = dropTargets[button]
+    local count = info and info.stackCount or 0
+    if target.bagID == bagID and target.slotIndex == slotIndex
+        and target.count == count then
         return false
     end
 
     button:SetBagID(bagID)
     button:SetID(slotIndex)
-    SetItemButtonCount(button, 0)
-    button:SetHasItem(false)
+    SetItemButtonCount(button, count)
+    button:SetHasItem(info ~= nil)
     button:SetReadable(nil)
     button.Cooldown:Hide()
     target.bagID = bagID
     target.slotIndex = slotIndex
+    target.count = count
     return true
 end
 

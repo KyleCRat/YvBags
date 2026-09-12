@@ -165,7 +165,7 @@ end
 
 function ListController:InvalidateCursorDropTarget()
     if self.cursorDropOverlay then
-        self.cursorDropOverlay.dropTargetDirty = true
+        CursorDrop.Invalidate(self)
     end
 end
 

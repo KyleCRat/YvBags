@@ -126,14 +126,16 @@ function BankItemButton.Create(row, list)
     return button
 end
 
-function BankItemButton.CreateEmptySlotTarget(parent, list)
+function BankItemButton.CreateDropTarget(parent, list)
     local button = CreateNativeButton(parent, list)
     button:RegisterForClicks("LeftButtonUp")
     button:RegisterForDrag("LeftButton")
+    button:SetScript("OnEnter", nil)
+    button:SetScript("OnLeave", nil)
     return button
 end
 
-function BankItemButton.SetEmptySlotTarget(button, tabID, slotIndex)
+function BankItemButton.SetDropTarget(button, tabID, slotIndex)
     local list = buttonLists[button]
     local bankType = list.context.inventory:GetActiveBankType()
     button:Init(bankType, tabID, slotIndex)

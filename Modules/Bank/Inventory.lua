@@ -546,27 +546,26 @@ function BankInventory:IsSlotEmpty(tabID, slotIndex)
     return C_Container.GetContainerItemInfo(tabID, slotIndex) == nil
 end
 
+function BankInventory:CanAcceptCursorItem(cursorItemLocation)
+    local bankType = self.activeBankType
+    local state = self.states[bankType]
+    return state ~= nil and state.isLoaded and C_Bank.CanUseBank(bankType)
+        and cursorItemLocation ~= nil
+        and C_Bank.IsItemAllowedInBankType(bankType, cursorItemLocation)
+end
+
 function BankInventory:FindCursorItemEmptySlot(
     _,
     _,
     sourceContainerID,
     sourceSlotIndex
 )
-    local bankType = self.activeBankType
-    local state = self.states[bankType]
-    if not state or not state.isLoaded or not C_Bank.CanUseBank(bankType) then
-        return nil
-    end
-
     local cursorItemLocation = C_Cursor.GetCursorItem()
-    if not cursorItemLocation
-        or not C_Bank.IsItemAllowedInBankType(
-            bankType,
-            cursorItemLocation
-        ) then
+    if not self:CanAcceptCursorItem(cursorItemLocation) then
         return nil
     end
 
+    local state = self.states[self.activeBankType]
     local sourceFallback
     for index = 1, #state.emptySlots do
         local slot = state.emptySlots[index]

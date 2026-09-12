@@ -95,6 +95,8 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - `Modules/ItemList/HeaderInteraction.lua`: column reorder/resize previews, drag completion, and cancellation on Escape, combat, and lifecycle changes.
 - `Modules/ItemList/ColumnMenu.lua`: scope-aware visibility and reset actions shared by headers and Settings.
 - `Modules/ItemList/SearchBox.lua`: search-box creation and list search dispatch.
+- `Modules/ItemList/CursorItem.lua`: transient native pickup/split provenance
+  and read-only compatible-stack matching for cursor drops.
 - `Modules/ItemList/CursorDrop.lua`: cursor-item drop targets, insertion overlay, and active cursor polling.
 - `Modules/ItemList/ItemRow.lua`: pooled item-row layout and custom visual rendering.
 - `Modules/ItemList/ItemButton.lua`: native `ContainerFrameItemButtonTemplate` interaction bridge and suppression of native button art.
@@ -210,11 +212,28 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - Bag/Slot is an optional display column, hidden by default and after Reset
   Columns. It is not a separate sort or group option; Manual sorting retains
   physical bag/slot order. Its header still supports dragging and context menus.
-- In sorted modes, a cursor-held item shows a full-list insertion overlay backed by a native container item button bound to one actual compatible empty slot.
+- In sorted modes, a cursor-held item shows a full-list insertion overlay backed
+  by a native item button bound to one real slot. Outside combat, a confirmed
+  whole-stack pickup prefers an unlocked compatible partial stack; otherwise
+  use an empty slot. Match item links and bound state, exclude the source slot,
+  and leave uncertain or refundable items on the empty-slot path.
 - In Manual mode, rows remain available for normal item swapping and a bottom insertion area exposes that same native empty-slot target.
+- Observe native pickup/split operations through secure post-hooks, storing
+  cursor-action state outside native buttons. Splits always use empty slots;
+  never infer split intent from the modifier held at drop time. Clear intent
+  when the cursor empties or changes item/source, retaining it for leftovers.
+- In combat, the overlay remains empty-slot-only. Invalidate merge targets on
+  combat entry, cursor changes, and inventory updates; lock events may disable
+  a stale target but must not rebind it on the native input stack. Validate
+  targets before reuse and display Merge/Place to match the selected action.
+- Poll cursor drops only while the list is visible and an item is held. Cursor
+  events wake a next-frame check; reuse one cursor snapshot per update and one
+  target-location object per overlay without caching away live slot validation.
 - Cursor-drop visuals never call `PickupContainerItem` or distribute a cursor stack through custom Lua. Blizzard's native item-button scripts own the single physical-slot drop in and out of combat.
-- The bank cursor overlay binds to a real empty slot in the active bank type and
-  validates the cursor item with `C_Bank.IsItemAllowedInBankType`.
+- The bank cursor overlay binds only within the active, loaded bank type and
+  validates both empty-slot and merge placement with `C_Bank.IsItemAllowedInBankType`.
+  A merge fills at most one destination per click; any remainder stays on the
+  native cursor for another placement.
 - Header context menus intentionally stay open and return refresh responses when choices change.
 - Column visibility, stable-key order, and fixed widths are profile-owned and
   participate in bag/bank mirroring. Every displayed column can be hidden;
@@ -354,6 +373,9 @@ Use the relevant subset for small changes and the full list before release:
 - Test search, all grouping modes, every pin presentation mode, primary/secondary sorting, Manual mode, and collapsed groups.
 - Swap and empty normal and reagent bags; test insufficient compatible space and concurrent empty attempts.
 - Drop cursor items in sorted and Manual modes, including stack merging and specialty-bag compatibility.
+- Verify whole-stack merges, split preservation, partial-merge leftovers,
+  full inventories with merge space, cursor cancellation/re-pickup, and combat
+  entry/exit while holding an item over a merge target. Repeat in both banks.
 - Check free-space totals, Blizzard cleanup, money, tracked currencies, tooltips, and currency fitting at narrow widths.
 - Test settings live refresh and persistence.
 - Hide all columns and recover through the empty header and Settings. Reorder

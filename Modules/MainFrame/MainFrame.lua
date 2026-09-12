@@ -109,6 +109,10 @@ local function CreateContent(frame)
         end,
         cursorDrop = {
             textFormat = "Place %s into your bags",
+            mergeTextFormat = "Merge %s into a bag stack",
+            getMergeItems = function()
+                return NS.Inventory:GetItems(), NS.BagManagement.cursorSourceContainerID
+            end,
             isSlotEmpty = function(bagID, slotIndex)
                 return NS.BagManagement.IsPlayerContainerSlotEmpty(
                     bagID,

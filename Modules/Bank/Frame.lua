@@ -150,6 +150,12 @@ local function CreateContent(frame)
         end,
         cursorDrop = {
             textFormat = "Place %s into this bank",
+            mergeTextFormat = "Merge %s into a bank stack",
+            getMergeItems = function(cursorItemLocation)
+                if Inventory:CanAcceptCursorItem(cursorItemLocation) then
+                    return Inventory:GetItems()
+                end
+            end,
             isSlotEmpty = function(tabID, slotIndex)
                 return Inventory:IsSlotEmpty(tabID, slotIndex)
             end,

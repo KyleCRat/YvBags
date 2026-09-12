@@ -3,6 +3,11 @@
 ## Unreleased
 
 ### Added
+- Added out-of-combat stack merging through the sorted bag and bank drop
+  overlays. Whole-stack pickups prefer a compatible partial stack, while
+  splits, Manual mode, and combat retain empty-slot placement. Merge/Place
+  hints describe the destination; Blizzard performs one native drop per
+  click, leaving any excess on the cursor.
 - Added profile-owned column visibility, header drag-and-drop ordering, and
   live drag resizing to bags and both bank views. Any displayed column can be
   hidden and restored through header or Settings menus, with direct Hide/Reset
@@ -58,6 +63,9 @@
 - Restored Mythic Keystones to their own prioritized category and gave keystone pins a stable identity across dungeon and level changes.
 
 ### Changed
+- Limited cursor-drop polling to visible lists while an item is held, with
+  event-driven wakeups, one cursor read per update, and a reusable target
+  location. Live stack validation and native combat-safe drops are unchanged.
 - Centered the active sort arrow together with its column title or icon in bag
   and bank headers. Unsorted titles recenter on their own, and narrow text
   headers reserve space for the arrow.

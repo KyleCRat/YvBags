@@ -28,7 +28,8 @@ Character bank, and Warband bank as sortable, searchable lists instead of grids.
   physical bag or bank-tab ID and slot number.
 - Shows item rarity through name color and icon border color.
 - Shows equipped bag buttons for bag swapping and right-click emptying.
-- Supports dropping cursor-held items into available bag space.
+- Supports dropping cursor-held items into available bag or bank space, with
+  automatic stack merging in sorted views outside combat.
 - Shows used/total bag space and calls Blizzard bag cleanup when clicked.
 - Shows current character money and tracked backpack currencies in the footer.
 - Can restore the original Blizzard bag frames from the backpack button.
@@ -48,6 +49,13 @@ YvBags remembers the last available view used by each character.
 Middle-click an item row to pin or unpin that item type. Pinning a Mythic Keystone applies to every future keystone regardless of its dungeon or level.
 
 Pinned-item presentation can place pins above the full list, in one collapsible Pinned group, at the top of their respective groups, or in normal sort order. Manual sorting preserves physical bag-slot order within each resulting section.
+
+In sorted views outside combat, picking up a whole stack and dropping it onto
+the insertion overlay merges it into a compatible partial stack when possible.
+The overlay says **Merge** or **Place** to show its action. Each drop fills at
+most one stack; any excess remains on your cursor for another placement.
+Split stacks, unknown cursor origins, and refundable items use empty slots.
+During combat and in Manual mode, the insertion area always uses an empty slot.
 
 Items Blizzard marks as new appear above pinned rows and groups. When pins use Top Rows presentation, a divider separates the new-item and pinned sections. Hovering a new row acknowledges it and removes its breathing highlight without moving it or removing its new-item marker. The marker remains until the row returns to its normal sorted position after YvBags is closed and reopened, or until the item is physically moved. Unseen rows remain at the top across bag opens.
 

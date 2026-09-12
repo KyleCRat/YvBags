@@ -1,11 +1,12 @@
 local _, NS = ...
 
--- Native empty-slot drop target for sorted insertion and Manual-mode placement.
+-- Native physical-slot targets for sorted insertion and Manual-mode placement.
 local CursorDrop = {}
 NS.ItemListCursorDrop = CursorDrop
 
 local Layout = NS.ItemListLayout
 local ListModel = NS.ItemListModel
+local CursorItem = NS.CursorItem
 local ACCENT_COLOR_R, ACCENT_COLOR_G, ACCENT_COLOR_B = NS.Media.GetAccentColor()
 
 local UPDATE_INTERVAL = 0.05
@@ -14,6 +15,7 @@ local MANUAL_OVERLAY_HEIGHT = 50
 local TEXT_SIZE = 22
 local TEXT_FLAGS = "OUTLINE, SLUG"
 local DEFAULT_TEXT_FORMAT = "Place %s"
+local DEFAULT_MERGE_TEXT_FORMAT = "Merge %s into an existing stack"
 local FALLBACK_ITEM_NAME = "item"
 local TEXT_SIDE_PADDING = 24
 local BACKGROUND_ALPHA = 0.72
@@ -42,22 +44,6 @@ local function GetDropText(itemID, itemLink, textFormat)
     return (textFormat or DEFAULT_TEXT_FORMAT):format(
         itemName or FALLBACK_ITEM_NAME
     )
-end
-
-local function GetCursorItemData()
-    local cursorType, itemID, itemLink = GetCursorInfo()
-    if cursorType ~= "item" then
-        return nil
-    end
-
-    local sourceContainerID
-    local sourceSlotIndex
-    local cursorItemLocation = C_Cursor.GetCursorItem()
-    if cursorItemLocation then
-        sourceContainerID, sourceSlotIndex = cursorItemLocation:GetBagAndSlot()
-    end
-
-    return itemID, itemLink, sourceContainerID, sourceSlotIndex
 end
 
 local function SetHovered(overlay, hovered)
@@ -182,8 +168,9 @@ local function CreateOverlay(list)
     text:SetWordWrap(false)
     overlay.text = text
 
-    overlay.emptySlotTarget =
-        list.context.itemButtonAdapter.CreateEmptySlotTarget(overlay, list)
+    overlay.dropTarget =
+        list.context.itemButtonAdapter.CreateDropTarget(overlay, list)
+    overlay.targetLocation = ItemLocation:CreateEmpty()
     overlay.dropTargetDirty = true
 
     overlay:Hide()
@@ -230,7 +217,7 @@ local function SetOverlayMode(list, mode)
 end
 
 local function IsCursorOverDropArea(list)
-    if list.cursorDropOverlay.emptySlotTarget:IsMouseOver() then
+    if list.cursorDropOverlay.dropTarget:IsMouseOver() then
         return true
     end
 
@@ -241,60 +228,82 @@ local function IsCursorOverDropArea(list)
     return not list.header:IsMouseOver()
 end
 
-local function HasCursorItemChanged(overlay, itemID, itemLink, sourceContainerID, sourceSlotIndex)
-    return overlay.cursorItemID ~= itemID
-        or overlay.cursorItemLink ~= itemLink
-        or overlay.sourceContainerID ~= sourceContainerID
-        or overlay.sourceSlotIndex ~= sourceSlotIndex
-end
-
-local function SetCursorItem(overlay, itemID, itemLink, sourceContainerID, sourceSlotIndex)
-    overlay.cursorItemID = itemID
-    overlay.cursorItemLink = itemLink
-    overlay.sourceContainerID = sourceContainerID
-    overlay.sourceSlotIndex = sourceSlotIndex
+local function InvalidateTarget(overlay)
     overlay.dropTargetDirty = true
+    if overlay.isMergeTarget then
+        -- Lock/cursor events may be inside native input. Disable a stale merge
+        -- target now, but leave rebinding to the next update or mouse press.
+        overlay.dropTarget:Disable()
+    end
 end
 
 local function ClearCursorItem(overlay)
-    overlay.cursorItemID = nil
-    overlay.cursorItemLink = nil
-    overlay.sourceContainerID = nil
-    overlay.sourceSlotIndex = nil
+    overlay.cursorRevision = nil
     overlay.targetBagID = nil
     overlay.targetSlotIndex = nil
+    overlay.targetLocation:Clear()
+    overlay.allowMerge = nil
+    overlay.isMergeTarget = false
     overlay.dropTargetDirty = true
 end
 
-local function RefreshEmptySlotTarget(overlay)
+local function RefreshDropTarget(overlay, cursor)
     local list = overlay.list
     local dropContext = list.context.cursorDrop
+    local allowMerge = not InCombatLockdown()
+        and not ListModel.IsManualSortKey(list.sortKey)
+        and CursorItem.CanMerge(cursor)
 
-    if overlay.targetBagID
-        and not dropContext.isSlotEmpty(
-            overlay.targetBagID,
-            overlay.targetSlotIndex
-        ) then
-        overlay.dropTargetDirty = true
+    if overlay.allowMerge ~= allowMerge then
+        overlay.allowMerge = allowMerge
+        InvalidateTarget(overlay)
+    end
+
+    if overlay.targetBagID and not overlay.dropTargetDirty then
+        local valid
+        if overlay.isMergeTarget then
+            valid = CursorItem.GetMergeSlotInfo(
+                cursor, overlay.targetBagID, overlay.targetSlotIndex,
+                overlay.targetLocation
+            )
+        else
+            valid = dropContext.isSlotEmpty(
+                overlay.targetBagID, overlay.targetSlotIndex
+            )
+        end
+        if not valid then
+            InvalidateTarget(overlay)
+        end
     end
 
     if overlay.dropTargetDirty then
-        local bagID, slotIndex = dropContext.findEmptySlot(
-            overlay.cursorItemID,
-            overlay.cursorItemLink,
-            overlay.sourceContainerID,
-            overlay.sourceSlotIndex
-        )
+        local bagID, slotIndex, info
+        if allowMerge then
+            local items, excludedBagID = dropContext.getMergeItems(cursor.location)
+            if items then
+                bagID, slotIndex, info = CursorItem.FindMergeSlot(
+                    cursor, items, overlay.targetLocation, excludedBagID
+                )
+            end
+        end
+        if not bagID then
+            bagID, slotIndex = dropContext.findEmptySlot(
+                cursor.itemID, cursor.link, cursor.bagID, cursor.slotIndex
+            )
+        end
         overlay.targetBagID = bagID
         overlay.targetSlotIndex = slotIndex
+        overlay.isMergeTarget = info ~= nil
         overlay.dropTargetDirty = false
 
         if bagID then
-            list.context.itemButtonAdapter.SetEmptySlotTarget(
-                overlay.emptySlotTarget,
+            list.context.itemButtonAdapter.SetDropTarget(
+                overlay.dropTarget,
                 bagID,
-                slotIndex
+                slotIndex,
+                info
             )
+            overlay.dropTarget:Enable()
         end
     end
 
@@ -309,23 +318,25 @@ local function HideOverlay(list)
     overlay:Hide()
 end
 
+-- Keep polling while an item is held, even outside the list, to detect reentry.
 function CursorDrop.Update(list)
     local overlay = list.cursorDropOverlay
-    local itemID, itemLink, sourceContainerID, sourceSlotIndex = GetCursorItemData()
+    local cursor, revision = CursorItem.Get()
 
-    if not itemID and not itemLink then
+    if not cursor then
         ClearCursorItem(overlay)
         HideOverlay(list)
-        return
+        return false
     end
 
-    if HasCursorItemChanged(overlay, itemID, itemLink, sourceContainerID, sourceSlotIndex) then
-        SetCursorItem(overlay, itemID, itemLink, sourceContainerID, sourceSlotIndex)
+    if overlay.cursorRevision ~= revision then
+        overlay.cursorRevision = revision
+        InvalidateTarget(overlay)
     end
 
-    if not IsCursorOverDropArea(list) or not RefreshEmptySlotTarget(overlay) then
+    if not IsCursorOverDropArea(list) or not RefreshDropTarget(overlay, cursor) then
         HideOverlay(list)
-        return
+        return true
     end
 
     if ListModel.IsManualSortKey(list.sortKey) then
@@ -336,36 +347,88 @@ function CursorDrop.Update(list)
         SetOverlayMode(list, MODE_FULL)
     end
 
-    local dropText = GetDropText(
-        itemID,
-        itemLink,
-        list.context.cursorDrop.textFormat
-    )
+    local textFormat = list.context.cursorDrop.textFormat
+    if overlay.isMergeTarget then
+        textFormat = list.context.cursorDrop.mergeTextFormat or DEFAULT_MERGE_TEXT_FORMAT
+    end
+    local dropText = GetDropText(cursor.itemID, cursor.link, textFormat)
     if overlay.dropText ~= dropText then
         overlay.text:SetText(dropText)
         overlay.dropText = dropText
     end
 
     overlay:Show()
-    SetHovered(overlay, overlay.emptySlotTarget:IsMouseOver())
+    SetHovered(overlay, overlay.dropTarget:IsMouseOver())
+    return true
+end
+
+function CursorDrop.Invalidate(list)
+    InvalidateTarget(list.cursorDropOverlay)
 end
 
 function CursorDrop.Attach(list)
     list.cursorDropOverlay = CreateOverlay(list)
     list.cursorDropOverlay.list = list
 
-    list.context.cursorDrop.registerUpdateCallback(function()
-        list.cursorDropOverlay.dropTargetDirty = true
-    end)
-
     local elapsedSinceUpdate = 0
-    list.frame:SetScript("OnUpdate", function(_, elapsed)
+    local function StopPolling()
+        elapsedSinceUpdate = 0
+        list.frame:SetScript("OnUpdate", nil)
+    end
+
+    local function OnUpdate(_, elapsed)
         elapsedSinceUpdate = elapsedSinceUpdate + elapsed
         if elapsedSinceUpdate < UPDATE_INTERVAL then
             return
         end
 
         elapsedSinceUpdate = 0
-        CursorDrop.Update(list)
+        if not CursorDrop.Update(list) then
+            StopPolling()
+        end
+    end
+
+    local function RefreshNow()
+        elapsedSinceUpdate = 0
+        if list.frame:IsVisible() and CursorDrop.Update(list) then
+            list.frame:SetScript("OnUpdate", OnUpdate)
+        else
+            StopPolling()
+        end
+    end
+
+    local function Invalidate()
+        InvalidateTarget(list.cursorDropOverlay)
+    end
+
+    local function QueueCursorRefresh()
+        Invalidate()
+        if list.frame:IsVisible() then
+            -- CURSOR_CHANGED can fire inside native item input. Let the
+            -- action and its post-hooks finish before selecting a target.
+            elapsedSinceUpdate = UPDATE_INTERVAL
+            list.frame:SetScript("OnUpdate", OnUpdate)
+        end
+    end
+
+    local function RefreshTarget()
+        Invalidate()
+        RefreshNow()
+    end
+
+    list.context.cursorDrop.registerUpdateCallback(Invalidate)
+    NS:RegisterEventHandler("CURSOR_CHANGED", QueueCursorRefresh)
+    NS:RegisterEventHandler("PLAYER_REGEN_DISABLED", RefreshTarget)
+    NS:RegisterEventHandler("PLAYER_REGEN_ENABLED", RefreshTarget)
+
+    list.frame:HookScript("OnShow", RefreshTarget)
+    list.frame:HookScript("OnHide", StopPolling)
+    list.cursorDropOverlay.dropTarget:HookScript("OnMouseDown", function(_, button)
+        if button == "LeftButton" then
+            list.cursorDropOverlay.dropTargetDirty = true
+            RefreshNow()
+        end
     end)
+
+    RefreshNow()
 end

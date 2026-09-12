@@ -49,6 +49,7 @@ Modules\ItemList\ColumnMenu.lua
 Modules\ItemList\HeaderInteraction.lua
 Modules\ItemList\Header.lua
 Modules\ItemList\SearchBox.lua
+Modules\ItemList\CursorItem.lua
 Modules\ItemList\CursorDrop.lua
 Modules\ItemList\List.lua
 Modules\MainFrame\FooterCurrencies.lua
