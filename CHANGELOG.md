@@ -58,6 +58,9 @@
 - Restored Mythic Keystones to their own prioritized category and gave keystone pins a stable identity across dungeon and level changes.
 
 ### Changed
+- Centered the active sort arrow together with its column title or icon in bag
+  and bank headers. Unsorted titles recenter on their own, and narrow text
+  headers reserve space for the arrow.
 - Restyled bag and bank accordion headers with full-width Modern tertiary
   bars and right-aligned expand/collapse arrows. Removed the leading boxed
   toggle, reserved icon space, and separate divider while retaining row

@@ -298,20 +298,38 @@ local function ShowContextMenu(list, columnKey)
 end
 
 -- Header visual state
-local function AnchorSortIcon(button)
-    button.sortIcon:ClearAllPoints()
+local function LayoutHeaderContent(button, sorted)
+    local hasText = GetHeaderText(button.column) ~= ""
+    local arrowSpace = sorted and (button.headerIcon or hasText)
+        and (HEADER_SORT_ICON_SIZE + HEADER_SORT_ICON_GAP) or 0
 
-    if button.headerIcon and button.headerIcon:IsShown() then
-        button.sortIcon:SetPoint("LEFT", button, "CENTER", (button.headerIcon:GetWidth() / 2) + HEADER_SORT_ICON_GAP, 0)
+    -- Center the label/icon and arrow as one block, reserving the arrow's
+    -- width in the text bounds so narrow columns still truncate their label.
+    button.text:ClearAllPoints()
+    button.text:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
+    button.text:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -arrowSpace, 0)
+    if button.headerIcon then
+        button.headerIcon:ClearAllPoints()
+        button.headerIcon:SetPoint("CENTER", button, "CENTER", -arrowSpace / 2, 0)
+    end
+
+    button.sortIcon:ClearAllPoints()
+    if not sorted then
         return
     end
 
-    if GetHeaderText(button.column) == "" then
+    if button.headerIcon then
+        button.sortIcon:SetPoint("LEFT", button.headerIcon, "RIGHT", HEADER_SORT_ICON_GAP, 0)
+        return
+    end
+
+    if not hasText then
         button.sortIcon:SetPoint("CENTER", button, "CENTER", 0, 0)
         return
     end
 
-    button.sortIcon:SetPoint("LEFT", button, "CENTER", ((button.text:GetStringWidth() or 0) / 2) + HEADER_SORT_ICON_GAP, 0)
+    local textWidth = math.min(button.text:GetStringWidth(), math.max(0, button:GetWidth() - arrowSpace))
+    button.sortIcon:SetPoint("LEFT", button, "CENTER", (textWidth - arrowSpace) / 2 + HEADER_SORT_ICON_GAP, 0)
 end
 
 local function UpdateButtonVisualState(button)
@@ -474,17 +492,16 @@ function Header.Refresh(header, list)
     end
 
     for _, button in ipairs(header.buttons) do
-        if button.column.sortKey and button.column.sortKey == list.sortKey then
-            button.sortIcon:Show()
+        local sorted = button.column.sortKey ~= nil and button.column.sortKey == list.sortKey
+        button.sortIcon:SetShown(sorted)
+        if sorted then
             if list.sortAscending then
                 button.sortIcon:SetTexCoord(0, 1, 0, 1)
             else
                 button.sortIcon:SetTexCoord(0, 1, 1, 0)
             end
-            AnchorSortIcon(button)
-        else
-            button.sortIcon:Hide()
         end
+        LayoutHeaderContent(button, sorted)
     end
 end
 
@@ -585,5 +602,14 @@ function Header.Create(parent, list)
 
     Header.ApplyColumnLayout(header, list)
     Interaction.Attach(header, list)
+    header:SetScript("OnShow", function(self)
+        -- Custom font metrics may be unavailable while the window is built
+        -- hidden. Remeasure once after it becomes visible, without polling.
+        C_Timer.After(0, function()
+            if self:IsVisible() then
+                Header.Refresh(self, list)
+            end
+        end)
+    end)
     return header
 end
