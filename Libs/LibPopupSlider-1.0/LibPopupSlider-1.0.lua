@@ -768,5 +768,42 @@ function lib:Create(button, options)
         return currentValue
     end
 
+    -- Declared visual parts for optional appearance libraries. The popup still
+    -- owns layout, fitting, values, and drag lifetime; do not replace these parts.
+    local visualParts = {
+        frame = popup, slider = popup.slider, track = popup.track, thumb = thumb,
+        label = popup.label, value = popup.value,
+        markers = { popup.diamondTop, popup.diamondCenter, popup.diamondBottom },
+        backgroundColor = bgColor, trackColor = trackColor, markerColor = markerColor,
+        thumbColor = thumbColor or { r = 1, g = 1, b = 1, a = 1 },
+        font = font, fontFlags = fontFlags,
+    }
+    popup.GetVisualParts = function()
+        return visualParts
+    end
+
+    popup.IsInteracting = function()
+        return dragStartY ~= nil
+    end
+
+    popup.SetFontAppearance = function(self, fontPath, flags)
+        if type(fontPath) ~= "string" or fontPath == "" or type(flags) ~= "string" then
+            raiseError("SetFontAppearance requires a font path and flags string.", 2)
+        end
+        if font == fontPath and fontFlags == flags then
+            return
+        end
+        if dragStartY then
+            raiseError("Finish the active drag before changing font appearance.", 2)
+        end
+        font, fontFlags = fontPath, flags
+        visualParts.font, visualParts.fontFlags = font, fontFlags
+        layoutResolved = false
+        if self:IsShown() then
+            layoutPopup()
+        end
+        self.value:SetFont(font, valueDisplaySize, fontFlags)
+    end
+
     return popup
 end

@@ -6,7 +6,6 @@ NS.ItemListColumns = Columns
 
 local Binding = NS.Binding
 local Media = NS.Media
-local ACCENT_COLOR_R, ACCENT_COLOR_G, ACCENT_COLOR_B = Media.GetAccentColor()
 
 local COLUMN_GAP = 6
 local MAX_COLUMN_WIDTH = 1024
@@ -77,11 +76,6 @@ local defaultBindingIconColor = {
     g = DEFAULT_BINDING_ICON_COLOR_G,
     b = DEFAULT_BINDING_ICON_COLOR_B,
 }
-local accentIconColor = {
-    r = ACCENT_COLOR_R,
-    g = ACCENT_COLOR_G,
-    b = ACCENT_COLOR_B,
-}
 local rarityIconColor = GetQualityColor(RARE_QUALITY, RARE_COLOR_R, RARE_COLOR_G, RARE_COLOR_B)
 local defaultBindingIconInfo = {
     texture = Media.GetSoulboundBindingIconTexture(),
@@ -114,7 +108,7 @@ local COLUMNS = {
         label = "",
         headerTexture = Media.GetSoulboundBindingIconTexture(),
         headerIconSize = BINDING_HEADER_ICON_SIZE,
-        headerIconColor = accentIconColor,
+        headerIconColorToken = "accent",
         width = COMPACT_ICON_COLUMN_WIDTH,
         minWidth = COMPACT_ICON_COLUMN_WIDTH,
         justify = "CENTER",

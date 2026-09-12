@@ -38,10 +38,8 @@ local Textures = {
 }
 
 local Atlases = {
-    textInputBackground = "common-button-tertiary-depressed-normal",
     warboundBindingIcon = "GM-icon-assist-hover",
     warbandTransfer = "warbands-transferable-icon",
-    checkmark = "common-icon-checkmark-yellow",
     add = "common-icon-plus",
     remove = "common-icon-minus",
     delete = "common-icon-redx",
@@ -102,10 +100,6 @@ function Media.GetScaleTexture()
     return Textures.scale
 end
 
-function Media.GetTextInputBackgroundAtlas()
-    return Atlases.textInputBackground
-end
-
 function Media.GetNewItemTexture()
     return Textures.newItem
 end
@@ -124,10 +118,6 @@ end
 
 function Media.GetWarbandTransferAtlas()
     return Atlases.warbandTransfer
-end
-
-function Media.GetCheckmarkAtlas()
-    return Atlases.checkmark
 end
 
 function Media.GetAddAtlas()

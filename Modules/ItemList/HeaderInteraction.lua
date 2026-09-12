@@ -6,7 +6,6 @@ NS.ItemListHeaderInteraction = Interaction
 
 local Columns = NS.ItemListColumns
 local ListSettings = NS.ItemListSettings
-local Media = NS.Media
 local INSERTION_WIDTH = 2
 local DRAG_ALPHA = 0.45
 local DRIVER_LEVEL_OFFSET = 10
@@ -159,9 +158,9 @@ function Interaction.Attach(header, list)
     driver:EnableKeyboard(true)
     driver:SetPropagateKeyboardInput(true)
     driver:Hide()
-    local indicator = driver:CreateTexture(nil, "OVERLAY")
-    local r, g, b = Media.GetAccentColor()
-    indicator:SetColorTexture(r, g, b, 1)
+    local indicator = NS.Skins:CreateTexture(driver, {
+        geometryRoot = list.window, layer = "OVERLAY", colorToken = "accent",
+    })
     indicator:Hide()
     driver.indicator = indicator
     header.interactionDriver = driver

@@ -16,10 +16,6 @@ local BINDING_ICON_SIZE = 22
 local ICON_LEFT_OFFSET = 3
 local NEW_ITEM_MARKER_SIZE = NS.ItemListLayout.ItemMarkerWidth
 local PIN_MARKER_SIZE = 16
-local ICON_TEX_COORD_LEFT = 0.08
-local ICON_TEX_COORD_RIGHT = 0.92
-local ICON_TEX_COORD_TOP = 0.08
-local ICON_TEX_COORD_BOTTOM = 0.92
 local ROW_TEXT_SIZE = 16
 
 -- Visual state
@@ -38,7 +34,6 @@ local NEW_ITEM_HIGHLIGHT_HALF_DURATION = 1
 local NEW_ITEM_MARKER_ALPHA = 0.9
 local PIN_MARKER_ALPHA = 0.82
 local FALLBACK_ITEM_ICON = 134400
-local CONTAINER_HIGHLIGHT_COLOR_R, CONTAINER_HIGHLIGHT_COLOR_G, CONTAINER_HIGHLIGHT_COLOR_B = NS.Media.GetAccentColor()
 
 -- Draw layers
 local ROW_HIGHLIGHT_LAYER = "BACKGROUND"
@@ -78,12 +73,10 @@ local function UpdateIconBorderColor(row, item)
     end
 
     if color then
-        row.iconBorder:SetVertexColor(color.r, color.g, color.b, 1)
+        row.iconAppearance:SetBorderColor(color.r, color.g, color.b, 1)
     else
-        row.iconBorder:SetVertexColor(DEFAULT_ICON_BORDER_COLOR_R, DEFAULT_ICON_BORDER_COLOR_G, DEFAULT_ICON_BORDER_COLOR_B, 1)
+        row.iconAppearance:SetBorderColor(DEFAULT_ICON_BORDER_COLOR_R, DEFAULT_ICON_BORDER_COLOR_G, DEFAULT_ICON_BORDER_COLOR_B, 1)
     end
-
-    row.iconBorder:Show()
 end
 
 local function UpdateContainerHighlight(row)
@@ -103,12 +96,9 @@ local function UpdateItemMarkers(row, item)
     row.newItemMarker:Hide()
     row.pinMarker:Hide()
 
-    local r, g, b = NS.Media.GetAccentColor()
     if item.isNewThisSession then
-        row.newItemMarker:SetVertexColor(r, g, b, NEW_ITEM_MARKER_ALPHA)
         row.newItemMarker:Show()
     elseif item.isPinned then
-        row.pinMarker:SetVertexColor(r, g, b, PIN_MARKER_ALPHA)
         row.pinMarker:Show()
     end
 end
@@ -121,8 +111,6 @@ local function UpdateNewItemVisuals(row, item)
         return
     end
 
-    local r, g, b = NS.Media.GetAccentColor()
-    row.newItemHighlight:SetColorTexture(r, g, b, 1)
     if not row.newItemHighlight:IsShown() then
         row.newItemHighlight:SetAlpha(NEW_ITEM_HIGHLIGHT_MIN_ALPHA)
         row.newItemHighlight:Show()
@@ -143,7 +131,7 @@ local function LayoutRow(row)
         text:SetShown(layout.byKey[key] ~= nil)
     end
     row.icon:SetShown(row.item ~= nil and layout.byKey.icon ~= nil)
-    row.iconBorder:SetShown(row.item ~= nil and layout.byKey.icon ~= nil)
+    row.iconAppearance:SetBorderShown(row.item ~= nil and layout.byKey.icon ~= nil)
     row.bindingIcon:SetShown(row.hasBindingIcon == true and layout.byKey.binding ~= nil)
     row.professionQualityIcon:SetShown(row.hasProfessionQualityIcon == true and layout.byKey.professionQuality ~= nil)
 
@@ -154,9 +142,6 @@ local function LayoutRow(row)
 
         if column.key == "icon" then
             local iconCenterX = columnCenterX + ICON_LEFT_OFFSET + (ICON_FRAME_SIZE - column.width) / 2
-            row.iconBorder:ClearAllPoints()
-            row.iconBorder:SetPoint("CENTER", row.contentClip, "LEFT", iconCenterX, 0)
-            row.iconBorder:SetSize(ICON_FRAME_SIZE, ICON_FRAME_SIZE)
             row.icon:ClearAllPoints()
             row.icon:SetPoint("CENTER", row.contentClip, "LEFT", iconCenterX, 0)
             row.icon:SetSize(ICON_SIZE, ICON_SIZE)
@@ -184,8 +169,9 @@ local function CreateTextColumns(row, columns)
     row.text = {}
     for _, column in ipairs(columns) do
         if IsTextColumn(column) then
-            local text = row.contentClip:CreateFontString(nil, "OVERLAY")
-            text:SetFont(NS.Media.GetPrimaryFont(), ROW_TEXT_SIZE)
+            local text = NS.Skins:CreateText(row.contentClip, {
+                geometryRoot = row.list.window, fontSize = ROW_TEXT_SIZE,
+            })
             text:SetJustifyV("MIDDLE")
             text:SetWordWrap(false)
             text:SetMaxLines(1)
@@ -228,18 +214,22 @@ local function InitializeRow(row, list)
     row:EnableMouse(false)
     row:SetID(0)
 
-    row.newItemHighlight = row:CreateTexture(nil, ROW_HIGHLIGHT_LAYER)
+    row.newItemHighlight = NS.Skins:CreateTexture(row, {
+        geometryRoot = list.window, layer = ROW_HIGHLIGHT_LAYER, colorToken = "accent",
+    })
     row.newItemHighlight:SetAllPoints(row)
     row.newItemHighlight:SetAlpha(NEW_ITEM_HIGHLIGHT_MIN_ALPHA)
     row.newItemHighlight:Hide()
     CreateNewItemAnimation(row)
 
-    row.containerHighlight = row:CreateTexture(nil, ROW_HIGHLIGHT_LAYER)
+    row.containerHighlight = NS.Skins:CreateTexture(row, {
+        geometryRoot = list.window, layer = ROW_HIGHLIGHT_LAYER,
+        colorToken = "accent", alpha = CONTAINER_HIGHLIGHT_ALPHA,
+    })
     row.containerHighlight:SetAllPoints(row)
-    row.containerHighlight:SetColorTexture(CONTAINER_HIGHLIGHT_COLOR_R, CONTAINER_HIGHLIGHT_COLOR_G, CONTAINER_HIGHLIGHT_COLOR_B, CONTAINER_HIGHLIGHT_ALPHA)
     row.containerHighlight:Hide()
 
-    row.highlight = row:CreateTexture(nil, ROW_HIGHLIGHT_LAYER)
+    row.highlight = NS.Skins:CreateTexture(row, { geometryRoot = list.window, layer = ROW_HIGHLIGHT_LAYER })
     row.highlight:SetAllPoints(row)
     row.highlight:SetColorTexture(DEFAULT_HIGHLIGHT_COLOR_R, DEFAULT_HIGHLIGHT_COLOR_G, DEFAULT_HIGHLIGHT_COLOR_B, DEFAULT_HIGHLIGHT_ALPHA)
     row.highlight:Hide()
@@ -249,41 +239,44 @@ local function InitializeRow(row, list)
     row.contentClip:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
     row.contentClip:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -GetRightClipPadding(row), 0)
 
-    row.newItemMarker = row.contentClip:CreateTexture(nil, ITEM_MARKER_LAYER)
-    row.newItemMarker:SetDrawLayer(ITEM_MARKER_LAYER, ITEM_MARKER_SUBLEVEL)
-    row.newItemMarker:SetTexture(NS.Media.GetNewItemTexture())
+    row.newItemMarker = NS.Skins:CreateTexture(row.contentClip, {
+        geometryRoot = list.window, layer = ITEM_MARKER_LAYER, sublevel = ITEM_MARKER_SUBLEVEL,
+        texture = NS.Media.GetNewItemTexture(), colorToken = "accent", alpha = NEW_ITEM_MARKER_ALPHA,
+    })
     row.newItemMarker:SetSize(NEW_ITEM_MARKER_SIZE, NEW_ITEM_MARKER_SIZE)
     row.newItemMarker:SetPoint("LEFT", row.contentClip, "LEFT", 0, 0)
     row.newItemMarker:Hide()
 
-    row.pinMarker = row.contentClip:CreateTexture(nil, ITEM_MARKER_LAYER)
-    row.pinMarker:SetDrawLayer(ITEM_MARKER_LAYER, ITEM_MARKER_SUBLEVEL)
-    row.pinMarker:SetTexture(NS.Media.GetPinnedTexture())
+    row.pinMarker = NS.Skins:CreateTexture(row.contentClip, {
+        geometryRoot = list.window, layer = ITEM_MARKER_LAYER, sublevel = ITEM_MARKER_SUBLEVEL,
+        texture = NS.Media.GetPinnedTexture(), colorToken = "accent", alpha = PIN_MARKER_ALPHA,
+    })
     row.pinMarker:SetSize(PIN_MARKER_SIZE, PIN_MARKER_SIZE)
     row.pinMarker:SetPoint("TOPLEFT", row.contentClip, "TOPLEFT", 0, 0)
     row.pinMarker:Hide()
 
-    row.icon = row.contentClip:CreateTexture(nil, ROW_ICON_LAYER)
-    row.icon:SetDrawLayer(ROW_ICON_LAYER, ROW_ICON_SUBLEVEL)
-    row.icon:SetTexCoord(ICON_TEX_COORD_LEFT, ICON_TEX_COORD_RIGHT, ICON_TEX_COORD_TOP, ICON_TEX_COORD_BOTTOM)
+    row.icon, row.iconAppearance = NS.Skins:CreateIcon(row.contentClip, {
+        geometryRoot = list.window, width = ICON_SIZE, layer = ROW_ICON_LAYER, sublevel = ROW_ICON_SUBLEVEL,
+        borderLayer = ICON_BORDER_LAYER, borderSublevel = ICON_BORDER_SUBLEVEL,
+    })
     row.icon:Hide()
-
-    row.iconBorder = row.contentClip:CreateTexture(nil, ICON_BORDER_LAYER)
-    row.iconBorder:SetDrawLayer(ICON_BORDER_LAYER, ICON_BORDER_SUBLEVEL)
-    row.iconBorder:SetTexture(NS.Media.GetIconBorderTexture())
-    row.iconBorder:Hide()
+    row.iconAppearance:SetBorderShown(false)
 
     Cooldown.CreateShade(row)
     Cooldown.LayoutShade(row)
     row.itemButton = row.itemButtonAdapter.Create(row, list)
     CreateTextColumns(row, columns)
 
-    row.professionQualityIcon = row.contentClip:CreateTexture(nil, PROFESSION_QUALITY_LAYER)
+    row.professionQualityIcon = NS.Skins:CreateTexture(row.contentClip, {
+        geometryRoot = list.window, layer = PROFESSION_QUALITY_LAYER, sublevel = PROFESSION_QUALITY_SUBLEVEL,
+    })
     row.professionQualityIcon:SetSize(PROFESSION_QUALITY_ICON_SIZE, PROFESSION_QUALITY_ICON_SIZE)
     row.professionQualityIcon:SetDrawLayer(PROFESSION_QUALITY_LAYER, PROFESSION_QUALITY_SUBLEVEL)
     row.professionQualityIcon:Hide()
 
-    row.bindingIcon = row.contentClip:CreateTexture(nil, BINDING_ICON_LAYER)
+    row.bindingIcon = NS.Skins:CreateTexture(row.contentClip, {
+        geometryRoot = list.window, layer = BINDING_ICON_LAYER, sublevel = BINDING_ICON_SUBLEVEL,
+    })
     row.bindingIcon:SetSize(BINDING_ICON_SIZE, BINDING_ICON_SIZE)
     row.bindingIcon:SetDrawLayer(BINDING_ICON_LAYER, BINDING_ICON_SUBLEVEL)
     row.bindingIcon:Hide()
@@ -406,12 +399,12 @@ function ItemRow.Render(row, item, list)
     UpdateContainerHighlight(row)
     UpdateNewItemVisuals(row, item)
     UpdateIconBorderColor(row, item)
-    row.iconBorder:SetShown(list.columnLayout.byKey.icon ~= nil)
     row.itemButtonAdapter.Update(row.itemButton, item)
 
     row.icon:SetTexture(item.icon or FALLBACK_ITEM_ICON)
     row.icon:SetDesaturated(item.isLocked)
     row.icon:SetShown(list.columnLayout.byKey.icon ~= nil)
+    row.iconAppearance:SetBorderShown(list.columnLayout.byKey.icon ~= nil)
 
     RenderProfessionQuality(row, item)
     RenderBinding(row, item)
@@ -435,7 +428,7 @@ function ItemRow.Reset(row)
     row.icon:SetTexture(nil)
     row.icon:SetDesaturated(false)
     row.icon:Hide()
-    row.iconBorder:Hide()
+    row.iconAppearance:SetBorderShown(false)
     row.itemButtonAdapter.Reset(row.itemButton)
     row.professionQualityIcon:Hide()
 

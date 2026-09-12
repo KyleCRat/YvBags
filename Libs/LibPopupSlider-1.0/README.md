@@ -65,6 +65,28 @@ local current = popup:GetValue()
 | `markerSize` | `8` | Diamond marker width and height, minimum `4` |
 | `markerColor` | `trackColor` | `{ r, g, b, a }` marker color |
 
+## Presentation Integration
+
+The popup still owns drag handling, values, label fitting, and layout. Optional
+appearance libraries can use these public methods without replacing that behavior:
+
+- `popup:GetVisualParts()` returns a stable, read-only mapping of `frame`,
+  `slider`, `track`, `thumb`, `label`, `value`, and the three `markers`, plus the
+  configured `backgroundColor`, `trackColor`, `markerColor`, `thumbColor`, `font`,
+  and `fontFlags`. Style the declared regions; do not replace them, mutate the
+  mapping, or alter the slider's scripts or geometry.
+- `popup:IsInteracting()` reports whether a mouse drag is active.
+- `popup:SetFontAppearance(fontPath, flags)` changes the label/value font and
+  invalidates cached fitting without changing the value or firing its callback.
+  The visible idle popup refits immediately; a hidden one refits on its next
+  open. Changing fonts during a drag raises an error; defer it until the drag
+  ends. Reapplying the current font is a no-op.
+
+These APIs add no skin-library dependency. They are unreleased development
+changes at MINOR 1; an older equal-MINOR embed loaded first will not expose
+them. Appearance integrations must check this external capability boundary.
+Increment the implementation MINOR once when preparing the next release.
+
 ## Implementation Notes
 
 **Button event handling** - The library hooks the button's `OnMouseDown`

@@ -7,7 +7,6 @@ NS.ItemListCursorDrop = CursorDrop
 local Layout = NS.ItemListLayout
 local ListModel = NS.ItemListModel
 local CursorItem = NS.CursorItem
-local ACCENT_COLOR_R, ACCENT_COLOR_G, ACCENT_COLOR_B = NS.Media.GetAccentColor()
 
 local UPDATE_INTERVAL = 0.05
 local OVERLAY_FRAME_LEVEL_OFFSET = 80
@@ -21,10 +20,6 @@ local TEXT_SIDE_PADDING = 24
 local BACKGROUND_ALPHA = 0.72
 local HOVER_BACKGROUND_ALPHA = 0.18
 local HOVER_BACKGROUND_INSET = 9
-local GLOW_CORNER_TEXTURE = "Interface\\Common\\GlowBorder-Corner"
-local GLOW_TOP_TEXTURE = "Interface\\Common\\GlowBorder-Top"
-local GLOW_LEFT_TEXTURE = "Interface\\Common\\GlowBorder-Left"
-local GLOW_CORNER_SIZE = 16
 local GLOW_MIN_ALPHA = 0.35
 local GLOW_MAX_ALPHA = 0.85
 local GLOW_PULSE_DURATION = 0.85
@@ -75,56 +70,9 @@ local function RestartGlow(overlay)
     end
 end
 
-local function CreateGlowTexture(parent, texture)
-    local region = parent:CreateTexture(nil, "BORDER")
-    region:SetTexture(texture)
-    region:SetBlendMode("ADD")
-    region:SetDesaturated(true)
-    region:SetVertexColor(ACCENT_COLOR_R, ACCENT_COLOR_G, ACCENT_COLOR_B, 1)
-    return region
-end
-
-local function CreateGlow(parent)
-    local glow = CreateFrame("Frame", nil, parent)
-    glow:SetAllPoints(parent)
+local function CreateGlow(parent, window)
+    local glow = NS.Skins:CreateGlowBorder(parent, { geometryRoot = window })
     glow:SetAlpha(GLOW_MIN_ALPHA)
-
-    local topLeft = CreateGlowTexture(glow, GLOW_CORNER_TEXTURE)
-    topLeft:SetSize(GLOW_CORNER_SIZE, GLOW_CORNER_SIZE)
-    topLeft:SetPoint("TOPLEFT", glow, "TOPLEFT", 0, 0)
-
-    local topRight = CreateGlowTexture(glow, GLOW_CORNER_TEXTURE)
-    topRight:SetSize(GLOW_CORNER_SIZE, GLOW_CORNER_SIZE)
-    topRight:SetPoint("TOPRIGHT", glow, "TOPRIGHT", 0, 0)
-    topRight:SetTexCoord(1, 0, 0, 1)
-
-    local bottomLeft = CreateGlowTexture(glow, GLOW_CORNER_TEXTURE)
-    bottomLeft:SetSize(GLOW_CORNER_SIZE, GLOW_CORNER_SIZE)
-    bottomLeft:SetPoint("BOTTOMLEFT", glow, "BOTTOMLEFT", 0, 0)
-    bottomLeft:SetTexCoord(0, 1, 1, 0)
-
-    local bottomRight = CreateGlowTexture(glow, GLOW_CORNER_TEXTURE)
-    bottomRight:SetSize(GLOW_CORNER_SIZE, GLOW_CORNER_SIZE)
-    bottomRight:SetPoint("BOTTOMRIGHT", glow, "BOTTOMRIGHT", 0, 0)
-    bottomRight:SetTexCoord(1, 0, 1, 0)
-
-    local top = CreateGlowTexture(glow, GLOW_TOP_TEXTURE)
-    top:SetPoint("TOPLEFT", topLeft, "TOPRIGHT", 0, 0)
-    top:SetPoint("BOTTOMRIGHT", topRight, "BOTTOMLEFT", 0, 0)
-
-    local bottom = CreateGlowTexture(glow, GLOW_TOP_TEXTURE)
-    bottom:SetPoint("TOPLEFT", bottomLeft, "TOPRIGHT", 0, 0)
-    bottom:SetPoint("BOTTOMRIGHT", bottomRight, "BOTTOMLEFT", 0, 0)
-    bottom:SetTexCoord(0, 1, 1, 0)
-
-    local left = CreateGlowTexture(glow, GLOW_LEFT_TEXTURE)
-    left:SetPoint("TOPLEFT", topLeft, "BOTTOMLEFT", 0, 0)
-    left:SetPoint("BOTTOMRIGHT", bottomLeft, "TOPRIGHT", 0, 0)
-
-    local right = CreateGlowTexture(glow, GLOW_LEFT_TEXTURE)
-    right:SetPoint("TOPLEFT", topRight, "BOTTOMLEFT", 0, 0)
-    right:SetPoint("BOTTOMRIGHT", bottomRight, "TOPRIGHT", 0, 0)
-    right:SetTexCoord(1, 0, 0, 1)
 
     local pulse = glow:CreateAnimationGroup()
     pulse:SetLooping("BOUNCE")
@@ -144,23 +92,25 @@ local function CreateOverlay(list)
     overlay:SetScript("OnShow", StartGlow)
     overlay:SetScript("OnHide", StopGlow)
 
-    local background = overlay:CreateTexture(nil, "BACKGROUND")
+    local background = NS.Skins:CreateTexture(overlay, { geometryRoot = list.window, layer = "BACKGROUND" })
     background:SetAllPoints(overlay)
     background:SetColorTexture(0, 0, 0, BACKGROUND_ALPHA)
     overlay.background = background
 
-    local hoverBackground = overlay:CreateTexture(nil, "BACKGROUND", nil, 1)
+    local hoverBackground = NS.Skins:CreateTexture(overlay, {
+        geometryRoot = list.window, layer = "BACKGROUND", sublevel = 1,
+        colorToken = "accent", alpha = HOVER_BACKGROUND_ALPHA,
+    })
     hoverBackground:SetPoint("TOPLEFT", overlay, "TOPLEFT", HOVER_BACKGROUND_INSET, -HOVER_BACKGROUND_INSET)
     hoverBackground:SetPoint("BOTTOMRIGHT", overlay, "BOTTOMRIGHT", -HOVER_BACKGROUND_INSET, HOVER_BACKGROUND_INSET)
-    hoverBackground:SetColorTexture(ACCENT_COLOR_R, ACCENT_COLOR_G, ACCENT_COLOR_B, HOVER_BACKGROUND_ALPHA)
     hoverBackground:Hide()
     overlay.hoverBackground = hoverBackground
 
-    CreateGlow(overlay)
+    CreateGlow(overlay, list.window)
 
-    local text = overlay:CreateFontString(nil, "OVERLAY")
-    text:SetFont(NS.Media.GetPrimaryFont(), TEXT_SIZE, TEXT_FLAGS)
-    text:SetTextColor(ACCENT_COLOR_R, ACCENT_COLOR_G, ACCENT_COLOR_B)
+    local text = NS.Skins:CreateText(overlay, {
+        geometryRoot = list.window, fontSize = TEXT_SIZE, fontFlags = TEXT_FLAGS, colorToken = "accent",
+    })
     text:SetPoint("LEFT", overlay, "LEFT", TEXT_SIDE_PADDING, 0)
     text:SetPoint("RIGHT", overlay, "RIGHT", -TEXT_SIDE_PADDING, 0)
     text:SetJustifyH("CENTER")

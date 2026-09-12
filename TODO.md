@@ -6,12 +6,10 @@
 ## Current Feature Plan: Shared Skins
 
 - [PLAN.md](PLAN.md) tracks LibYvSkins development in a YvBags Libs submodule.
-  The pixel dividers and creation-first window foundation are implemented:
-  YvBags builds directly on library-owned window parts, without frame adapters.
-  Their in-game gates precede the remaining Modern control constructors,
-  Flat skin, and optional reload-bound EllesmereUI integration. Masque is
-  deferred; preserve its separate icon
-  ownership extension point without implementing an adapter yet.
+  Pixel dividers, creation-first windows, and Modern controls are implemented
+  without frame adapters. Phase 2 awaits in-game parity checks before Flat
+  skin/selection and optional reload-bound EllesmereUI integration. Masque is
+  deferred; preserve its separate icon ownership extension point.
 
 ## Future Appearance Settings
 

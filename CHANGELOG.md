@@ -63,6 +63,14 @@
 - Restored Mythic Keystones to their own prioritized category and gave keystone pins a stable identity across dungeon and level changes.
 
 ### Changed
+- Moved toolbar buttons, bank-view tabs, search, footers, scrollbars, item/bag
+  icons, and list/drop-overlay visuals into LibYvSkins constructors. Preserved
+  Modern sizing/spacing, selected-tab precedence, native banking actions, and
+  item interactions, with presentation-only refreshes for pooled visuals.
+- Added a public presentation contract to the owned LibPopupSlider copy and
+  integrated its scale popup through LibYvSkins without changing drag/value
+  behavior. Font refitting waits until dragging ends; older popup embeds retain
+  working Modern behavior and report their missing skinning capability.
 - Limited cursor-drop polling to visible lists while an item is held, with
   event-driven wakeups, one cursor read per update, and a reusable target
   location. Live stack validation and native combat-safe drops are unchanged.

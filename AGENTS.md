@@ -321,10 +321,22 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 
 - YvBags is a native creation-first LibYvSkins consumer. Create window shells
   with `NS.Skins:CreateWindow` and populate its `header`, `content`, and `footer`
-  parts. Use direct component factories as visual ownership moves into the
-  library; do not introduce YvBags existing-window adapters or part-discovery
-  maps. Keep raw native controls directly accessible and domain behavior,
+  parts. Use direct component factories for controls, scrollbars, icons, text,
+  accent regions, and drop glows; do not introduce existing-window adapters or
+  part-discovery maps. Keep raw native controls directly accessible and domain behavior,
   position/size/scale persistence, and item-button bridges addon-owned.
+- LibYvSkins components own generic Modern art and visual-state drawing.
+  Use tab handles for selection and icon handles for border color/visibility;
+  keep raw controls for values and native scripts. Do not restore competing
+  hover/selected atlases in addon refreshes. Semantic rarity, money, binding,
+  and lock colors/state remain addon-owned.
+- Bank footer actions compose Blizzard's original bank mixins/scripts on
+  library-created controls. Preserve native confirmation, money, reagent-CVar,
+  and disabled-tooltip behavior; do not replace these with custom transfers.
+- The scale popup uses `NS.Skins:CreatePopupSlider`, backed by the library's
+  explicit LibPopupSlider integration and its public presentation API. Keep
+  font fitting out of active drags. An older embed without that API remains a
+  working Modern popup but cannot participate in a complete skin transition.
 - Header, column, and new/pinned-section separators use LibYvSkins
   solid one-physical-pixel strokes, not stretched/rotated divider textures.
   Use physical-pixel insets for adjoining strokes so joins do not separate
@@ -337,14 +349,19 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
   no leading icon slot or separate divider. The addon owns group collapse and
   counts; the library owns bar/arrow state. Reset pooled header visibility,
   expansion, and text, and keep group rows out of pixel-divider refreshes.
-- Skin development is gated by `PLAN.md`. The pixel and canonical window
-  foundations are implemented; remaining Modern control factories and
-  Flat/EllesmereUI ownership/selection are not yet active.
+- Skin development is gated by `PLAN.md`. Modern construction is implemented
+  and awaiting Phase 2's in-game gate; Flat/EllesmereUI and selection are not
+  active. Presentation refreshes must retain values, focus, pooled visibility,
+  animation lifetime, and native input without rebuilding inventory/providers.
 - Use regular tertiary command buttons by default. Reserve small buttons for
   dense rows, tables, or genuinely constrained layouts.
 - Register shared media from the structured tables in `Media.lua`; do not duplicate texture, atlas, font, binding-icon, or accent definitions in consumers.
 - Access shared assets through `NS.Media` getters.
-- The accent color is currently centralized but static. `TODO.md` tracks making it user-configurable, so new accent-colored regions should use `NS.Media.GetAccentColor()` and remain compatible with a future live refresh.
+- The accent preference is still static. `Appearance.lua` supplies
+  `NS.Media.GetAccentColor()` to the skin context; create frame accents with
+  `colorToken = "accent"` so context refresh can recolor them in place. Shared
+  tooltips and Settings remain outside this skin scope. `TODO.md` tracks a
+  user-facing color preference.
 - Keep visual constants in the module that owns the visual. Future appearance settings should be able to override them without restructuring behavior.
 
 ## Change Workflow

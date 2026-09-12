@@ -61,10 +61,6 @@ local TEXTURE_LAYER_BACKGROUND = "BACKGROUND"
 local TEXTURE_LAYER_ARTWORK = "ARTWORK"
 local TEXTURE_LAYER_OVERLAY = "OVERLAY"
 
-local function GetPrimaryFont()
-    return NS.Media.GetPrimaryFont()
-end
-
 local function AddTooltipDivider(tooltip)
     if GameTooltip_AddBlankLineToTooltip then
         GameTooltip_AddBlankLineToTooltip(tooltip)
@@ -344,11 +340,11 @@ local function UpdateBagButton(button, slot)
     button.icon:SetAlpha(slot.isEquipped and FOOTER_BAG_BUTTON_FILLED_ALPHA or FOOTER_BAG_BUTTON_EMPTY_ALPHA)
 
     if slot.isReagentBag and slot.isEquipped then
-        button.border:SetVertexColor(FOOTER_BAG_BUTTON_REAGENT_BORDER_R, FOOTER_BAG_BUTTON_REAGENT_BORDER_G, FOOTER_BAG_BUTTON_REAGENT_BORDER_B, FOOTER_BAG_BUTTON_BORDER_ALPHA)
+        button.iconAppearance:SetBorderColor(FOOTER_BAG_BUTTON_REAGENT_BORDER_R, FOOTER_BAG_BUTTON_REAGENT_BORDER_G, FOOTER_BAG_BUTTON_REAGENT_BORDER_B, FOOTER_BAG_BUTTON_BORDER_ALPHA)
     elseif slot.isEquipped then
-        button.border:SetVertexColor(FOOTER_BAG_BUTTON_BORDER_R, FOOTER_BAG_BUTTON_BORDER_G, FOOTER_BAG_BUTTON_BORDER_B, FOOTER_BAG_BUTTON_BORDER_ALPHA)
+        button.iconAppearance:SetBorderColor(FOOTER_BAG_BUTTON_BORDER_R, FOOTER_BAG_BUTTON_BORDER_G, FOOTER_BAG_BUTTON_BORDER_B, FOOTER_BAG_BUTTON_BORDER_ALPHA)
     else
-        button.border:SetVertexColor(FOOTER_BAG_BUTTON_EMPTY_BORDER_R, FOOTER_BAG_BUTTON_EMPTY_BORDER_G, FOOTER_BAG_BUTTON_EMPTY_BORDER_B, FOOTER_BAG_BUTTON_EMPTY_BORDER_ALPHA)
+        button.iconAppearance:SetBorderColor(FOOTER_BAG_BUTTON_EMPTY_BORDER_R, FOOTER_BAG_BUTTON_EMPTY_BORDER_G, FOOTER_BAG_BUTTON_EMPTY_BORDER_B, FOOTER_BAG_BUTTON_EMPTY_BORDER_ALPHA)
     end
 
     button:Show()
@@ -370,27 +366,27 @@ function Footer.UpdateBagButtons(frame)
     end
 end
 
-local function CreateBagButton(parent, index)
+local function CreateBagButton(frame, parent, index)
     local button = CreateFrame(BUTTON_TYPE, nil, parent)
     button:SetSize(FOOTER_BAG_BUTTON_SIZE, FOOTER_BAG_BUTTON_SIZE)
     button:SetPoint("LEFT", parent, "LEFT", FOOTER_BAG_BUTTONS_X_OFFSET + ((index - 1) * (FOOTER_BAG_BUTTON_SIZE + FOOTER_BAG_BUTTON_GAP)), 0)
     button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     button:RegisterForDrag("LeftButton")
 
-    button.highlight = button:CreateTexture(nil, TEXTURE_LAYER_BACKGROUND)
+    button.highlight = NS.Skins:CreateTexture(button, {
+        geometryRoot = frame, layer = TEXTURE_LAYER_BACKGROUND,
+        colorToken = "accent", alpha = FOOTER_BAG_BUTTON_HIGHLIGHT_ALPHA,
+    })
     button.highlight:SetAllPoints(button)
-    button.highlight:SetColorTexture(FOOTER_BAG_BUTTON_REAGENT_BORDER_R, FOOTER_BAG_BUTTON_REAGENT_BORDER_G, FOOTER_BAG_BUTTON_REAGENT_BORDER_B, FOOTER_BAG_BUTTON_HIGHLIGHT_ALPHA)
     button.highlight:Hide()
 
-    button.icon = button:CreateTexture(nil, TEXTURE_LAYER_ARTWORK)
+    button.icon, button.iconAppearance = NS.Skins:CreateIcon(button, {
+        geometryRoot = frame, width = FOOTER_BAG_BUTTON_ICON_SIZE,
+        borderOutset = (FOOTER_BAG_BUTTON_BORDER_SIZE - FOOTER_BAG_BUTTON_ICON_SIZE) / 2,
+        layer = TEXTURE_LAYER_ARTWORK, borderLayer = TEXTURE_LAYER_OVERLAY,
+    })
     button.icon:SetPoint("CENTER", button, "CENTER", 0, 0)
     button.icon:SetSize(FOOTER_BAG_BUTTON_ICON_SIZE, FOOTER_BAG_BUTTON_ICON_SIZE)
-    button.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-
-    button.border = button:CreateTexture(nil, TEXTURE_LAYER_OVERLAY)
-    button.border:SetPoint("CENTER", button, "CENTER", 0, 0)
-    button.border:SetSize(FOOTER_BAG_BUTTON_BORDER_SIZE, FOOTER_BAG_BUTTON_BORDER_SIZE)
-    button.border:SetTexture(NS.Media.GetIconBorderTexture())
 
     button:SetScript("OnClick", OnBagButtonClick)
     button:SetScript("OnDragStart", OnBagButtonDragStart)
@@ -413,7 +409,7 @@ local function CreateBagButtons(frame, footer)
 
     local maxButtons = 1 + (NUM_BAG_SLOTS or 4) + (NUM_REAGENTBAG_SLOTS or 0)
     for index = 1, maxButtons do
-        frame.bagButtons[index] = CreateBagButton(footer, index)
+        frame.bagButtons[index] = CreateBagButton(frame, footer, index)
     end
 
     function frame:UpdateBagButtons()
@@ -444,8 +440,9 @@ function Footer.Create(frame)
     statsHoverFrame:SetScript("OnClick", SortBagsFromStatsDisplay)
     frame.statsHoverFrame = statsHoverFrame
 
-    local statsText = statsHoverFrame:CreateFontString(nil, FOOTER_FONT_LAYER)
-    statsText:SetFont(GetPrimaryFont(), FOOTER_TEXT_SIZE)
+    local statsText = NS.Skins:CreateText(statsHoverFrame, {
+        geometryRoot = frame, layer = FOOTER_FONT_LAYER, fontSize = FOOTER_TEXT_SIZE,
+    })
     statsText:SetTextColor(FOOTER_TEXT_COLOR_R, FOOTER_TEXT_COLOR_G, FOOTER_TEXT_COLOR_B)
     statsText:SetPoint("TOPLEFT", statsHoverFrame, "TOPLEFT", 0, FOOTER_TEXT_Y_OFFSET)
     statsText:SetPoint("BOTTOMRIGHT", statsHoverFrame, "BOTTOMRIGHT", 0, FOOTER_TEXT_Y_OFFSET)
@@ -462,8 +459,9 @@ function Footer.Create(frame)
     moneyHoverFrame:SetScript("OnLeave", HideMoneyTooltip)
     frame.moneyHoverFrame = moneyHoverFrame
 
-    local moneyText = moneyHoverFrame:CreateFontString(nil, FOOTER_FONT_LAYER)
-    moneyText:SetFont(GetPrimaryFont(), FOOTER_TEXT_SIZE)
+    local moneyText = NS.Skins:CreateText(moneyHoverFrame, {
+        geometryRoot = frame, layer = FOOTER_FONT_LAYER, fontSize = FOOTER_TEXT_SIZE,
+    })
     moneyText:SetTextColor(FOOTER_TEXT_COLOR_R, FOOTER_TEXT_COLOR_G, FOOTER_TEXT_COLOR_B)
     moneyText:SetPoint("TOPLEFT", moneyHoverFrame, "TOPLEFT", 0, FOOTER_TEXT_Y_OFFSET)
     moneyText:SetPoint("BOTTOMRIGHT", moneyHoverFrame, "BOTTOMRIGHT", 0, FOOTER_TEXT_Y_OFFSET)

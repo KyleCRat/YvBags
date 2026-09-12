@@ -1,28 +1,24 @@
 # LibYvSkins And YvBags Appearance Plan
 
-Status: approved, with a creation-first architecture. Phases 0, 1, and the
-user-directed frame-foundation refactor in Phase 1.5 are complete for the
-foundation checkpoint. The user confirmed the current Modern appearance and
-functionality in game. Pause here for focused bug fixes before continuing
-Phase 2. Remaining Modern control factories, skin selection, Flat/EUI
-restyling, and the first library release are still incomplete.
+Status: approved, with a creation-first architecture. Phases 0, 1, and 1.5
+passed their in-game foundation gates. Phase 2's Modern ownership implementation
+is complete and awaiting its in-game gate before Phase 3. Skin selection,
+Flat/EUI styling, and the first library release remain unimplemented.
 
-Current checkpoint (2026-09-12): LibYvSkins source is committed on `main` at
-`62e35d4`; YvBags integration is committed at `4ce44f2`, including the matching
-submodule pointer. Both worktrees were clean at verification. YvBags directly
-uses library-created window shells and separator factories; the addon-side
-separator wrapper and window/list registration map are removed. Lua 5.1
-library tests cover window construction/lifecycle, context isolation,
-geometry/clipping, pooled state, and mixed/equal-MINOR loading (19 tests
-passing); all 106 Lua files pass syntax checks, and TOC/embed paths and
-whitespace checks pass. The accepted in-game foundation check does not replace
-the broader regression matrix required after the remaining skin work.
+Phase 2 checkpoint (2026-09-12): YvBags now constructs toolbar, tab, search,
+footer, scrollbar, icon, text/accent, and drop-glow presentation through
+LibYvSkins. Native item bridges and banking actions remain authoritative.
+LibPopupSlider exposes an additive public presentation contract; its explicit
+library adapter preserves drag/value ownership. No LMS code, saved settings,
+release counters, or package pins change in this phase.
 
-Follow-up: group/category accordion headers now use a direct LibYvSkins
-expandable-header factory matching LMS's Modern tertiary bar and right-side
-arrow. No leading icon slot or separate category divider remains. Row heights,
-counts, and addon-owned collapse behavior are unchanged. This focused control
-conversion precedes the rest of Phase 2 and awaits in-game visual validation.
+The expanded Lua 5.1 library suite covers constructor/state contracts, native
+control access, semantic colors, pooling, two consumers, popup capability
+boundaries, and mixed/equal-MINOR loading (40 tests passing). All 118 Lua files
+pass syntax checks, and root/library whitespace checks pass. Temporary diagnostics exercise
+the actual popup implementation and YvBags footer construction with exported
+Blizzard bank mixins. These mock checks do not establish visual parity or
+secure in-game behavior. Changes are not committed or released by this work.
 
 ## Outcome And Scope
 
@@ -442,14 +438,15 @@ LMS continues to own Settings layout, fields, input commits, and callbacks.
 LibYvSkins owns appearance, not a replacement field/control-value abstraction.
 Do not alter LMS merely to apply the bag/bank skin.
 
-The scale popup remains LibPopupSlider-owned behavior. Use its supported
-presentation options and a declared surface adapter. RGM has a `showBorder`
-extension absent from YvBags' current embedded copy; reconcile that owned
-library change deliberately if required. Any additional visual-parts contract
-belongs upstream in that library, with its tests/version/package workflow,
-not an addon-side dependency on undocumented popup internals. The scale popup
-should be fully skinned to match whichever skin is selected, do not ignore just
-because it may require upstream changes to make functional.
+The scale popup remains LibPopupSlider-owned behavior. Phase 2 adds its public
+`GetVisualParts`, `IsInteracting`, and `SetFontAppearance` contract in the owned
+embedded copy, consumed by `Integrations/PopupSlider.lua`. Font fitting is
+deferred during an active drag. An older equal-MINOR popup embed retains its
+working Modern popup and reports unavailable styling through the context;
+Phase 3 must reject incomplete live skin transitions in that situation.
+Publish the popup contract with its own release workflow before shipping skins
+that depend on it. RGM's separate `showBorder` extension remains outside this
+phase; reconcile it if needed rather than relying on undocumented internals.
 
 ## Implementation Phases And Gates
 
@@ -523,22 +520,29 @@ does not imply the remaining control skins are done.
   header constructor, with native click/text access, visual expansion state,
   context-owned appearance, and pooled-state/load-order tests. Match LMS's
   Modern bar without leading icons or separate category dividers.
-- [ ] Implement the remaining concrete control factories and supported state
+- [x] Implement the remaining concrete control factories and supported state
   handles. Preserve independent layout and skin selection.
-- [ ] Move generic Modern assets/state drawing out of addon-owned controls.
+- [x] Move generic Modern assets/state drawing out of addon-owned controls.
   Build search, scale/close/resize presentation, tabs, footer controls, list
   accents/text, and icon surfaces through library constructors.
-- [ ] Remove competing hover/refresh atlas writers as components are converted.
+- [x] Remove competing hover/refresh atlas writers as components are converted.
   Preserve tab selection precedence, correct atlas families/outsets, disabled
   controls, and input focus behavior.
-- [ ] Establish a presentation-only refresh path for both windows and pooled
+- [x] Establish a presentation-only refresh path for both windows and pooled
   rows. Keep the old geometry/storage and all native banking actions intact.
-- [ ] Exercise the same window/control constructors in YvBags and the second
+- [x] Exercise the same window/control constructors in YvBags and the second
   library harness consumer; verify raw controls remain directly accessible.
 
-Gate: Modern matches the existing frame/portrait/header/footer appearance
+Gate pending: Modern matches the existing frame/portrait/header/footer appearance
 apart from Phase 1's deliberate divider change. Bank tab changes, cold icon
 loads, scale popup, and input interactions do not restore stray old art.
+
+Before Phase 3, check both windows after a reload: toolbar spacing and search
+focus/clear; selected/hovered tabs; footer icons and disabled cold-load states;
+Character/Warband Deposit All, reagent checkbox, withdraw/deposit dialogs;
+scale-popup dragging; scrolling, new-item glow, sorting/grouping, and native
+item use/drag/split/drop in and out of combat. No appearance selector is
+expected yet.
 
 ### Phase 3: Flat Skin, Compact Chrome, And Built-In Selection
 

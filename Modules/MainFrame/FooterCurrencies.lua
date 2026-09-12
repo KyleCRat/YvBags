@@ -16,10 +16,6 @@ local CURRENCY_BUTTON_GAP = 8
 -- Icon visuals
 local CURRENCY_ICON_SIZE = 18
 local CURRENCY_ICON_BORDER_SIZE = 24
-local CURRENCY_ICON_TEX_COORD_LEFT = 0.08
-local CURRENCY_ICON_TEX_COORD_RIGHT = 0.92
-local CURRENCY_ICON_TEX_COORD_TOP = 0.08
-local CURRENCY_ICON_TEX_COORD_BOTTOM = 0.92
 local CURRENCY_ICON_BORDER_ALPHA = 0.95
 
 -- Text
@@ -41,10 +37,6 @@ local TEXTURE_LAYER_ARTWORK = "ARTWORK"
 local TEXTURE_LAYER_OVERLAY = "OVERLAY"
 
 -- Formatting and tracked-currency data
-local function GetPrimaryFont()
-    return NS.Media.GetPrimaryFont()
-end
-
 local function FormatLargeAmount(amount)
     if AbbreviateNumbers then
         return AbbreviateNumbers(amount or 0)
@@ -274,7 +266,7 @@ local function UpdateCurrencyButton(button, currency, width)
     button.currency = currency
     button:SetWidth(width)
     button.icon:SetTexture(currency.iconFileID)
-    button.border:SetVertexColor(r, g, b, CURRENCY_ICON_BORDER_ALPHA)
+    button.iconAppearance:SetBorderColor(r, g, b, CURRENCY_ICON_BORDER_ALPHA)
     button:Show()
 end
 
@@ -283,28 +275,27 @@ local function HideCurrencyButton(button)
     button:Hide()
 end
 
-local function CreateCurrencyButton(parent)
+local function CreateCurrencyButton(frame, parent)
     local button = CreateFrame(BUTTON_TYPE, nil, parent)
     button:SetSize(CURRENCY_BUTTON_MIN_WIDTH, CURRENCY_BUTTON_HEIGHT)
     button:RegisterForClicks("LeftButtonUp", "MiddleButtonUp")
 
-    button.countText = button:CreateFontString(nil, CURRENCY_FONT_LAYER)
-    button.countText:SetFont(GetPrimaryFont(), CURRENCY_TEXT_SIZE)
+    button.countText = NS.Skins:CreateText(button, {
+        geometryRoot = frame, layer = CURRENCY_FONT_LAYER, fontSize = CURRENCY_TEXT_SIZE,
+    })
     button.countText:SetTextColor(CURRENCY_TEXT_COLOR_R, CURRENCY_TEXT_COLOR_G, CURRENCY_TEXT_COLOR_B)
     button.countText:SetPoint("TOPLEFT", button, "TOPLEFT", 0, CURRENCY_TEXT_Y_OFFSET)
     button.countText:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -(CURRENCY_ICON_BORDER_SIZE + CURRENCY_BUTTON_TEXT_ICON_GAP), CURRENCY_TEXT_Y_OFFSET)
     button.countText:SetJustifyH("RIGHT")
     button.countText:SetJustifyV("MIDDLE")
 
-    button.icon = button:CreateTexture(nil, TEXTURE_LAYER_ARTWORK)
+    button.icon, button.iconAppearance = NS.Skins:CreateIcon(button, {
+        geometryRoot = frame, width = CURRENCY_ICON_SIZE,
+        borderOutset = (CURRENCY_ICON_BORDER_SIZE - CURRENCY_ICON_SIZE) / 2,
+        layer = TEXTURE_LAYER_ARTWORK, borderLayer = TEXTURE_LAYER_OVERLAY,
+    })
     button.icon:SetPoint("RIGHT", button, "RIGHT", -3, 0)
     button.icon:SetSize(CURRENCY_ICON_SIZE, CURRENCY_ICON_SIZE)
-    button.icon:SetTexCoord(CURRENCY_ICON_TEX_COORD_LEFT, CURRENCY_ICON_TEX_COORD_RIGHT, CURRENCY_ICON_TEX_COORD_TOP, CURRENCY_ICON_TEX_COORD_BOTTOM)
-
-    button.border = button:CreateTexture(nil, TEXTURE_LAYER_OVERLAY)
-    button.border:SetPoint("CENTER", button.icon, "CENTER", 0, 0)
-    button.border:SetSize(CURRENCY_ICON_BORDER_SIZE, CURRENCY_ICON_BORDER_SIZE)
-    button.border:SetTexture(NS.Media.GetIconBorderTexture())
 
     button:SetScript("OnEnter", OnCurrencyEnter)
     button:SetScript("OnLeave", OnCurrencyLeave)
@@ -373,7 +364,7 @@ function FooterCurrencies.Create(frame, footer, leftAnchor, rightAnchor)
 
     frame.currencyButtons = {}
     for index = 1, CURRENCY_BUTTON_POOL_SIZE do
-        frame.currencyButtons[index] = CreateCurrencyButton(container)
+        frame.currencyButtons[index] = CreateCurrencyButton(frame, container)
     end
 
     container:SetScript("OnSizeChanged", function()

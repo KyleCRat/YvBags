@@ -16,11 +16,6 @@ local FRAME_PORTRAIT =
     "Interface\\Icons\\INV_12_Profession_Tailoring_ReagentBag_Violet"
 local TYPE_BUTTON_HEIGHT = 28
 local TYPE_BUTTON_TEXT_SIZE = 13
-local TYPE_BUTTON_NORMAL_ATLAS = "common-button-tertiary-normal"
-local TYPE_BUTTON_HOVER_ATLAS = "common-button-tertiary-hover"
-local TYPE_BUTTON_PRESSED_ATLAS = "common-button-tertiary-pressed"
-local TYPE_BUTTON_SELECTED_ATLAS = "common-button-tertiary-selected"
-local TYPE_BUTTON_SELECTED_OUTSET = 3
 local EMPTY_ITEMS = {}
 
 local LOCKED_MESSAGES = {
@@ -169,112 +164,17 @@ local function CreateContent(frame)
     })
 end
 
-local function CreateTypeButtonTexture(button, layer, atlas, outset)
-    local texture = button:CreateTexture(nil, layer)
-    if outset then
-        texture:SetPoint(
-            "TOPLEFT",
-            button,
-            "TOPLEFT",
-            -outset,
-            outset
-        )
-        texture:SetPoint(
-            "BOTTOMRIGHT",
-            button,
-            "BOTTOMRIGHT",
-            outset,
-            -outset
-        )
-    else
-        texture:SetAllPoints(button)
-    end
-    texture:SetAtlas(atlas, false)
-    return texture
-end
-
-local function RefreshTypeButtonInteraction(button)
-    local canActivate = not button.isSelected
-    button.hoverTexture:SetShown(
-        canActivate
-            and button.isHovered == true
-            and button.isPressed ~= true
-    )
-    button.pressedTexture:SetShown(
-        canActivate and button.isPressed == true
-    )
-end
-
 local function RefreshTypeButton(button, activeBankType)
-    local selected = button.bankType == activeBankType
-    button.isSelected = selected
-    button.selectedTexture:SetShown(selected)
-    button.normalTexture:SetShown(not selected)
-    button.text:SetTextColor(
-        selected and 1 or 0.92,
-        selected and 0.82 or 0.92,
-        selected and 0 or 0.92
-    )
-    RefreshTypeButtonInteraction(button)
+    button.appearance:SetSelected(button.bankType == activeBankType)
 end
 
 local function CreateTypeButton(frame, text, bankType, width)
-    local button = CreateFrame("Button", nil, frame.header)
-    button:SetSize(width, TYPE_BUTTON_HEIGHT)
-    button:RegisterForClicks("LeftButtonUp")
+    local button, appearance = NS.Skins:CreateTab(frame.header, {
+        geometryRoot = frame, width = width, height = TYPE_BUTTON_HEIGHT,
+        text = text, fontSize = TYPE_BUTTON_TEXT_SIZE, fontFlags = "OUTLINE",
+    })
+    button.appearance = appearance
     button.bankType = bankType
-
-    button.normalTexture = CreateTypeButtonTexture(
-        button,
-        "BACKGROUND",
-        TYPE_BUTTON_NORMAL_ATLAS
-    )
-    button.selectedTexture = CreateTypeButtonTexture(
-        button,
-        "BACKGROUND",
-        TYPE_BUTTON_SELECTED_ATLAS,
-        TYPE_BUTTON_SELECTED_OUTSET
-    )
-    button.hoverTexture = CreateTypeButtonTexture(
-        button,
-        "BORDER",
-        TYPE_BUTTON_HOVER_ATLAS
-    )
-    button.pressedTexture = CreateTypeButtonTexture(
-        button,
-        "BORDER",
-        TYPE_BUTTON_PRESSED_ATLAS
-    )
-    button.selectedTexture:Hide()
-    button.hoverTexture:Hide()
-    button.pressedTexture:Hide()
-
-    local label = button:CreateFontString(nil, "OVERLAY")
-    label:SetPoint("CENTER", 0, 1)
-    label:SetFont(NS.Media.GetPrimaryFont(), TYPE_BUTTON_TEXT_SIZE, "OUTLINE")
-    label:SetText(text)
-    button.text = label
-
-    button:SetScript("OnEnter", function(self)
-        self.isHovered = true
-        RefreshTypeButtonInteraction(self)
-    end)
-    button:SetScript("OnLeave", function(self)
-        self.isHovered = false
-        self.isPressed = false
-        RefreshTypeButtonInteraction(self)
-    end)
-    button:SetScript("OnMouseDown", function(self, mouseButton)
-        if mouseButton == "LeftButton" then
-            self.isPressed = true
-            RefreshTypeButtonInteraction(self)
-        end
-    end)
-    button:SetScript("OnMouseUp", function(self)
-        self.isPressed = false
-        self.isHovered = self:IsMouseOver()
-        RefreshTypeButtonInteraction(self)
-    end)
     button:SetScript("OnClick", function(self)
         frame:SetBankType(self.bankType)
     end)

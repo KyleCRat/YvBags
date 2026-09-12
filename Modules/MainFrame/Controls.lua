@@ -12,11 +12,6 @@ local ADDON_NAME = NS.ADDON_NAME
 -- Shared square header buttons
 local SQUARE_BUTTON_SIZE = 28
 local SQUARE_BUTTON_ICON_SIZE = 18
-local SQUARE_BUTTON_DISABLED_ICON_ALPHA = 0.5
-local SQUARE_BUTTON_NORMAL_ATLAS = "common-button-tertiary-square-normal"
-local SQUARE_BUTTON_HOVER_ATLAS = "common-button-tertiary-square-hover"
-local SQUARE_BUTTON_PRESSED_ATLAS = "common-button-tertiary-square-pressed"
-local SQUARE_BUTTON_DISABLED_ATLAS = "common-button-tertiary-square-disabled"
 local SUBHEADER_FRAME_LEVEL_OFFSET = 8
 
 -- Scale control
@@ -45,68 +40,6 @@ local function ShowTooltip(button, title, description)
     GameTooltip:Show()
 end
 
-local function CreateSquareButtonTexture(button, layer, atlas)
-    local texture = button:CreateTexture(nil, layer)
-    texture:SetAllPoints(button)
-    texture:SetAtlas(atlas, false)
-    return texture
-end
-
-local function UpdateSquareButtonVisualState(button)
-    local enabled = button:IsEnabled()
-    button.disabledTexture:SetShown(not enabled)
-    button.pressedTexture:SetShown(enabled and button.isPressed == true)
-    button.hoverTexture:SetShown(enabled and button.isHovered == true and button.isPressed ~= true)
-    button.icon:SetAlpha(enabled and 1 or SQUARE_BUTTON_DISABLED_ICON_ALPHA)
-end
-
-local function CreateSquareIconButton(frame, iconTexture)
-    local button = CreateFrame("Button", nil, frame.header)
-    button:SetSize(SQUARE_BUTTON_SIZE, SQUARE_BUTTON_SIZE)
-    button:SetFrameLevel(frame:GetFrameLevel() + SUBHEADER_FRAME_LEVEL_OFFSET)
-    button:EnableMouse(true)
-    button:SetHitRectInsets(0, 0, 0, 0)
-
-    button.normalTexture = CreateSquareButtonTexture(button, "BACKGROUND", SQUARE_BUTTON_NORMAL_ATLAS)
-    button.hoverTexture = CreateSquareButtonTexture(button, "BORDER", SQUARE_BUTTON_HOVER_ATLAS)
-    button.pressedTexture = CreateSquareButtonTexture(button, "BORDER", SQUARE_BUTTON_PRESSED_ATLAS)
-    button.disabledTexture = CreateSquareButtonTexture(button, "BORDER", SQUARE_BUTTON_DISABLED_ATLAS)
-    button.hoverTexture:Hide()
-    button.pressedTexture:Hide()
-    button.disabledTexture:Hide()
-
-    local icon = button:CreateTexture(nil, "ARTWORK")
-    icon:SetPoint("CENTER", button, "CENTER", 0, 0)
-    icon:SetSize(SQUARE_BUTTON_ICON_SIZE, SQUARE_BUTTON_ICON_SIZE)
-    icon:SetTexture(iconTexture)
-    button.icon = icon
-
-    button:SetScript("OnEnter", function(self)
-        self.isHovered = true
-        UpdateSquareButtonVisualState(self)
-    end)
-    button:SetScript("OnLeave", function(self)
-        self.isHovered = false
-        self.isPressed = false
-        UpdateSquareButtonVisualState(self)
-        GameTooltip:Hide()
-    end)
-    button:SetScript("OnMouseDown", function(self, mouseButton)
-        if mouseButton == "LeftButton" then
-            self.isPressed = true
-            UpdateSquareButtonVisualState(self)
-        end
-    end)
-    button:SetScript("OnMouseUp", function(self)
-        self.isPressed = false
-        self.isHovered = self:IsMouseOver()
-        UpdateSquareButtonVisualState(self)
-    end)
-    button:SetScript("OnEnable", UpdateSquareButtonVisualState)
-    button:SetScript("OnDisable", UpdateSquareButtonVisualState)
-    return button
-end
-
 function Controls.RefreshScale(frame, scale)
     if frame.scalePopup then
         frame.scalePopup:SetValue(scale * 100, true)
@@ -117,7 +50,13 @@ function Controls.CreateScaleButton(frame, options)
     options = options or {}
     local geometry = options.geometry or Geometry
     local frameLabel = options.frameLabel or ADDON_NAME
-    local button = CreateSquareIconButton(frame, NS.Media.GetScaleTexture())
+    local button = NS.Skins:CreateButton(frame.header, {
+        geometryRoot = frame, variant = "square",
+        width = SQUARE_BUTTON_SIZE, height = SQUARE_BUTTON_SIZE,
+        icon = NS.Media.GetScaleTexture(), iconWidth = SQUARE_BUTTON_ICON_SIZE,
+    })
+    button:SetFrameLevel(frame:GetFrameLevel() + SUBHEADER_FRAME_LEVEL_OFFSET)
+    button:HookScript("OnLeave", function() GameTooltip:Hide() end)
     button:SetPoint("LEFT", frame.settingsButton, "RIGHT", Controls.SubheaderControlGap, 0)
     frame.scaleButton = button
 
@@ -129,23 +68,22 @@ function Controls.CreateScaleButton(frame, options)
         )
     end)
 
-    local LibPopupSlider = LibStub("LibPopupSlider-1.0", true)
-    if LibPopupSlider then
-        local popup = LibPopupSlider:Create(button, {
-            minValue = SCALE_MIN_PERCENT,
-            maxValue = SCALE_MAX_PERCENT,
-            step = SCALE_STEP_PERCENT,
-            label = "Scale",
-            formatValue = FormatScalePercent,
-            onValueChanged = function(value)
-                geometry.SetScale(value / 100)
-            end,
-            sliderHeight = SCALE_POPUP_HEIGHT,
-            popupWidth = SCALE_POPUP_WIDTH,
-            font = NS.Media.GetPrimaryFont(),
-            fontFlags = SCALE_POPUP_FONT_FLAGS,
-            fontSize = SCALE_POPUP_FONT_SIZE,
-        })
+    local popup = NS.Skins:CreatePopupSlider(button, {
+        minValue = SCALE_MIN_PERCENT,
+        maxValue = SCALE_MAX_PERCENT,
+        step = SCALE_STEP_PERCENT,
+        label = "Scale",
+        formatValue = FormatScalePercent,
+        onValueChanged = function(value)
+            geometry.SetScale(value / 100)
+        end,
+        sliderHeight = SCALE_POPUP_HEIGHT,
+        popupWidth = SCALE_POPUP_WIDTH,
+        font = NS.Media.GetPrimaryFont(),
+        fontFlags = SCALE_POPUP_FONT_FLAGS,
+        fontSize = SCALE_POPUP_FONT_SIZE,
+    })
+    if popup then
         popup:SetValue(geometry.GetSavedScale() * 100, true)
         frame.scalePopup = popup
     else
@@ -155,7 +93,13 @@ end
 
 function Controls.CreateSettingsButton(frame, options)
     options = options or {}
-    local button = CreateSquareIconButton(frame, NS.Media.GetSettingsTexture())
+    local button = NS.Skins:CreateButton(frame.header, {
+        geometryRoot = frame, variant = "square",
+        width = SQUARE_BUTTON_SIZE, height = SQUARE_BUTTON_SIZE,
+        icon = NS.Media.GetSettingsTexture(), iconWidth = SQUARE_BUTTON_ICON_SIZE,
+    })
+    button:SetFrameLevel(frame:GetFrameLevel() + SUBHEADER_FRAME_LEVEL_OFFSET)
+    button:HookScript("OnLeave", function() GameTooltip:Hide() end)
     button:SetPoint(
         "TOPLEFT",
         frame.header,

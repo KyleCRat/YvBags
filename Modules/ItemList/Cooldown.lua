@@ -208,8 +208,9 @@ function Cooldown.ClearCache()
 end
 
 function Cooldown.CreateShade(row)
-    local shade = row:CreateTexture(nil, SHADE_LAYER)
-    shade:SetDrawLayer(SHADE_LAYER, SHADE_SUBLEVEL)
+    local shade = NS.Skins:CreateTexture(row, {
+        geometryRoot = row.list.window, layer = SHADE_LAYER, sublevel = SHADE_SUBLEVEL,
+    })
     shade:SetColorTexture(0, 0, 0, SHADE_ALPHA)
     shade:Hide()
     row.cooldownShade = shade

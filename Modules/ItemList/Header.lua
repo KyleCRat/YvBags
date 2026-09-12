@@ -11,7 +11,6 @@ local ListSettings = NS.ItemListSettings
 local ListModel = NS.ItemListModel
 local Layout = NS.ItemListLayout
 local Media = NS.Media
-local ACCENT_COLOR_R, ACCENT_COLOR_G, ACCENT_COLOR_B = Media.GetAccentColor()
 
 -- Text, icons, and dividers
 local HEADER_TEXT_SIZE = 16
@@ -44,10 +43,6 @@ local NO_SECONDARY_SORT_LABEL = "None"
 local ASCENDING_LABEL = "Ascending"
 local DESCENDING_LABEL = "Descending"
 
-local function GetPrimaryFont()
-    return Media.GetPrimaryFont()
-end
-
 local function GetHeaderText(column)
     return column.label or ""
 end
@@ -58,31 +53,6 @@ end
 
 local function HasHeaderIcon(column)
     return column.headerAtlas or column.headerTexture
-end
-
-local function ApplyHeaderIcon(button)
-    local icon = button.headerIcon
-    local column = button.column
-    if not icon or not HasHeaderIcon(column) then
-        return
-    end
-
-    if column.headerAtlas then
-        icon:SetAtlas(column.headerAtlas, false)
-    else
-        icon:SetTexture(column.headerTexture)
-        icon:SetTexCoord(0, 1, 0, 1)
-    end
-
-    local color = column.headerIconColor
-    if color then
-        icon:SetVertexColor(color.r, color.g, color.b, color.a or 1)
-    else
-        icon:SetVertexColor(1, 1, 1, 1)
-    end
-
-    icon:SetSize(GetHeaderIconSize(column), GetHeaderIconSize(column))
-    icon:Show()
 end
 
 local function GetHeaderTooltipTitle(column)
@@ -391,15 +361,17 @@ local function CreateSeparator(parent, xOffset, list)
     separator.list = list
     separator.UpdateVisualState = UpdateSeparatorVisualState
 
-    local hoverTexture = separator:CreateTexture(nil, "BACKGROUND")
+    local hoverTexture = NS.Skins:CreateTexture(separator, {
+        geometryRoot = list.window, layer = "BACKGROUND", colorToken = "accent", alpha = HEADER_SEPARATOR_HOVER_ALPHA,
+    })
     hoverTexture:SetAllPoints(separator)
-    hoverTexture:SetColorTexture(ACCENT_COLOR_R, ACCENT_COLOR_G, ACCENT_COLOR_B, HEADER_SEPARATOR_HOVER_ALPHA)
     hoverTexture:Hide()
     separator.hoverTexture = hoverTexture
 
-    local pressedTexture = separator:CreateTexture(nil, "BACKGROUND")
+    local pressedTexture = NS.Skins:CreateTexture(separator, {
+        geometryRoot = list.window, layer = "BACKGROUND", colorToken = "accent", alpha = HEADER_SEPARATOR_PRESSED_ALPHA,
+    })
     pressedTexture:SetAllPoints(separator)
-    pressedTexture:SetColorTexture(ACCENT_COLOR_R, ACCENT_COLOR_G, ACCENT_COLOR_B, HEADER_SEPARATOR_PRESSED_ALPHA)
     pressedTexture:Hide()
     separator.pressedTexture = pressedTexture
 
@@ -544,21 +516,25 @@ function Header.Create(parent, list)
         -- Display-only headers still support dragging and context actions.
         button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 
-        local hoverTexture = button:CreateTexture(nil, "BACKGROUND", nil, -7)
+        local hoverTexture = NS.Skins:CreateTexture(button, {
+            geometryRoot = list.window, layer = "BACKGROUND", sublevel = -7,
+            colorToken = "accent", alpha = HEADER_HOVER_ALPHA,
+        })
         hoverTexture:SetAllPoints(button)
-        hoverTexture:SetColorTexture(ACCENT_COLOR_R, ACCENT_COLOR_G, ACCENT_COLOR_B, HEADER_HOVER_ALPHA)
         hoverTexture:Hide()
         button.hoverTexture = hoverTexture
 
-        local pressedTexture = button:CreateTexture(nil, "BACKGROUND", nil, -6)
+        local pressedTexture = NS.Skins:CreateTexture(button, {
+            geometryRoot = list.window, layer = "BACKGROUND", sublevel = -6,
+            colorToken = "accent", alpha = HEADER_PRESSED_ALPHA,
+        })
         pressedTexture:SetAllPoints(button)
-        pressedTexture:SetColorTexture(ACCENT_COLOR_R, ACCENT_COLOR_G, ACCENT_COLOR_B, HEADER_PRESSED_ALPHA)
         pressedTexture:Hide()
         button.pressedTexture = pressedTexture
 
-        local text = button:CreateFontString(nil, "OVERLAY")
-        text:SetFont(GetPrimaryFont(), HEADER_TEXT_SIZE)
-        text:SetTextColor(ACCENT_COLOR_R, ACCENT_COLOR_G, ACCENT_COLOR_B)
+        local text = NS.Skins:CreateText(button, {
+            geometryRoot = list.window, fontSize = HEADER_TEXT_SIZE, colorToken = "accent",
+        })
         text:SetAllPoints(button)
         text:SetJustifyH("CENTER")
         text:SetJustifyV("MIDDLE")
@@ -568,15 +544,22 @@ function Header.Create(parent, list)
         button.text = text
 
         if HasHeaderIcon(column) then
-            button.headerIcon = button:CreateTexture(nil, "OVERLAY")
+            button.headerIcon = NS.Skins:CreateTexture(button, {
+                geometryRoot = list.window, layer = "OVERLAY",
+                width = GetHeaderIconSize(column), height = GetHeaderIconSize(column),
+                atlas = column.headerAtlas, texture = column.headerTexture, colorToken = column.headerIconColorToken,
+            })
             button.headerIcon:SetPoint("CENTER", button, "CENTER", 0, 0)
-            ApplyHeaderIcon(button)
+            local color = column.headerIconColor
+            if color then
+                button.headerIcon:SetVertexColor(color.r, color.g, color.b, color.a or 1)
+            end
         end
 
-        local sortIcon = button:CreateTexture(nil, "OVERLAY")
-        sortIcon:SetTexture(Media.GetSortArrowTexture())
+        local sortIcon = NS.Skins:CreateTexture(button, {
+            geometryRoot = list.window, layer = "OVERLAY", texture = Media.GetSortArrowTexture(), colorToken = "accent",
+        })
         sortIcon:SetSize(HEADER_SORT_ICON_SIZE, HEADER_SORT_ICON_SIZE)
-        sortIcon:SetVertexColor(ACCENT_COLOR_R, ACCENT_COLOR_G, ACCENT_COLOR_B)
         sortIcon:Hide()
         button.sortIcon = sortIcon
 

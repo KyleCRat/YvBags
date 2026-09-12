@@ -16,7 +16,6 @@ local ListSettings = NS.ItemListSettings
 local SearchBox = NS.ItemListSearchBox
 
 local SCROLL_BOX_TEMPLATE = "WowScrollBoxList"
-local SCROLL_BAR_TEMPLATE = "MinimalScrollBar"
 local ITEM_ROW_FRAME_TYPE = "Frame"
 -- A distinct native type keeps dividers out of the protected item-row pool.
 local DIVIDER_ROW_FRAME_TYPE = "EventFrame"
@@ -454,8 +453,7 @@ local function PrewarmItemRows(list)
 end
 
 local function CreateEmptyText(list)
-    local emptyText = list.frame:CreateFontString(nil, "OVERLAY")
-    emptyText:SetFont(NS.Media.GetPrimaryFont(), EMPTY_TEXT_SIZE)
+    local emptyText = NS.Skins:CreateText(list.frame, { geometryRoot = list.window, fontSize = EMPTY_TEXT_SIZE })
     emptyText:SetTextColor(EMPTY_TEXT_COLOR_R, EMPTY_TEXT_COLOR_G, EMPTY_TEXT_COLOR_B)
     emptyText:SetPoint("CENTER", list.scrollBox, "CENTER", 0, 0)
     emptyText:SetText(list.context.emptyText or DEFAULT_EMPTY_LIST_TEXT)
@@ -501,7 +499,7 @@ function ItemList.Create(parent, context)
     scrollBox:SetClipsChildren(true)
     list.scrollBox = scrollBox
 
-    local scrollBar = CreateFrame("EventFrame", nil, frame, SCROLL_BAR_TEMPLATE)
+    local scrollBar = NS.Skins:CreateScrollBar(frame, { geometryRoot = list.window })
     Layout.PositionScrollBar(scrollBar, scrollBox)
     list.scrollBar = scrollBar
 
