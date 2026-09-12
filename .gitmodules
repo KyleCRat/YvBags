@@ -14,3 +14,7 @@
 	path = Libs/LibYvSkins-1.0
 	url = git@github.com:KyleCRat/LibYvSkins.git
 	branch = main
+[submodule "Libs/LibPopupSlider-1.0"]
+	path = Libs/LibPopupSlider-1.0
+	url = git@github.com:KyleCRat/LibPopupSlider.git
+	branch = main

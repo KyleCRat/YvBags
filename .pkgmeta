@@ -14,6 +14,9 @@ externals:
   Libs/LibSimpleDBProfiles-1.0:
     url: https://github.com/KyleCRat/LibSimpleDBProfiles.git
     tag: 1.0.0
+  Libs/LibPopupSlider-1.0:
+    url: https://github.com/KyleCRat/LibPopupSlider.git
+    tag: 1.2.0
 
 ignore:
   - .pkgmeta
@@ -27,6 +30,7 @@ ignore:
   - "Libs/LibSimpleDB-2.0/tests"
   - "Libs/LibSimpleDBProfiles-1.0/tests"
   - "Libs/LibModernSettings-1.0/tests"
+  - "Libs/LibPopupSlider-1.0/tests"
   - "Libs/LibYvSkins-1.0/tests"
   - "Libs/LibYvSkins-1.0/examples"
   - "*.afphoto"
