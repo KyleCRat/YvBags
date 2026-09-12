@@ -1,20 +1,22 @@
 # LibYvSkins And YvBags Appearance Plan
 
-Status: approved, with a creation-first architecture. Phase 0 and Phase 1 are
-implemented, and the user-directed frame-foundation refactor is implemented
-as Phase 1.5 below. The pixel corrections and new window construction await
-in-game validation before broader control restyling. No skin selector,
-Flat/EUI restyling, or library release is active yet.
+Status: approved, with a creation-first architecture. Phases 0, 1, and the
+user-directed frame-foundation refactor in Phase 1.5 are complete for the
+foundation checkpoint. The user confirmed the current Modern appearance and
+functionality in game. Pause here for focused bug fixes before continuing
+Phase 2. Remaining Modern control factories, skin selection, Flat/EUI
+restyling, and the first library release are still incomplete.
 
-Current checkpoint (2026-09-12): the submodule is registered on `main` at the
-published bootstrap commit `816ed1e`. Uncommitted library source and YvBags
-integration now load from this submodule. YvBags directly uses library-created
-window shells and separator factories; the addon-side separator wrapper and
-window/list registration map are removed. Lua 5.1 library tests cover window
-construction/lifecycle, context isolation, geometry/clipping, pooled state,
-and mixed/equal-MINOR loading (19 tests passing); all 106 Lua files pass syntax
-checks, and TOC/embed paths and whitespace checks pass. Client visual/combat
-validation pass.
+Current checkpoint (2026-09-12): LibYvSkins source is committed on `main` at
+`62e35d4`; YvBags integration is committed at `4ce44f2`, including the matching
+submodule pointer. Both worktrees were clean at verification. YvBags directly
+uses library-created window shells and separator factories; the addon-side
+separator wrapper and window/list registration map are removed. Lua 5.1
+library tests cover window construction/lifecycle, context isolation,
+geometry/clipping, pooled state, and mixed/equal-MINOR loading (19 tests
+passing); all 106 Lua files pass syntax checks, and TOC/embed paths and
+whitespace checks pass. The accepted in-game foundation check does not replace
+the broader regression matrix required after the remaining skin work.
 
 ## Outcome And Scope
 
@@ -122,8 +124,9 @@ hovered, pressed, focused, disabled, and disabled-checked states distinguishable
 
 ## Inspected Baseline
 
-- At planning time LibYvSkins had no remote refs. Bootstrap is now complete:
-  local and published `main` point to `816ed1e` (`Initialize LibYvSkins`).
+- At planning time LibYvSkins had no remote refs. The user bootstrapped and
+  published `main` at `816ed1e`; the committed implementation checkpoint above
+  supersedes that initial empty commit.
 - Existing sibling reference: RaidGroupManager `bee6287`, especially
   `UI/PixelPerfect.lua`, `UI/Widgets.lua`, and `UI/MainFrame.lua`.
 - Blizzard code export: Retail `12.1.0.69497` (`03b6f28`). The supplemental
@@ -457,9 +460,9 @@ because it may require upstream changes to make functional.
   for two independent consumers, not a broad speculative widget toolkit.
 - [x] Add mixed-copy tests before expanding the public API.
 
-Gate: valid committed library HEAD available for the submodule; loader and
-context-isolation tests pass; no duplicate registrations on mixed-copy loading.
-Initial commits/pushes require the user's explicit Git authorization.
+Gate passed (2026-09-12): library source is committed and YvBags records the
+matching gitlink. Loader, context-isolation, and mixed-copy tests pass without
+duplicate registrations.
 
 ### Phase 1: Pixel Primitives And Existing List Dividers
 
@@ -474,12 +477,14 @@ Initial commits/pushes require the user's explicit Git authorization.
 
 Initial in-game review found a header join gap at 125%+ and premature header
 clipping at the scrollbar. Physical-pixel join insets and full-width header
-bounds are implemented; recheck those fixes before approving this gate.
+bounds are implemented and included in the accepted Modern foundation.
 
-Gate (pending in game): verify crisp 1px strokes in Modern at 50%, 75%, 100%, 125%, and 150%
-frame scales, multiple UI scales, and 1080p/1440p/4K where available. Test drag,
-resize, reload, smooth scrolling, clipping, and header interactions. No overall
-skin/layout change yet. Stop for visual approval before broad restyling.
+Gate passed (2026-09-12): the user confirmed the current Modern appearance and
+functionality. Retain regression coverage for crisp 1px strokes at 50%, 75%,
+100%, 125%, and 150% frame scales, multiple UI scales, and 1080p/1440p/4K where
+available, plus drag, resize, reload, smooth scrolling, clipping, and header
+interactions. The checkpoint confirmation is not a claim that every display
+combination has been tested.
 
 ### Phase 1.5: Creation-First Window Foundation
 
@@ -496,9 +501,11 @@ User-directed architecture update before continuing broader skin work:
   close/resize behavior with consumer-owned persistence callbacks.
 - [x] Add constructor, geometry/lifecycle, raw-control, and mixed-copy tests.
 
-Gate: verify the current Modern appearance, open/close, move/resize/scale,
-toolbar interactions, footer alignment, bank switching, and pixel corrections
-in game. This foundation does not imply the remaining control skins are done.
+Gate passed (2026-09-12): the user confirmed the current Modern appearance and
+functionality after the creation-first refactor. Preserve open/close,
+move/resize/scale, toolbar interactions, footer alignment, bank switching, and
+pixel corrections as regression checks for subsequent work. This foundation
+does not imply the remaining control skins are done.
 
 ### Phase 2: Modern Ownership And Window/Component Layer
 
