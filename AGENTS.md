@@ -325,7 +325,7 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
   accent regions, and drop glows; do not introduce existing-window adapters or
   part-discovery maps. Keep raw native controls directly accessible and domain behavior,
   position/size/scale persistence, and item-button bridges addon-owned.
-- LibYvSkins components own generic Modern art and visual-state drawing.
+- LibYvSkins components own generic Modern/Flat art and visual-state drawing.
   Use tab handles for selection and icon handles for border color/visibility;
   keep raw controls for values and native scripts. Do not restore competing
   hover/selected atlases in addon refreshes. Semantic rarity, money, binding,
@@ -348,10 +348,19 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - Group/category accordion bars use `NS.Skins:CreateExpandableHeader`, with
   no leading icon slot or separate divider. The addon owns group collapse and
   counts; the library owns bar/arrow state. Reset pooled header visibility,
-  expansion, and text, and keep group rows out of pixel-divider refreshes.
-- Skin development is gated by `PLAN.md`. Modern construction and Phase 2's
-  in-game visual/interaction gate are complete; Flat/EllesmereUI and selection
-  are not active. Presentation refreshes must retain values, focus, pooled visibility,
+  expansion, and text. In Flat, refresh visible header and icon borders after
+  ScrollBox positioning; Modern group rows do not need pixel-border refreshes.
+- Skin development is gated by `PLAN.md`. Phase 2 is accepted; Phase 3 Flat
+  and shared selection are implemented but await in-game approval. Do not begin
+  the optional EllesmereUI provider until that gate passes.
+- `NS.globalDB` owns `appearance.skin`, shared by bags/bank and independent
+  of profiles. `NS.Appearance` connects storage/status to the library context.
+  Live Modern/Flat switches coalesce after input and defer during combat or
+  active window/scale drags; cancel column gestures before changing chrome.
+  Prewarm the largest skin viewport at creation and before a switch, counting
+  active item rows toward the pool budget. Use library-owned header layout
+  and minimum measurements; never save geometry merely because a skin changed.
+  Presentation refreshes must retain values, focus, pooled visibility,
   animation lifetime, and native input without rebuilding inventory/providers.
 - Use regular tertiary command buttons by default. Reserve small buttons for
   dense rows, tables, or genuinely constrained layouts.

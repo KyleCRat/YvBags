@@ -96,8 +96,10 @@ function Geometry.GetMaxWidth()
 end
 
 function Geometry.RefreshResizeBounds(frame)
-    local maxWidth = Geometry.GetMaxWidth()
-    frame:SetResizeBounds(Layout.MinWidth, Layout.MinHeight, maxWidth, nil)
+    local minWidth = NS.Skins:GetWindowMinimumWidth(frame)
+    local maxWidth = math.max(minWidth, Geometry.GetMaxWidth())
+    frame:SetResizeBounds(minWidth, Layout.MinHeight, maxWidth, nil)
+    frame.resizeButton:SetMinWidth(minWidth)
     frame.resizeButton:SetMaxWidth(maxWidth)
 end
 

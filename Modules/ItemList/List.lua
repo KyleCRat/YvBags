@@ -95,8 +95,15 @@ function ListController:RefreshVisiblePixelGeometry()
     for _, row in ipairs(self.view:GetFrames()) do
         if row.sectionDividerInitialized then
             row.divider:RefreshGeometry()
+        elseif NS.Skins:GetAppliedSkin() == "flat" then
+            if row.rowInitialized then
+                row.iconAppearance:RefreshGeometry()
+            elseif row.groupInitialized then
+                row.headerAppearance:RefreshGeometry()
+            end
         end
     end
+    if NS.Skins:GetAppliedSkin() == "flat" then self.scrollBarAppearance:RefreshGeometry() end
 end
 
 -- Appearance-only updates never rebuild the inventory provider or native bridge.
@@ -427,12 +434,20 @@ local function CreateScrollView(list)
     return view
 end
 
-local function PrewarmItemRows(list)
+function ListController:PrewarmItemRows()
+    local list = self
     local visibleExtent = math.max(list.scrollBox:GetVisibleExtent(), list.frame:GetHeight())
+        + NS.Skins:GetWindowContentReserve(list.window)
     local rowCount = math.max(
         MIN_PREWARMED_ITEM_ROWS,
         math.ceil(visibleExtent / ItemRow.GetRowHeight()) + ITEM_ROW_PREWARM_BUFFER
     )
+    -- Already-bound rows count toward the viewport budget. Acquire only the
+    -- remainder so a skin swap never grows another full viewport-sized pool.
+    for _, row in ipairs(list.view:GetFrames()) do
+        if row.rowInitialized then rowCount = rowCount - 1 end
+    end
+    rowCount = math.max(0, rowCount)
     local rows = {}
 
     for index = 1, rowCount do
@@ -499,16 +514,17 @@ function ItemList.Create(parent, context)
     scrollBox:SetClipsChildren(true)
     list.scrollBox = scrollBox
 
-    local scrollBar = NS.Skins:CreateScrollBar(frame, { geometryRoot = list.window })
+    local scrollBar, scrollBarAppearance = NS.Skins:CreateScrollBar(frame, { geometryRoot = list.window })
     Layout.PositionScrollBar(scrollBar, scrollBox)
     list.scrollBar = scrollBar
+    list.scrollBarAppearance = scrollBarAppearance
 
     local view = CreateScrollView(list)
     ScrollUtil.InitScrollBoxListWithScrollBar(scrollBox, scrollBar, view)
     list.view = view
     scrollBox:RegisterCallback(BaseScrollBoxEvents.OnScroll, ListController.RefreshVisiblePixelGeometry, list)
     scrollBox:RegisterCallback(BaseScrollBoxEvents.OnLayout, ListController.RefreshVisiblePixelGeometry, list)
-    PrewarmItemRows(list)
+    list:PrewarmItemRows()
 
     if context.cursorDrop then
         CursorDrop.Attach(list)

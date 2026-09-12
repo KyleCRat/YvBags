@@ -28,6 +28,7 @@ local function InitializeRow(row, owner)
 
     row.header, row.headerAppearance = NS.Skins:CreateExpandableHeader(row.contentClip, {
         geometryRoot = owner.window,
+        clip = owner.scrollBox,
         height = CONTENT_HEIGHT,
         font = NS.Media.GetPrimaryFont(),
         fontSize = TEXT_SIZE,

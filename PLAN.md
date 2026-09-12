@@ -1,9 +1,31 @@
 # LibYvSkins And YvBags Appearance Plan
 
 Status: approved, with a creation-first architecture. Phases 0, 1, 1.5, and 2
-are complete with their in-game gates accepted. Phase 3 is next: Flat styling,
-compact chrome, and built-in skin selection. EUI integration and the first
+are complete with their in-game gates accepted. Phase 3 Flat styling,
+compact chrome, and built-in skin selection are implemented, pending the
+user's in-game visual/interaction approval. EUI integration and the first
 library release remain later work.
+
+Phase 3 checkpoint (2026-09-12): the shared addon-global Modern/Flat selector,
+compact toolbar, physical-pixel Flat surfaces/icon borders, and deferred live
+transitions are implemented. Additional viewport rows are prewarmed without
+replacing providers, and visible Flat strokes update after scrolling. Lua 5.1
+library suite (50 tests), 121-file syntax check, and whitespace checks pass.
+Temporary diagnostics also exercise actual appearance persistence, bounded
+viewport prewarming, and the existing column/pooled-row regression checks.
+In-game validation is still
+required; stop here before Phase 4. MINOR and release/package pins are unchanged.
+
+Popup dependency follow-up (2026-09-12): converted the vendored LibPopupSlider
+to its canonical Git submodule after updating the standalone checkout from
+upstream `1.1.0`. Prepared `1.2.0` / MINOR `3` with the public presentation API
+and the existing `showBorder` option so older addon embeds cannot mask Flat
+support. The consumer package pin is prepared for `1.2.0`; publish that library
+release and update the parent gitlink before committing/shipping this dependency
+change. Local skin validation can continue against the updated worktree.
+Public popup API tests and both legacy load orders pass, including an active
+popup created before upgrade. Actual popup/skin Modern-Flat-Modern diagnostics,
+the 50-test skin suite, 125-file Lua syntax checks, and whitespace checks pass.
 
 Phase 2 checkpoint (2026-09-12): YvBags now constructs toolbar, tab, search,
 footer, scrollbar, icon, text/accent, and drop-glow presentation through
@@ -439,15 +461,15 @@ LMS continues to own Settings layout, fields, input commits, and callbacks.
 LibYvSkins owns appearance, not a replacement field/control-value abstraction.
 Do not alter LMS merely to apply the bag/bank skin.
 
-The scale popup remains LibPopupSlider-owned behavior. Phase 2 adds its public
-`GetVisualParts`, `IsInteracting`, and `SetFontAppearance` contract in the owned
-embedded copy, consumed by `Integrations/PopupSlider.lua`. Font fitting is
-deferred during an active drag. An older equal-MINOR popup embed retains its
-working Modern popup and reports unavailable styling through the context;
-Phase 3 must reject incomplete live skin transitions in that situation.
-Publish the popup contract with its own release workflow before shipping skins
-that depend on it. RGM's separate `showBorder` extension remains outside this
-phase; reconcile it if needed rather than relying on undocumented internals.
+The scale popup remains LibPopupSlider-owned behavior. Its public
+`GetVisualParts`, `IsInteracting`, and `SetFontAppearance` contract is developed
+in the canonical LibPopupSlider submodule and consumed by
+`Integrations/PopupSlider.lua`. Font fitting is deferred during an active drag.
+The prepared `1.2.0` / MINOR `3` release preserves RGM's `showBorder` option and
+supersedes older embeds. Legacy popup instances retain their original working
+behavior; an external instance without the public API still reports unavailable
+styling so skin selection can reject incomplete transitions. Publish the popup
+contract with its own release workflow before shipping skins that depend on it.
 
 ## Implementation Phases And Gates
 
@@ -541,22 +563,22 @@ it does not replace the full release regression matrix below.
 
 ### Phase 3: Flat Skin, Compact Chrome, And Built-In Selection
 
-- [ ] Implement Flat surfaces and all control states; use 1px physical window/
+- [x] Implement Flat surfaces and all control states; use 1px physical window/
   input borders and 2px physical item/container icon borders.
-- [ ] Remove portrait/title visually in Flat while preserving the ButtonFrame
+- [x] Remove portrait/title visually in Flat while preserving the ButtonFrame
   structural root. Anchor the existing actions in the compact header and
   retain a non-intercepting drag region around its interactive controls.
-- [ ] Centralize current-skin chrome metrics and calculate content/footer/
+- [x] Centralize current-skin chrome metrics and calculate content/footer/
   search/resize bounds from them. Keep fixed columns clipped as before.
-- [ ] Prewarm any additional viewport capacity needed by the shorter header
+- [x] Prewarm any additional viewport capacity needed by the shorter header
   before allowing a combat-time open; do not rebuild providers to restyle.
-- [ ] Add the shared LSDB preference and LMS selectors/status. Implement
+- [x] Add the shared LSDB preference and LMS selectors/status. Implement
   coalesced live Modern/Flat transitions, appearance reset, combat deferral,
   and interaction cancellation/end handling.
-- [ ] Preserve and restore Modern art on repeated round trips. Update active
+- [x] Preserve and restore Modern art on repeated round trips. Update active
   custom row art in place and mark hidden pool members for the next revision.
 
-Gate: repeat Modern -> Flat -> Modern in both windows without lost search,
+Gate pending: repeat Modern -> Flat -> Modern in both windows without lost search,
 changed bank selection, scroll jumps beyond unavoidable viewport clamping,
 provider replacement, duplicate regions/hooks, or saved-position changes.
 Validate narrow headers, all-hidden columns, footer alignment, both bank

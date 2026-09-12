@@ -3,6 +3,9 @@
 ## Unreleased
 
 ### Added
+- Added a shared WoW Modern / Flat skin selector for bags and bank. Flat uses
+  pixel-aligned borders, compact single-row toolbars, and neutral controls;
+  skin changes preserve list state and wait for combat or active frame drags.
 - Added out-of-combat stack merging through the sorted bag and bank drop
   overlays. Whole-stack pickups prefer a compatible partial stack, while
   splits, Manual mode, and combat retain empty-slot placement. Merge/Place
@@ -71,10 +74,11 @@
   icons, and list/drop-overlay visuals into LibYvSkins constructors. Preserved
   Modern sizing/spacing, selected-tab precedence, native banking actions, and
   item interactions, with presentation-only refreshes for pooled visuals.
-- Added a public presentation contract to the owned LibPopupSlider copy and
-  integrated its scale popup through LibYvSkins without changing drag/value
-  behavior. Font refitting waits until dragging ends; older popup embeds retain
-  working Modern behavior and report their missing skinning capability.
+- Moved LibPopupSlider to its canonical Git submodule and integrated its public
+  presentation contract through LibYvSkins without changing drag/value behavior.
+  The updated revision takes precedence over older addon embeds so they no
+  longer prevent Flat styling, while preserving their `showBorder` option.
+  Font refitting waits until dragging ends.
 - Limited cursor-drop polling to visible lists while an item is held, with
   event-driven wakeups, one cursor read per update, and a reusable target
   location. Live stack validation and native combat-safe drops are unchanged.

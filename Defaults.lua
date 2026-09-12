@@ -36,6 +36,7 @@ end
 NS.defaults = {
     global = {
         debug = false,
+        appearance = { skin = "modern" },
         features = {
             replaceBlizzardBags = true,
             replaceBlizzardBank = true,

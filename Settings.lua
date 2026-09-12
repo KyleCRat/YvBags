@@ -862,6 +862,7 @@ local function RefreshBankSettingsIfShown()
 end
 
 local function ResetMainSettings()
+    NS.Appearance.Reset()
     local globalDefaults = NS.defaults.global.features
     local profileDefaults = NS.defaults.profile
     local listDefaults = profileDefaults.list
@@ -882,6 +883,7 @@ local function ResetMainSettings()
 end
 
 local function ResetBankSettings()
+    NS.Appearance.Reset()
     NS.globalDB:Set(
         "features",
         "replaceBlizzardBank",
@@ -957,6 +959,33 @@ local function AddListDropdown(flow, options)
     })
 end
 
+local function AddAppearanceSettings(root)
+    root:AddSection("Appearance")
+    local row = root:BeginColumns()
+    local skin = AddListDropdown(row.left, {
+        label = "Skin",
+        choices = {
+            { value = "modern", label = "WoW Modern" },
+            { value = "flat", label = "Flat" },
+        },
+        tooltip = "Change both the bag and bank windows. Skin selection is shared across profiles. Changes wait until combat or moving, resizing, and scaling finish.",
+        onChanged = NS.Appearance.SetSkin,
+    })
+    row.right:AddControl("button", {
+        text = "Reset Appearance",
+        tooltip = "Restore WoW Modern for bags and bank without changing profiles, list settings, or window sizes and positions.",
+        onClick = NS.Appearance.Reset,
+    })
+    row:Finish()
+    local status = root:AddText({ text = NS.Appearance.GetStatusText(), fontObject = GameFontHighlightSmall, height = 32 })
+    local function Refresh()
+        skin:GetControl():SetValue(NS.Appearance.GetSkin())
+        status:SetText(NS.Appearance.GetStatusText())
+    end
+    NS.Appearance.RegisterCallback(Refresh)
+    Refresh()
+end
+
 local function BuildMainSettingsFrame(frame, measurementFrame)
     local layout = ModernSettings:CreateCanvasLayout(frame, {
         measurementFrame = measurementFrame,
@@ -1007,6 +1036,8 @@ local function BuildMainSettingsFrame(frame, measurementFrame)
         }
     )
     profileSelectors:Finish({ marginBottom = 12 })
+
+    AddAppearanceSettings(root)
 
     local columns = root:BeginColumns()
 
@@ -1099,6 +1130,8 @@ local function BuildBankSettingsFrame(frame, measurementFrame)
         "Bank",
         "Configure the combined Character and Warband bank window."
     )
+
+    AddAppearanceSettings(root)
 
     local columns = root:BeginColumns()
 

@@ -184,6 +184,7 @@ function MainFrame.Create()
         title = ADDON_NAME,
         portrait = FRAME_PORTRAIT,
         insetBackground = NS.Media.GetInsetBackgroundTexture(),
+        compactHeader = true,
         minWidth = Layout.MinWidth,
         minHeight = Layout.MinHeight,
         maxWidth = Geometry.GetMaxWidth(),

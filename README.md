@@ -13,6 +13,8 @@ Character bank, and Warband bank as sortable, searchable lists instead of grids.
   native tab configuration, purchase, cleanup, money, and deposit actions.
 - Shows inventory contents in a virtualized list for fast scrolling.
 - Draws list and column dividers at one physical pixel, independent of window scale.
+- Offers WoW Modern and Flat skins shared by bags and bank, with a compact
+  toolbar and pixel-aligned borders in Flat.
 - Uses full-row item interaction for tooltips, item use, drag, pickup, and cooldown display.
 - Supports name, column, and tooltip search plus collapsible groups, primary sorting, secondary sorting, and manual bag-slot ordering.
 - Surfaces unseen items in accent-highlighted top rows until they are hovered and the bag is reopened.
@@ -100,6 +102,7 @@ Settings include:
 - Sell Gray Junk At Vendors
 - Show Cooldowns In Item Names
 - Frame scale
+- Shared skin selection and appearance reset
 - Group By
 - Pinned Items presentation
 - Primary Sort and direction
@@ -112,8 +115,15 @@ Settings include:
 Profile settings include bag grouping, sorting, and column layout, bank list mirroring or its
 independent list configuration, pinned-item presentation, cooldown-name
 display, and the complete shared category registry. Bag and bank replacement,
-gray-junk selling, and pinned item identities remain shared across the addon.
+gray-junk selling, skin selection, and pinned item identities remain shared across the addon.
 Bag and bank frame position, size, and scale remain stored per character.
+
+Choose **Appearance > Skin** on either the main or Bank settings page. Flat
+removes the portrait/title strip and keeps settings, scale, search, close,
+and bank-view selectors in one header. Switching skins preserves the window's
+size and position; the shorter header leaves more space for items. Changes
+wait for combat or an active move, resize, or scale drag to finish.
+**Reset Appearance** restores WoW Modern without resetting profiles or geometry.
 
 **Use Bag List Settings** also mirrors column visibility, order, and widths.
 Changes from either window update both while enabled. Disabling it initially

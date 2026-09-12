@@ -1,9 +1,7 @@
 local _, NS = ...
 
 -- Shared bag/bank subheader control construction contract.
-local Controls = {
-    SubheaderControlGap = 2,
-}
+local Controls = {}
 NS.MainFrameControls = Controls
 
 local Geometry = NS.MainFrameGeometry
@@ -57,7 +55,6 @@ function Controls.CreateScaleButton(frame, options)
     })
     button:SetFrameLevel(frame:GetFrameLevel() + SUBHEADER_FRAME_LEVEL_OFFSET)
     button:HookScript("OnLeave", function() GameTooltip:Hide() end)
-    button:SetPoint("LEFT", frame.settingsButton, "RIGHT", Controls.SubheaderControlGap, 0)
     frame.scaleButton = button
 
     button:HookScript("OnEnter", function(self)
@@ -100,13 +97,6 @@ function Controls.CreateSettingsButton(frame, options)
     })
     button:SetFrameLevel(frame:GetFrameLevel() + SUBHEADER_FRAME_LEVEL_OFFSET)
     button:HookScript("OnLeave", function() GameTooltip:Hide() end)
-    button:SetPoint(
-        "TOPLEFT",
-        frame.header,
-        "TOPLEFT",
-        0,
-        0
-    )
     button:RegisterForClicks("LeftButtonUp")
 
     button:HookScript("OnEnter", function(self)
@@ -176,38 +166,14 @@ function Controls.RegisterSearchShortcut(frame)
     frame.searchShortcutListener = listener
 end
 
-function Controls.LayoutSearch(frame, options)
-    options = options or {}
-    local searchBox = frame.searchBox
-    local leftAnchor = options.leftAnchor or frame.scaleButton
-    local gap = Controls.SubheaderControlGap
-    searchBox:ClearAllPoints()
-    searchBox:SetPoint(
-        "TOPLEFT",
-        leftAnchor,
-        "TOPRIGHT",
-        gap,
-        0
-    )
-    searchBox:SetPoint(
-        "BOTTOMLEFT",
-        leftAnchor,
-        "BOTTOMRIGHT",
-        gap,
-        0
-    )
-    searchBox:SetPoint(
-        "TOPRIGHT",
-        frame.header,
-        "TOPRIGHT",
-        0,
-        0
-    )
-end
-
-function Controls.CreateSearch(frame, options)
+function Controls.CreateSearch(frame)
     local searchBox = frame.itemList:CreateSearchBox(frame.header)
     searchBox:SetFrameLevel(frame:GetFrameLevel() + SUBHEADER_FRAME_LEVEL_OFFSET)
     frame.searchBox = searchBox
-    Controls.LayoutSearch(frame, options)
+    local toolbar = { frame.settingsButton, frame.scaleButton }
+    if frame.characterBankButton then
+        toolbar[#toolbar + 1] = frame.characterBankButton
+        toolbar[#toolbar + 1] = frame.accountBankButton
+    end
+    NS.Skins:SetHeaderControls(frame, toolbar, searchBox)
 end

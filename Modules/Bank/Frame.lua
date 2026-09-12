@@ -174,6 +174,7 @@ local function CreateTypeButton(frame, text, bankType, width)
         text = text, fontSize = TYPE_BUTTON_TEXT_SIZE, fontFlags = "OUTLINE",
     })
     button.appearance = appearance
+    button:SetWidth(math.max(width, math.ceil(button:GetFontString():GetStringWidth()) + 24))
     button.bankType = bankType
     button:SetScript("OnClick", function(self)
         frame:SetBankType(self.bankType)
@@ -183,7 +184,6 @@ end
 
 local function RefreshTypeButtons(frame)
     local activeBankType = Inventory:GetActiveBankType()
-    local previous = frame.scaleButton
     local buttons = {
         frame.characterBankButton,
         frame.accountBankButton,
@@ -194,20 +194,12 @@ local function RefreshTypeButtons(frame)
         local shown = Inventory:IsBankTypeViewable(button.bankType)
         button:SetShown(shown)
         if shown then
-            button:ClearAllPoints()
-            button:SetPoint(
-                "LEFT",
-                previous,
-                "RIGHT",
-                Controls.SubheaderControlGap,
-                0
-            )
-            previous = button
             RefreshTypeButton(button, activeBankType)
         end
     end
 
-    Controls.LayoutSearch(frame, { leftAnchor = previous })
+    NS.Skins:LayoutHeader(frame)
+    Geometry.RefreshResizeBounds(frame)
 end
 
 local function CreateSubheaderControls(frame)
@@ -235,9 +227,7 @@ local function CreateSubheaderControls(frame)
         96
     )
 
-    Controls.CreateSearch(frame, {
-        leftAnchor = frame.accountBankButton,
-    })
+    Controls.CreateSearch(frame)
 end
 
 local function RegisterCallbacks(frame)
@@ -297,6 +287,7 @@ function BankFrameController.Create()
         title = "Bank",
         portrait = FRAME_PORTRAIT,
         insetBackground = NS.Media.GetInsetBackgroundTexture(),
+        compactHeader = true,
         minWidth = Layout.MinWidth,
         minHeight = Layout.MinHeight,
         maxWidth = Geometry.GetMaxWidth(),

@@ -159,6 +159,9 @@ local function LayoutRow(row)
                 region:ClearAllPoints()
                 region:SetPoint(point, row.contentClip, "LEFT", x, 0)
                 row.columnPositions[key] = x
+                if key == "icon" and NS.Skins:GetAppliedSkin() == "flat" then
+                    row.iconAppearance:RefreshGeometry()
+                end
             end
             if IsTextColumn(column) and row.columnWidths[key] ~= entry.width then
                 region:SetWidth(entry.width)
@@ -268,6 +271,7 @@ local function InitializeRow(row, list)
     row.pinMarker:Hide()
 
     row.icon, row.iconAppearance = NS.Skins:CreateIcon(row.contentClip, {
+        clip = list.scrollBox,
         geometryRoot = list.window, width = ICON_SIZE, layer = ROW_ICON_LAYER, sublevel = ROW_ICON_SUBLEVEL,
         borderLayer = ICON_BORDER_LAYER, borderSublevel = ICON_BORDER_SUBLEVEL,
     })
