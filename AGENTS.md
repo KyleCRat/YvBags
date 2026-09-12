@@ -349,9 +349,9 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
   no leading icon slot or separate divider. The addon owns group collapse and
   counts; the library owns bar/arrow state. Reset pooled header visibility,
   expansion, and text, and keep group rows out of pixel-divider refreshes.
-- Skin development is gated by `PLAN.md`. Modern construction is implemented
-  and awaiting Phase 2's in-game gate; Flat/EllesmereUI and selection are not
-  active. Presentation refreshes must retain values, focus, pooled visibility,
+- Skin development is gated by `PLAN.md`. Modern construction and Phase 2's
+  in-game visual/interaction gate are complete; Flat/EllesmereUI and selection
+  are not active. Presentation refreshes must retain values, focus, pooled visibility,
   animation lifetime, and native input without rebuilding inventory/providers.
 - Use regular tertiary command buttons by default. Reserve small buttons for
   dense rows, tables, or genuinely constrained layouts.

@@ -1,9 +1,9 @@
 # LibYvSkins And YvBags Appearance Plan
 
-Status: approved, with a creation-first architecture. Phases 0, 1, and 1.5
-passed their in-game foundation gates. Phase 2's Modern ownership implementation
-is complete and awaiting its in-game gate before Phase 3. Skin selection,
-Flat/EUI styling, and the first library release remain unimplemented.
+Status: approved, with a creation-first architecture. Phases 0, 1, 1.5, and 2
+are complete with their in-game gates accepted. Phase 3 is next: Flat styling,
+compact chrome, and built-in skin selection. EUI integration and the first
+library release remain later work.
 
 Phase 2 checkpoint (2026-09-12): YvBags now constructs toolbar, tab, search,
 footer, scrollbar, icon, text/accent, and drop-glow presentation through
@@ -17,8 +17,9 @@ control access, semantic colors, pooling, two consumers, popup capability
 boundaries, and mixed/equal-MINOR loading (40 tests passing). All 118 Lua files
 pass syntax checks, and root/library whitespace checks pass. Temporary diagnostics exercise
 the actual popup implementation and YvBags footer construction with exported
-Blizzard bank mixins. These mock checks do not establish visual parity or
-secure in-game behavior. Changes are not committed or released by this work.
+Blizzard bank mixins. The user subsequently confirmed Modern visual parity,
+bag/bank buttons and actions, sorting, and header actions in game. Broader
+release regression coverage remains required after the remaining skin work.
 
 ## Outcome And Scope
 
@@ -533,16 +534,10 @@ does not imply the remaining control skins are done.
 - [x] Exercise the same window/control constructors in YvBags and the second
   library harness consumer; verify raw controls remain directly accessible.
 
-Gate pending: Modern matches the existing frame/portrait/header/footer appearance
-apart from Phase 1's deliberate divider change. Bank tab changes, cold icon
-loads, scale popup, and input interactions do not restore stray old art.
-
-Before Phase 3, check both windows after a reload: toolbar spacing and search
-focus/clear; selected/hovered tabs; footer icons and disabled cold-load states;
-Character/Warband Deposit All, reagent checkbox, withdraw/deposit dialogs;
-scale-popup dragging; scrolling, new-item glow, sorting/grouping, and native
-item use/drag/split/drop in and out of combat. No appearance selector is
-expected yet.
+Gate passed (2026-09-12): the user confirmed that bag and bank buttons/actions,
+sorting, and header actions work as expected, and the Modern appearance is
+unchanged by the migration. This accepts Phase 2 and clears the way for Phase 3;
+it does not replace the full release regression matrix below.
 
 ### Phase 3: Flat Skin, Compact Chrome, And Built-In Selection
 

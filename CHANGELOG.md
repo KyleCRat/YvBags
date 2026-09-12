@@ -63,6 +63,10 @@
 - Restored Mythic Keystones to their own prioritized category and gave keystone pins a stable identity across dungeon and level changes.
 
 ### Changed
+- Reduced column-editing overhead in bags and bank: visibility menus read
+  current settings without copying the column configuration, and resizing
+  updates only changed header/cell geometry while preserving pooled rows and
+  native item interactions.
 - Moved toolbar buttons, bank-view tabs, search, footers, scrollbars, item/bag
   icons, and list/drop-overlay visuals into LibYvSkins constructors. Preserved
   Modern sizing/spacing, selected-tab precedence, native banking actions, and
