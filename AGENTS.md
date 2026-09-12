@@ -83,6 +83,10 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - `Modules/ItemList/Columns.lua`: available column definitions, canonical visibility/width defaults and resize constraints, header metadata, cell formatting, and column-owned visual metadata.
 - `Modules/ItemList/Settings.lua`: effective bag/bank list-setting ownership,
   bidirectional mirroring, first-detach snapshots, and normalized column-layout transactions.
+- `Modules/Appearance/Appearance.lua`: the shared `NS.Skins` LibYvSkins context
+  and media inputs; future preference/application routing belongs here, not
+  frame adapters or constructor proxies. The library creates window chrome
+  and separator visuals and owns physical-pixel metrics and display refreshes.
 - `Modules/ItemList/Model.lua`: search, grouping, primary sorting, secondary sorting, manual ordering, and display-row construction. Cache sort values here rather than in row rendering.
 - `Modules/ItemList/List.lua`: inventory-adapted list state, ScrollBox
   composition, data-provider refreshes, and coordination between list-owned
@@ -104,10 +108,11 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - `Modules/MainFrame/MainFrame.lua`: top-level frame lifecycle, composition, and reason-scoped inventory refresh routing.
 - `Modules/MainFrame/Geometry.lua`: frame scale, size, position persistence, pixel snapping, and position diagnostics.
 - `Modules/MainFrame/Controls.lua`: shared subheader settings, square scale, and search controls for bags and bank.
-- `Modules/MainFrame/Layout.lua`: geometry shared by main-frame modules.
+- `Modules/MainFrame/Layout.lua`: bag-specific minimum window bounds. Shared
+  chrome geometry and horizontal overhead belong to LibYvSkins.
 - `Modules/MainFrame/Footer.lua`: bag buttons, bag-space display, money, footer layout, and related tooltips.
 - `Modules/MainFrame/FooterCurrencies.lua`: tracked backpack currencies, responsive fitting, currency tooltips, and untracking.
-- `Modules/Bank/Layout.lua`: shared custom-bank frame geometry constants.
+- `Modules/Bank/Layout.lua`: bank-specific minimum window bounds.
 - `Modules/Bank/Geometry.lua`: per-character custom-bank position, size, and
   scale persistence.
 - `Modules/Bank/Footer.lua`: physical bank-tab controls, usage, native purchase
@@ -295,6 +300,23 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 
 ### Media And Visual Settings
 
+- YvBags is a native creation-first LibYvSkins consumer. Create window shells
+  with `NS.Skins:CreateWindow` and populate its `header`, `content`, and `footer`
+  parts. Use direct component factories as visual ownership moves into the
+  library; do not introduce YvBags existing-window adapters or part-discovery
+  maps. Keep raw native controls directly accessible and domain behavior,
+  position/size/scale persistence, and item-button bridges addon-owned.
+- Header, column, category, and new/pinned-section separators use LibYvSkins
+  solid one-physical-pixel strokes, not stretched/rotated divider textures.
+  Use physical-pixel insets for adjoining strokes so joins do not separate
+  when scaled. The header line, titles, and controls own the full inner-frame
+  width above the scrollbar; only scrolling rows reserve the scrollbar gutter.
+  Preserve row extents and resize hit targets. Refresh only visible custom
+  strokes from ScrollBox placement callbacks; never alter native item-button
+  geometry, data providers, or normalized item data to refresh appearance.
+- Skin development is gated by `PLAN.md`. The pixel and canonical window
+  foundations are implemented; remaining Modern control factories and
+  Flat/EllesmereUI ownership/selection are not yet active.
 - Use regular tertiary command buttons by default. Reserve small buttons for
   dense rows, tables, or genuinely constrained layouts.
 - Register shared media from the structured tables in `Media.lua`; do not duplicate texture, atlas, font, binding-icon, or accent definitions in consumers.

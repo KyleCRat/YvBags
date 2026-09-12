@@ -76,6 +76,7 @@ function Geometry.SetScale(scale)
     if frame then
         frame:SetScale(scale)
         NS.MainFrameControls.RefreshScale(frame, scale)
+        NS.Skins:RefreshGeometry(frame)
     end
 
     NS.Settings.NotifyFrameScaleChanged()
@@ -88,7 +89,7 @@ function Geometry.GetMaxWidth()
     )
     return math.max(
         Layout.MinWidth,
-        listWidth + Layout.GetHorizontalChromeWidth(),
+        listWidth + NS.Skins:GetWindowChromeWidth(),
         NS.charDB:GetRaw("frame", "width") or 0,
         NS.frame and NS.frame:GetWidth() or 0
     )
@@ -122,6 +123,7 @@ function Geometry.Save(frame)
     NS.charDB:Set("frame", "height", frame:GetHeight())
     Geometry.PreventClientSaving(frame)
     Geometry.ClearClientPosition(frame)
+    NS.Skins:RefreshGeometry(frame)
 end
 
 function Geometry.RestorePosition(frame)
@@ -133,6 +135,7 @@ function Geometry.RestorePosition(frame)
         NS.charDB:Get("frame", "x") or 0,
         NS.charDB:Get("frame", "y") or 0
     )
+    NS.Skins:RefreshGeometry(frame)
 end
 
 function Geometry.PrintDebug(frame, reason)

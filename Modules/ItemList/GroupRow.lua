@@ -28,13 +28,8 @@ local HIGHLIGHT_COLOR_R = ACCENT_COLOR_R
 local HIGHLIGHT_COLOR_G = ACCENT_COLOR_G
 local HIGHLIGHT_COLOR_B = ACCENT_COLOR_B
 local HIGHLIGHT_ALPHA = 0.14
-local DIVIDER_HEIGHT = 12
 local DIVIDER_LEFT_OFFSET = 2
-local DIVIDER_RIGHT_OFFSET = -2
-local DIVIDER_BOTTOM_OFFSET = -5
-local DIVIDER_COLOR_R = ACCENT_COLOR_R
-local DIVIDER_COLOR_G = ACCENT_COLOR_G
-local DIVIDER_COLOR_B = ACCENT_COLOR_B
+local DIVIDER_RIGHT_OFFSET = 2
 local DIVIDER_ALPHA = 0.55
 local TEXT_COLOR_R = ACCENT_COLOR_R
 local TEXT_COLOR_G = ACCENT_COLOR_G
@@ -74,12 +69,6 @@ local function AnchorContentClip(row)
     row.contentClip:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -GetRightClipPadding(row), BOTTOM_MARGIN)
 end
 
-local function AnchorDivider(row)
-    row.divider:ClearAllPoints()
-    row.divider:SetPoint("BOTTOMLEFT", row.contentClip, "BOTTOMLEFT", DIVIDER_LEFT_OFFSET, DIVIDER_BOTTOM_OFFSET)
-    row.divider:SetPoint("BOTTOMRIGHT", row.contentClip, "BOTTOMRIGHT", DIVIDER_RIGHT_OFFSET, DIVIDER_BOTTOM_OFFSET)
-end
-
 local function SetTextureCoords(texture, coords)
     texture:SetTexCoord(coords[1], coords[2], coords[3], coords[4])
 end
@@ -94,7 +83,7 @@ local function UpdateToggleIcon(row, pressed)
     SetTextureCoords(row.toggleIcon, TOGGLE_TEXCOORDS[state][textureState])
 end
 
-local function InitializeRow(row)
+local function InitializeRow(row, owner)
     row:SetHeight(ROW_HEIGHT)
     row:EnableMouse(true)
     row:RegisterForClicks("LeftButtonUp")
@@ -112,13 +101,16 @@ local function InitializeRow(row)
         row.contentClip:SetClipsChildren(true)
     end
 
-    row.divider = row:CreateTexture(nil, BORDER_LAYER)
-    row.divider:SetDrawLayer(BORDER_LAYER, BORDER_SUBLEVEL)
-    row.divider:SetTexture(Media.GetDividerTexture())
-    row.divider:SetBlendMode("ADD")
-    row.divider:SetHeight(DIVIDER_HEIGHT)
-    AnchorDivider(row)
-    row.divider:SetVertexColor(DIVIDER_COLOR_R, DIVIDER_COLOR_G, DIVIDER_COLOR_B, DIVIDER_ALPHA)
+    row.dividerTexture, row.divider = NS.Skins:CreateSeparator(row.contentClip, {
+        geometryRoot = owner.window,
+        align = "end",
+        left = DIVIDER_LEFT_OFFSET,
+        right = DIVIDER_RIGHT_OFFSET,
+        alpha = DIVIDER_ALPHA,
+        layer = BORDER_LAYER,
+        sublevel = BORDER_SUBLEVEL,
+        clip = owner.scrollBox,
+    })
 
     row.toggleIcon = row.contentClip:CreateTexture(nil, TOGGLE_LAYER)
     row.toggleIcon:SetDrawLayer(TOGGLE_LAYER, TOGGLE_SUBLEVEL)
@@ -169,7 +161,7 @@ end
 
 function GroupRow.Render(row, groupData, owner)
     if not row.groupInitialized then
-        InitializeRow(row)
+        InitializeRow(row, owner)
     end
 
     row.owner = owner
@@ -181,15 +173,14 @@ function GroupRow.Render(row, groupData, owner)
         AnchorContentClip(row)
     end
 
-    if row.divider and row.contentClip then
-        AnchorDivider(row)
-    end
+    row.divider:SetShown(true)
 
     UpdateToggleIcon(row, false)
     row.label:SetText(("%s (%d)"):format(groupData.label or "", groupData.count or 0))
 end
 
 function GroupRow.Reset(row)
+    row.divider:SetShown(false)
     row.owner = nil
     row.groupID = nil
     row.groupData = nil

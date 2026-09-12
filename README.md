@@ -12,6 +12,7 @@ Character bank, and Warband bank as sortable, searchable lists instead of grids.
 - Combines all purchased physical tabs within each bank view while retaining
   native tab configuration, purchase, cleanup, money, and deposit actions.
 - Shows inventory contents in a virtualized list for fast scrolling.
+- Draws list and column dividers at one physical pixel, independent of window scale.
 - Uses full-row item interaction for tooltips, item use, drag, pickup, and cooldown display.
 - Supports name, column, and tooltip search plus collapsible groups, primary sorting, secondary sorting, and manual bag-slot ordering.
 - Surfaces unseen items in accent-highlighted top rows until they are hovered and the bag is reopened.

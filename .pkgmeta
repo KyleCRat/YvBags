@@ -22,10 +22,13 @@ ignore:
   - .git
   - AGENTS.md
   - TODO.md
+  - PLAN.md
   - "Libs/LibSimpleDB-2.0/benchmarks"
   - "Libs/LibSimpleDB-2.0/tests"
   - "Libs/LibSimpleDBProfiles-1.0/tests"
   - "Libs/LibModernSettings-1.0/tests"
+  - "Libs/LibYvSkins-1.0/tests"
+  - "Libs/LibYvSkins-1.0/examples"
   - "*.afphoto"
   - "Media/Textures/*.afphoto"
   - "*.png"

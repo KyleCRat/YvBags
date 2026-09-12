@@ -21,15 +21,11 @@ local HEADER_TOOLTIP_TEXT_COLOR_R = 0.86
 local HEADER_TOOLTIP_TEXT_COLOR_G = 0.86
 local HEADER_TOOLTIP_TEXT_COLOR_B = 0.86
 local HEADER_BOTTOM_DIVIDER_LEFT_OFFSET = 2
-local HEADER_BOTTOM_DIVIDER_RIGHT_OFFSET = -2
-local HEADER_BOTTOM_DIVIDER_BOTTOM_OFFSET = -6
-local HEADER_DIVIDER_HEIGHT = 14
+local HEADER_BOTTOM_DIVIDER_RIGHT_OFFSET = 2
+local HEADER_DIVIDER_THICKNESS = 1
 local HEADER_DIVIDER_ALPHA = 0.68
 local HEADER_SEPARATOR_HANDLE_WIDTH = 6
 local HEADER_SEPARATOR_TOP_OFFSET = 1
-local HEADER_SEPARATOR_BOTTOM_OFFSET = 1
-local HEADER_SEPARATOR_TEXTURE_LENGTH = Layout.HeaderHeight - HEADER_SEPARATOR_TOP_OFFSET - HEADER_SEPARATOR_BOTTOM_OFFSET
-local HEADER_SEPARATOR_TEXTURE_THICKNESS = 6
 local HEADER_SEPARATOR_HOVER_ALPHA = 0.14
 local HEADER_SEPARATOR_PRESSED_ALPHA = 0.28
 local HEADER_SEPARATOR_LINE_HOVER_ALPHA = 0.86
@@ -352,7 +348,7 @@ local function OnButtonMouseUp(button)
 end
 
 local function SetSeparatorLineAlpha(separator, alpha)
-    separator.line:SetVertexColor(ACCENT_COLOR_R, ACCENT_COLOR_G, ACCENT_COLOR_B, alpha)
+    separator.line:SetAlpha(alpha)
 end
 
 local function UpdateSeparatorVisualState(separator)
@@ -389,15 +385,14 @@ local function CreateSeparator(parent, xOffset, list)
     pressedTexture:Hide()
     separator.pressedTexture = pressedTexture
 
-    local line = separator:CreateTexture(nil, "BORDER")
-    line:SetTexture(Media.GetDividerTexture())
-    line:SetBlendMode("ADD")
-    line:SetPoint("CENTER", separator, "CENTER", 0, 0)
-    line:SetSize(HEADER_SEPARATOR_TEXTURE_LENGTH, HEADER_SEPARATOR_TEXTURE_THICKNESS)
-    if line.SetRotation then
-        line:SetRotation(math.pi / 2)
-    end
-    separator.line = line
+    separator.lineTexture, separator.line = NS.Skins:CreateSeparator(separator, {
+        geometryRoot = list.window,
+        orientation = "vertical",
+        top = HEADER_SEPARATOR_TOP_OFFSET,
+        pixelInsets = { bottom = HEADER_DIVIDER_THICKNESS },
+        clip = parent,
+        alpha = HEADER_DIVIDER_ALPHA,
+    })
 
     separator:SetScript("OnEnter", function(self)
         self.isHovered = true
@@ -441,6 +436,13 @@ function Header.CancelInteraction(header)
     Interaction.Cancel(header)
 end
 
+function Header.RefreshPixelGeometry(header)
+    header.bottomDivider:RefreshGeometry()
+    for _, separator in ipairs(header.separators) do
+        separator.line:RefreshGeometry()
+    end
+end
+
 function Header.ApplyColumnLayout(header, list)
     local entries = list.columnLayout.entries
     local lastEntry = entries[#entries]
@@ -462,6 +464,7 @@ function Header.ApplyColumnLayout(header, list)
             separator:SetPoint("LEFT", header.content, "LEFT", separatorX - HEADER_SEPARATOR_HANDLE_WIDTH / 2, 0)
         end
     end
+    Header.RefreshPixelGeometry(header)
     Header.Refresh(header, list)
 end
 
@@ -498,19 +501,19 @@ function Header.Create(parent, list)
     end)
 
     local content = CreateFrame("Frame", nil, header)
-    content:SetPoint("TOPLEFT", header, "TOPLEFT", 0, 0)
-    content:SetPoint("BOTTOMRIGHT", header, "BOTTOMRIGHT", -Layout.ScrollBarContentPadding, 0)
+    -- The header owns the space above the scrollbar; only rows reserve its gutter.
+    content:SetAllPoints(header)
     content:SetClipsChildren(true)
     header.content = content
 
-    local bottomDivider = header:CreateTexture(nil, "BORDER")
-    bottomDivider:SetTexture(Media.GetDividerTexture())
-    bottomDivider:SetBlendMode("ADD")
-    bottomDivider:SetPoint("BOTTOMLEFT", header, "BOTTOMLEFT", HEADER_BOTTOM_DIVIDER_LEFT_OFFSET, HEADER_BOTTOM_DIVIDER_BOTTOM_OFFSET)
-    bottomDivider:SetPoint("BOTTOMRIGHT", header, "BOTTOMRIGHT", HEADER_BOTTOM_DIVIDER_RIGHT_OFFSET, HEADER_BOTTOM_DIVIDER_BOTTOM_OFFSET)
-    bottomDivider:SetHeight(HEADER_DIVIDER_HEIGHT)
-    bottomDivider:SetVertexColor(ACCENT_COLOR_R, ACCENT_COLOR_G, ACCENT_COLOR_B, HEADER_DIVIDER_ALPHA)
-    header.bottomDivider = bottomDivider
+    header.bottomDividerTexture, header.bottomDivider = NS.Skins:CreateSeparator(content, {
+        geometryRoot = list.window,
+        align = "end",
+        thickness = HEADER_DIVIDER_THICKNESS,
+        left = HEADER_BOTTOM_DIVIDER_LEFT_OFFSET,
+        right = HEADER_BOTTOM_DIVIDER_RIGHT_OFFSET,
+        alpha = HEADER_DIVIDER_ALPHA,
+    })
 
     header.buttons = {}
     header.separators = {}

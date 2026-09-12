@@ -58,6 +58,16 @@
 - Restored Mythic Keystones to their own prioritized category and gave keystone pins a stable identity across dungeon and level changes.
 
 ### Changed
+- Integrated bags and bank directly with LibYvSkins-created window shells,
+  header/content/footer areas, resize controls, and separator factories.
+  Removed the temporary appearance adapters and duplicated chrome construction
+  while preserving Modern visuals, native item behavior, and saved geometry.
+- Replaced bag and bank header, column, category, and new/pinned-section
+  divider textures with LibYvSkins' one-physical-pixel strokes. Their visual
+  edges realign after scaling, moving, resizing, and scrolling without
+  changing row heights, column hit targets, or native item interactions.
+  Column strokes meet the header divider at every scale, and the header line
+  and titles retain the full inner-frame width above the scrollbar.
 - Restyled bag and bank settings and scale controls as matching compact square
   tertiary buttons, with the Vertex-Scale control beside the cog and one shared
   gap between toolbar buttons and search. Preserved the drag-to-scale popup and current percentage

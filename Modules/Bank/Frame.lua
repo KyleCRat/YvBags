@@ -12,11 +12,8 @@ local ListSettings = NS.ItemListSettings
 
 local CHARACTER_BANK = Enum.BankType.Character
 local ACCOUNT_BANK = Enum.BankType.Account
-local FRAME_TEMPLATE = "ButtonFrameTemplate"
 local FRAME_PORTRAIT =
     "Interface\\Icons\\INV_12_Profession_Tailoring_ReagentBag_Violet"
-local FRAME_STRATA = "HIGH"
-local RESIZE_BUTTON_TEMPLATE = "PanelResizeButtonTemplate"
 local TYPE_BUTTON_HEIGHT = 28
 local TYPE_BUTTON_TEXT_SIZE = 13
 local TYPE_BUTTON_NORMAL_ATLAS = "common-button-tertiary-normal"
@@ -41,19 +38,6 @@ end
 
 local function GetBankTypeFromToken(token)
     return token == "account" and ACCOUNT_BANK or CHARACTER_BANK
-end
-
-local function ApplyBaseFrameTheme(frame)
-    local insetBackground = frame.Inset.Bg
-    insetBackground:SetTexture(
-        NS.Media.GetInsetBackgroundTexture(),
-        "REPEAT",
-        "REPEAT"
-    )
-    insetBackground:SetHorizTile(true)
-    insetBackground:SetVertTile(true)
-    frame.TopTileStreaks:Hide()
-    frame.TopTileStreaks:SetAlpha(0)
 end
 
 local function GetEmptyText(bankType)
@@ -151,23 +135,8 @@ local function RequestInventoryRefresh(frame, refreshFooter)
 end
 
 local function CreateContent(frame)
-    local content = CreateFrame("Frame", nil, frame)
-    content:SetPoint(
-        "TOPLEFT",
-        frame.Inset,
-        "TOPLEFT",
-        Layout.ContentInsetLeft,
-        Layout.ContentInsetTop
-    )
-    content:SetPoint(
-        "BOTTOMRIGHT",
-        frame.Inset,
-        "BOTTOMRIGHT",
-        Layout.ContentInsetRight,
-        Layout.ContentInsetBottom
-    )
-    frame.content = content
-    frame.itemList = NS.ItemList.Create(content, {
+    frame.itemList = NS.ItemList.Create(frame.content, {
+        window = frame,
         settingsScope = ListSettings.Scopes.Bank,
         onColumnLayoutChanged = function()
             Geometry.RefreshResizeBounds(frame)
@@ -192,32 +161,6 @@ local function CreateContent(frame)
             end,
         },
     })
-end
-
-local function CreateResizeButton(frame)
-    local maxWidth = Geometry.GetMaxWidth()
-    frame:SetResizable(true)
-    frame:SetResizeBounds(Layout.MinWidth, Layout.MinHeight, maxWidth, nil)
-
-    local resizeButton = CreateFrame(
-        "Button",
-        nil,
-        frame,
-        RESIZE_BUTTON_TEMPLATE
-    )
-    resizeButton:SetPoint(
-        "BOTTOMRIGHT",
-        frame,
-        "BOTTOMRIGHT",
-        Layout.ResizeButtonRightOffset,
-        Layout.ResizeButtonBottomOffset
-    )
-    resizeButton:Init(frame, Layout.MinWidth, Layout.MinHeight, maxWidth, nil)
-    resizeButton:SetOnResizeStoppedCallback(function(target)
-        Geometry.SnapSize(target)
-        Geometry.Save(target)
-    end)
-    frame.resizeButton = resizeButton
 end
 
 local function CreateTypeButtonTexture(button, layer, atlas, outset)
@@ -270,7 +213,7 @@ local function RefreshTypeButton(button, activeBankType)
 end
 
 local function CreateTypeButton(frame, text, bankType, width)
-    local button = CreateFrame("Button", nil, frame)
+    local button = CreateFrame("Button", nil, frame.header)
     button:SetSize(width, TYPE_BUTTON_HEIGHT)
     button:RegisterForClicks("LeftButtonUp")
     button.bankType = bankType
@@ -443,59 +386,31 @@ function BankFrameController.Create()
         return NS.bankFrame
     end
 
-    local frame = CreateFrame(
-        "Frame",
-        NS.BANK_FRAME_NAME,
-        UIParent,
-        FRAME_TEMPLATE
-    )
-    ApplyBaseFrameTheme(frame)
+    local frame = NS.Skins:CreateWindow(UIParent, {
+        name = NS.BANK_FRAME_NAME,
+        title = "Bank",
+        portrait = FRAME_PORTRAIT,
+        insetBackground = NS.Media.GetInsetBackgroundTexture(),
+        minWidth = Layout.MinWidth,
+        minHeight = Layout.MinHeight,
+        maxWidth = Geometry.GetMaxWidth(),
+        onMoveStopped = function(target)
+            Geometry.Save(target)
+        end,
+        onResizeStopped = function(target)
+            Geometry.SnapSize(target)
+            Geometry.Save(target)
+        end,
+    })
     Geometry.PreventClientSaving(frame)
     frame:SetScale(Geometry.GetSavedScale())
     Geometry.RestoreSize(frame)
-    frame:SetFrameStrata(FRAME_STRATA)
-    frame:SetToplevel(true)
-    frame:SetClampedToScreen(true)
-    frame:SetMovable(true)
     Geometry.ClearClientPosition(frame)
-    frame:EnableMouse(true)
-    frame:Hide()
-    frame:SetTitle("Bank")
-    frame:SetPortraitToAsset(FRAME_PORTRAIT)
-    frame:SetPortraitTexCoord(0, 1, 0, 1)
-
     Geometry.RestorePosition(frame)
-
-    frame.Inset:ClearAllPoints()
-    frame.Inset:SetPoint(
-        "TOPLEFT",
-        frame,
-        "TOPLEFT",
-        Layout.FrameInsetLeft,
-        Layout.FrameInsetTop
-    )
-    frame.Inset:SetPoint(
-        "BOTTOMRIGHT",
-        frame,
-        "BOTTOMRIGHT",
-        Layout.FrameInsetRight,
-        Layout.FrameInsetBottom
-    )
-
-    frame.TitleContainer:EnableMouse(true)
-    frame.TitleContainer:RegisterForDrag("LeftButton")
-    frame.TitleContainer:SetScript("OnDragStart", function()
-        frame:StartMoving()
-    end)
-    frame.TitleContainer:SetScript("OnDragStop", function()
-        frame:StopMovingOrSizing()
-        Geometry.Save(frame)
-    end)
 
     CreateContent(frame)
     CreateSubheaderControls(frame)
     NS.BankFooter.Create(frame)
-    CreateResizeButton(frame)
     RegisterCallbacks(frame)
     Controls.RegisterSearchShortcut(frame)
 

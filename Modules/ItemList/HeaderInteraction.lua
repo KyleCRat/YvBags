@@ -133,8 +133,8 @@ local function Begin(header, source, kind)
         valid = true,
     }
     if kind == "resize" then
-        -- Header content shares the rows' inner clip edge. Keep the entire
-        -- handle reachable, including its trailing hit area, at every scale.
+        -- The header spans the inner frame, including above the scrollbar.
+        -- Keep the entire handle reachable at that edge, at every scale.
         header.interaction.maxWidth = math.max(source.column.minWidth,
             math.floor(entry.width + header.content:GetRight() - source:GetRight()))
     end

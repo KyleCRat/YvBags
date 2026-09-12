@@ -4,12 +4,6 @@ local _, NS = ...
 local Footer = {}
 NS.Footer = Footer
 
--- Layout
-local FOOTER_LEFT_OFFSET = 3
-local FOOTER_RIGHT_OFFSET = -15
-local FOOTER_BOTTOM_OFFSET = 4
-local FOOTER_HEIGHT = 28
-
 -- Text
 local FOOTER_TEXT_SIZE = 18
 local FOOTER_TEXT_COLOR_R = 1
@@ -437,17 +431,13 @@ function Footer.Refresh(frame)
 end
 
 function Footer.Create(frame)
-    local footer = CreateFrame(FRAME_TYPE, nil, frame)
-    footer:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", FOOTER_LEFT_OFFSET, FOOTER_BOTTOM_OFFSET)
-    footer:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", FOOTER_RIGHT_OFFSET, FOOTER_BOTTOM_OFFSET)
-    footer:SetHeight(FOOTER_HEIGHT)
-    frame.footer = footer
+    local footer = frame.footer
 
     local bagButtonGroupWidth = CreateBagButtons(frame, footer)
 
     local statsHoverFrame = CreateFrame(BUTTON_TYPE, nil, footer)
     statsHoverFrame:SetPoint("LEFT", footer, "LEFT", bagButtonGroupWidth + FOOTER_STATS_TO_BAG_BUTTON_PADDING, FOOTER_STATS_Y_OFFSET)
-    statsHoverFrame:SetSize(FOOTER_STATS_HOVER_MIN_WIDTH, FOOTER_HEIGHT)
+    statsHoverFrame:SetSize(FOOTER_STATS_HOVER_MIN_WIDTH, footer:GetHeight())
     statsHoverFrame:RegisterForClicks("LeftButtonUp")
     statsHoverFrame:SetScript("OnEnter", ShowInventoryStatsTooltip)
     statsHoverFrame:SetScript("OnLeave", HideInventoryStatsTooltip)
@@ -466,7 +456,7 @@ function Footer.Create(frame)
 
     local moneyHoverFrame = CreateFrame(FRAME_TYPE, nil, footer)
     moneyHoverFrame:SetPoint("RIGHT", footer, "RIGHT", FOOTER_MONEY_X_OFFSET, FOOTER_MONEY_Y_OFFSET)
-    moneyHoverFrame:SetSize(FOOTER_MONEY_HOVER_MIN_WIDTH, FOOTER_HEIGHT)
+    moneyHoverFrame:SetSize(FOOTER_MONEY_HOVER_MIN_WIDTH, footer:GetHeight())
     moneyHoverFrame:EnableMouse(true)
     moneyHoverFrame:SetScript("OnEnter", ShowMoneyTooltip)
     moneyHoverFrame:SetScript("OnLeave", HideMoneyTooltip)

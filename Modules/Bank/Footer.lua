@@ -7,10 +7,6 @@ NS.BankFooter = Footer
 local CHARACTER_BANK = Enum.BankType.Character
 local ACCOUNT_BANK = Enum.BankType.Account
 local PRECREATED_TAB_BUTTONS = 6
-local FOOTER_LEFT_OFFSET = 3
-local FOOTER_RIGHT_OFFSET = -15
-local FOOTER_BOTTOM_OFFSET = 4
-local FOOTER_HEIGHT = 28
 local TAB_BUTTONS_X_OFFSET = 2
 local TAB_BUTTON_SIZE = 24
 local TAB_ICON_SIZE = 18
@@ -755,7 +751,7 @@ local function RefreshAutoDepositLayout(frame, bankType)
         depositButton:SetWidth(width)
     end
 
-    autoDepositFrame:SetSize(width, FOOTER_HEIGHT)
+    autoDepositFrame:SetSize(width, frame.footer:GetHeight())
     autoDepositFrame:ClearAllPoints()
     autoDepositFrame:SetPoint(
         "RIGHT",
@@ -968,23 +964,7 @@ function Footer.HideTransientUI(frame)
 end
 
 function Footer.Create(frame)
-    local footer = CreateFrame("Frame", nil, frame)
-    footer:SetPoint(
-        "BOTTOMLEFT",
-        frame,
-        "BOTTOMLEFT",
-        FOOTER_LEFT_OFFSET,
-        FOOTER_BOTTOM_OFFSET
-    )
-    footer:SetPoint(
-        "BOTTOMRIGHT",
-        frame,
-        "BOTTOMRIGHT",
-        FOOTER_RIGHT_OFFSET,
-        FOOTER_BOTTOM_OFFSET
-    )
-    footer:SetHeight(FOOTER_HEIGHT)
-    frame.footer = footer
+    local footer = frame.footer
 
     local tabGroup = CreateFrame("Frame", nil, footer)
     tabGroup:SetAllPoints(footer)
@@ -1058,7 +1038,7 @@ function Footer.Create(frame)
         "BankPanelAutoDepositFrameTemplate"
     )
     autoDepositFrame:ClearAllPoints()
-    autoDepositFrame:SetHeight(FOOTER_HEIGHT)
+    autoDepositFrame:SetHeight(footer:GetHeight())
     frame.autoDepositFrame = autoDepositFrame
 
     local autoDepositButton = autoDepositFrame.DepositButton
@@ -1124,7 +1104,7 @@ function Footer.Create(frame)
         MONEY_FRAME_RIGHT_OFFSET,
         0
     )
-    moneyFrame:SetHeight(FOOTER_HEIGHT)
+    moneyFrame:SetHeight(footer:GetHeight())
     moneyFrame.Border:Hide()
     moneyFrame.MoneyDisplay:Hide()
     SkinMoneyActionButton(
@@ -1145,7 +1125,7 @@ function Footer.Create(frame)
 
     local moneyDisplay = CreateFrame("Frame", nil, moneyFrame)
     moneyDisplay:SetPoint("LEFT", moneyFrame, "LEFT", 0, 0)
-    moneyDisplay:SetSize(MONEY_DISPLAY_MIN_WIDTH, FOOTER_HEIGHT)
+    moneyDisplay:SetSize(MONEY_DISPLAY_MIN_WIDTH, footer:GetHeight())
     moneyDisplay:EnableMouse(true)
     moneyDisplay:SetScript("OnEnter", ShowMoneyTooltip)
     moneyDisplay:SetScript("OnLeave", HideMoneyTooltip)

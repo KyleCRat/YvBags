@@ -48,6 +48,7 @@ function Geometry.SetScale(scale)
     if NS.bankFrame then
         NS.bankFrame:SetScale(scale)
         NS.MainFrameControls.RefreshScale(NS.bankFrame, scale)
+        NS.Skins:RefreshGeometry(NS.bankFrame)
     end
 
     NS.Settings.NotifyBankFrameScaleChanged()
@@ -59,7 +60,7 @@ function Geometry.GetMaxWidth()
         math.max(
             NS.ItemList.GetPreferredWidth(),
             NS.ItemList.GetPreferredWidth(NS.ItemListSettings.Scopes.Bank)
-        ) + Layout.GetHorizontalChromeWidth(),
+        ) + NS.Skins:GetWindowChromeWidth(),
         NS.charDB:GetRaw(DB_SECTION, "width") or 0,
         NS.bankFrame and NS.bankFrame:GetWidth() or 0
     )
@@ -102,6 +103,7 @@ function Geometry.Save(frame)
     NS.charDB:Set(DB_SECTION, "positionInitialized", true)
     Geometry.PreventClientSaving(frame)
     Geometry.ClearClientPosition(frame)
+    NS.Skins:RefreshGeometry(frame)
 end
 
 local function SetFirstPosition(frame)
@@ -152,4 +154,5 @@ function Geometry.RestorePosition(frame)
         NS.charDB:Get(DB_SECTION, "x") or 0,
         NS.charDB:Get(DB_SECTION, "y") or 0
     )
+    NS.Skins:RefreshGeometry(frame)
 end

@@ -73,6 +73,7 @@ end
 local function CreateListState(context)
     local list = setmetatable({}, ListController)
     list.context = context
+    list.window = context.window
     list.settingsScope = context.settingsScope
     list.items = {}
     list.searchText = ""
@@ -87,6 +88,16 @@ end
 
 function ListController:RefreshHeaderSortState()
     Header.Refresh(self.header, self)
+end
+
+function ListController:RefreshVisiblePixelGeometry()
+    -- ScrollBox has positioned its scroll target before OnScroll. Only adjust
+    -- custom strokes on active rows, never the pooled native item buttons.
+    for _, row in ipairs(self.view:GetFrames()) do
+        if row.groupInitialized or row.sectionDividerInitialized then
+            row.divider:RefreshGeometry()
+        end
+    end
 end
 
 -- Appearance-only updates never rebuild the inventory provider or native bridge.
@@ -390,7 +401,7 @@ local function CreateScrollView(list)
         if elementData.rowType == ListModel.GetRowTypeDivider() then
             factory(DIVIDER_ROW_FRAME_TYPE, function(row)
                 row.rightClipPadding = Layout.ScrollBarContentPadding
-                DividerRow.Render(row)
+                DividerRow.Render(row, list)
             end)
         elseif elementData.rowType == ListModel.GetRowTypeGroup() then
             factory("Button", function(row, rowData)
@@ -497,6 +508,8 @@ function ItemList.Create(parent, context)
     local view = CreateScrollView(list)
     ScrollUtil.InitScrollBoxListWithScrollBar(scrollBox, scrollBar, view)
     list.view = view
+    scrollBox:RegisterCallback(BaseScrollBoxEvents.OnScroll, ListController.RefreshVisiblePixelGeometry, list)
+    scrollBox:RegisterCallback(BaseScrollBoxEvents.OnLayout, ListController.RefreshVisiblePixelGeometry, list)
     PrewarmItemRows(list)
 
     if context.cursorDrop then
@@ -531,5 +544,6 @@ function ItemList.Create(parent, context)
             list:RefreshColumnSettings()
         end
     end)
+    NS.Skins:RefreshGeometry(list.window)
     return list
 end

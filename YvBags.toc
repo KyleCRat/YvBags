@@ -9,6 +9,7 @@
 ## SavedVariablesPerCharacter: YvBagsCharacterDB
 
 Libs\LibStub\LibStub.lua
+Libs\LibYvSkins-1.0\embed.xml
 Libs\LibModernSettings-1.0\embed.xml
 Libs\LibSimpleDB-2.0\embed.xml
 Libs\LibSimpleDBProfiles-1.0\embed.xml
@@ -19,6 +20,7 @@ Libs\LibPopupSlider-1.0\LibPopupSlider-1.0.xml
 Defaults.lua
 Core.lua
 Media.lua
+Modules\Appearance\Appearance.lua
 Constants\Binding.lua
 Formatting\Money.lua
 Modules\Inventory\CategoryRules.lua

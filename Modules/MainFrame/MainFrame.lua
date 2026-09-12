@@ -10,24 +10,8 @@ local Layout = NS.MainFrameLayout
 local ListSettings = NS.ItemListSettings
 
 local FRAME_NAME = NS.FRAME_NAME
-local FRAME_TEMPLATE = "ButtonFrameTemplate"
-local FRAME_STRATA = "HIGH"
 local FRAME_PORTRAIT =
     "Interface\\Icons\\INV_Tailoring_Reagent_Bag_Violet_Reagent_Bag"
-local RESIZE_BUTTON_TEMPLATE = "PanelResizeButtonTemplate"
-
-local function ApplyBaseFrameTheme(frame)
-    local insetBackground = frame.Inset.Bg
-    insetBackground:SetTexture(
-        NS.Media.GetInsetBackgroundTexture(),
-        "REPEAT",
-        "REPEAT"
-    )
-    insetBackground:SetHorizTile(true)
-    insetBackground:SetVertTile(true)
-    frame.TopTileStreaks:Hide()
-    frame.TopTileStreaks:SetAlpha(0)
-end
 
 local function ApplyInventoryRefresh(frame, refreshFooter)
     frame.itemList:SetItems(NS.Inventory:GetItems())
@@ -111,11 +95,8 @@ local function RefreshItemLock(frame, bagID, slotIndex, isLocked)
 end
 
 local function CreateContent(frame)
-    local content = CreateFrame("Frame", nil, frame)
-    content:SetPoint("TOPLEFT", frame.Inset, "TOPLEFT", Layout.ContentInsetLeft, Layout.ContentInsetTop)
-    content:SetPoint("BOTTOMRIGHT", frame.Inset, "BOTTOMRIGHT", Layout.ContentInsetRight, Layout.ContentInsetBottom)
-    frame.content = content
-    frame.itemList = NS.ItemList.Create(content, {
+    frame.itemList = NS.ItemList.Create(frame.content, {
+        window = frame,
         settingsScope = ListSettings.Scopes.Bags,
         onColumnLayoutChanged = function()
             Geometry.RefreshResizeBounds(frame)
@@ -152,22 +133,6 @@ local function CreateContent(frame)
             end,
         },
     })
-end
-
-local function CreateResizeButton(frame)
-    local maxWidth = Geometry.GetMaxWidth()
-    frame:SetResizable(true)
-    frame:SetResizeBounds(Layout.MinWidth, Layout.MinHeight, maxWidth, nil)
-
-    local resizeButton = CreateFrame("Button", nil, frame, RESIZE_BUTTON_TEMPLATE)
-    resizeButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", Layout.ResizeButtonRightOffset, Layout.ResizeButtonBottomOffset)
-    resizeButton:Init(frame, Layout.MinWidth, Layout.MinHeight, maxWidth, nil)
-    resizeButton:SetOnResizeStoppedCallback(function(target)
-        Geometry.SnapSize(target)
-        Geometry.Save(target)
-        Geometry.PrintDebug(target, "resize-stop")
-    end)
-    frame.resizeButton = resizeButton
 end
 
 local function RegisterCallbacks(frame)
@@ -210,46 +175,35 @@ function MainFrame.Create()
         return NS.frame
     end
 
-    local frame = CreateFrame("Frame", FRAME_NAME, UIParent, FRAME_TEMPLATE)
-    ApplyBaseFrameTheme(frame)
+    local frame = NS.Skins:CreateWindow(UIParent, {
+        name = FRAME_NAME,
+        title = ADDON_NAME,
+        portrait = FRAME_PORTRAIT,
+        insetBackground = NS.Media.GetInsetBackgroundTexture(),
+        minWidth = Layout.MinWidth,
+        minHeight = Layout.MinHeight,
+        maxWidth = Geometry.GetMaxWidth(),
+        onMoveStopped = function(target)
+            Geometry.Save(target)
+            Geometry.PrintDebug(target, "move-stop")
+        end,
+        onResizeStopped = function(target)
+            Geometry.SnapSize(target)
+            Geometry.Save(target)
+            Geometry.PrintDebug(target, "resize-stop")
+        end,
+    })
     Geometry.PreventClientSaving(frame)
     frame:SetScale(Geometry.GetSavedScale())
     Geometry.RestoreSize(frame)
-    frame:SetFrameStrata(FRAME_STRATA)
-    frame:SetToplevel(true)
-    frame:SetClampedToScreen(true)
-    frame:SetMovable(true)
     Geometry.ClearClientPosition(frame)
-    frame:EnableMouse(true)
-    frame:Hide()
-    frame:SetTitle(ADDON_NAME)
-    frame:SetPortraitToAsset(FRAME_PORTRAIT)
-    frame:SetPortraitTexCoord(0, 1, 0, 1)
-
     Geometry.RestorePosition(frame)
-
-    frame.Inset:ClearAllPoints()
-    frame.Inset:SetPoint("TOPLEFT", frame, "TOPLEFT", Layout.FrameInsetLeft, Layout.FrameInsetTop)
-    frame.Inset:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", Layout.FrameInsetRight, Layout.FrameInsetBottom)
-
-    local dragRegion = frame.TitleContainer
-    dragRegion:EnableMouse(true)
-    dragRegion:RegisterForDrag("LeftButton")
-    dragRegion:SetScript("OnDragStart", function()
-        frame:StartMoving()
-    end)
-    dragRegion:SetScript("OnDragStop", function()
-        frame:StopMovingOrSizing()
-        Geometry.Save(frame)
-        Geometry.PrintDebug(frame, "move-stop")
-    end)
 
     CreateContent(frame)
     Controls.CreateSettingsButton(frame)
     Controls.CreateScaleButton(frame)
     Controls.CreateSearch(frame)
     NS.Footer.Create(frame)
-    CreateResizeButton(frame)
     RegisterCallbacks(frame)
 
     frame:SetScript("OnShow", function(self)

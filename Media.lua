@@ -35,7 +35,6 @@ local Textures = {
     newItem = ADDON_MEDIA_PATH .. "Textures\\Vertex-New.tga",
     pinned = ADDON_MEDIA_PATH .. "Textures\\Vertex-Pinned.tga",
     soulboundBindingIcon = ADDON_MEDIA_PATH .. "Textures\\Vertex-Lock.tga",
-    divider = "Interface\\Common\\UI-TooltipDivider",
 }
 
 local Atlases = {
@@ -141,10 +140,6 @@ end
 
 function Media.GetDeleteAtlas()
     return Atlases.delete
-end
-
-function Media.GetDividerTexture()
-    return Textures.divider
 end
 
 function Media.GetAccentColor()

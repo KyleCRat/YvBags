@@ -29,9 +29,6 @@ local SCALE_POPUP_FONT_SIZE = 12
 local SCALE_POPUP_FONT_FLAGS = "OUTLINE"
 
 -- Settings and search controls
-local SETTINGS_BUTTON_LEFT_OFFSET = 58
-local SEARCH_BOX_RIGHT_OFFSET = -6
-local SEARCH_BOX_TOP_OFFSET = -28
 local SEARCH_FOCUS_KEY = "F"
 local SEARCH_SHORTCUT_LISTENER_TEMPLATE = "InsecureKeyboardInputPropagatorTemplate"
 
@@ -64,7 +61,7 @@ local function UpdateSquareButtonVisualState(button)
 end
 
 local function CreateSquareIconButton(frame, iconTexture)
-    local button = CreateFrame("Button", nil, frame)
+    local button = CreateFrame("Button", nil, frame.header)
     button:SetSize(SQUARE_BUTTON_SIZE, SQUARE_BUTTON_SIZE)
     button:SetFrameLevel(frame:GetFrameLevel() + SUBHEADER_FRAME_LEVEL_OFFSET)
     button:EnableMouse(true)
@@ -161,10 +158,10 @@ function Controls.CreateSettingsButton(frame, options)
     local button = CreateSquareIconButton(frame, NS.Media.GetSettingsTexture())
     button:SetPoint(
         "TOPLEFT",
-        frame,
+        frame.header,
         "TOPLEFT",
-        options.leftOffset or SETTINGS_BUTTON_LEFT_OFFSET,
-        options.topOffset or SEARCH_BOX_TOP_OFFSET
+        0,
+        0
     )
     button:RegisterForClicks("LeftButtonUp")
 
@@ -257,15 +254,15 @@ function Controls.LayoutSearch(frame, options)
     )
     searchBox:SetPoint(
         "TOPRIGHT",
-        frame,
+        frame.header,
         "TOPRIGHT",
-        options.rightOffset or SEARCH_BOX_RIGHT_OFFSET,
-        options.topOffset or SEARCH_BOX_TOP_OFFSET
+        0,
+        0
     )
 end
 
 function Controls.CreateSearch(frame, options)
-    local searchBox = frame.itemList:CreateSearchBox(frame)
+    local searchBox = frame.itemList:CreateSearchBox(frame.header)
     searchBox:SetFrameLevel(frame:GetFrameLevel() + SUBHEADER_FRAME_LEVEL_OFFSET)
     frame.searchBox = searchBox
     Controls.LayoutSearch(frame, options)

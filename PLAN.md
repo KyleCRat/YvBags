@@ -1,7 +1,20 @@
 # LibYvSkins And YvBags Appearance Plan
 
-Status: proposed implementation plan, awaiting approval. No runtime work or
-submodule registration has been performed for this feature.
+Status: approved, with a creation-first architecture. Phase 0 and Phase 1 are
+implemented, and the user-directed frame-foundation refactor is implemented
+as Phase 1.5 below. The pixel corrections and new window construction await
+in-game validation before broader control restyling. No skin selector,
+Flat/EUI restyling, or library release is active yet.
+
+Current checkpoint (2026-09-12): the submodule is registered on `main` at the
+published bootstrap commit `816ed1e`. Uncommitted library source and YvBags
+integration now load from this submodule. YvBags directly uses library-created
+window shells and separator factories; the addon-side separator wrapper and
+window/list registration map are removed. Lua 5.1 library tests cover window
+construction/lifecycle, context isolation, geometry/clipping, pooled state,
+and mixed/equal-MINOR loading (19 tests passing); all 106 Lua files pass syntax
+checks, and TOC/embed paths and whitespace checks pass. Client visual/combat
+validation pass.
 
 ## Outcome And Scope
 
@@ -18,8 +31,8 @@ Deliver these capabilities in order:
    including compact window headers and two-physical-pixel icon borders.
 4. Selectable EllesmereUI integration through its public API, with a reload
    required when entering or leaving that skin.
-5. Reusable component/window contracts so future addons can receive the same
-   skins and EUI integration without copying the adapter implementation.
+5. Reusable window/component constructors so YvBags and future addons build
+   directly on the same structure and inherit its skins and EUI integration.
 
 Masque is deferred. Aurora, Skinner, and AddOnSkins are excluded. Do not add
 dependencies, settings, placeholder adapters, or third-party detection for them.
@@ -34,10 +47,15 @@ column auto-fitting, action bars, new artwork generation, or Blizzard art
 exports are part of this work. Do not migrate RaidGroupManager or other addons
 in this implementation; use a library harness to validate another consumer.
 
-## Proposed Product Decisions
+## Approved Product Decisions
 
-These defaults make the plan implementable and can be revised during approval:
+These decisions guide the implementation:
 
+- YvBags is the first native consumer of LibYvSkins, not a legacy window to
+  adapt. Create its skinnable windows and controls through library factories.
+  Do not add an existing-window registration path or YvBags frame-tree mapping
+  layer. Adapters are reserved for real external boundaries, notably EUI and
+  other owned libraries such as LibPopupSlider.
 - One addon-global `appearance.skin` setting, shared by bags and bank, default
   `modern`. Store it through `NS.globalDB`; list profiles, list mirroring, and
   per-character geometry remain independent. The library has no SavedVariables
@@ -104,8 +122,8 @@ hovered, pressed, focused, disabled, and disabled-checked states distinguishable
 
 ## Inspected Baseline
 
-- LibYvSkins remote is reachable, but read-only `ls-remote` returned no HEAD,
-  branch, or tag refs. Treat initial-commit bootstrap as a required checkpoint.
+- At planning time LibYvSkins had no remote refs. Bootstrap is now complete:
+  local and published `main` point to `816ed1e` (`Initialize LibYvSkins`).
 - Existing sibling reference: RaidGroupManager `bee6287`, especially
   `UI/PixelPerfect.lua`, `UI/Widgets.lua`, and `UI/MainFrame.lua`.
 - Blizzard code export: Retail `12.1.0.69497` (`03b6f28`). The supplemental
@@ -122,11 +140,13 @@ hovered, pressed, focused, disabled, and disabled-checked states distinguishable
 
 Important implementation findings:
 
-- Bag/bank roots are `ButtonFrameTemplate`; both duplicate inset/background
-  setup. Frame layout constants and bank tab refreshes currently re-anchor
-  controls directly, so changing creation-time textures alone is insufficient.
-- Header/category/section separators stretch `UI-TooltipDivider`; column
-  separators rotate that texture. Replace their drawing, not their hit areas.
+- Bag/bank roots remain `ButtonFrameTemplate`, now created by LibYvSkins with
+  shared header/content/footer slots, inset/background layout, title/portrait,
+  close/resize controls, and geometry lifecycle. YvBags no longer duplicates
+  this construction. Toolbar interior layout and bank tab refreshes still need
+  conversion when the remaining control factories are implemented.
+- Header/category/section and column separators now use the library's direct
+  physical-pixel separator factory without changing their hit areas.
 - Item rows use 23-unit icons inside 29-unit textured borders and custom
   noninteractive regions beside native full-row interaction buttons. Footer
   container/tab icons are 18 units within 24-unit controls; bank tertiary
@@ -136,7 +156,8 @@ Important implementation findings:
   not rereading inventory data or globally replacing media values.
 - EUI's EditBox primitive fades texture regions, which includes a search icon
   on the edit box. Its Tab primitive expects a standard label reference and
-  refreshable selected state. Both need explicit component adapters.
+  refreshable selected state. The library's EUI provider must translate these
+  known constructor-owned parts without consumer-side adapters.
 - Bank footer hover/refresh code currently reapplies Modern atlases. Those
   writers must delegate to the selected renderer; leaving them active would
   overwrite Flat/EUI styling after a hover or bank update.
@@ -148,12 +169,12 @@ Important implementation findings:
 
 | Owner | Responsibilities | Explicit exclusions |
 |---|---|---|
-| LibYvSkins core | Per-addon contexts, component registrations, renderer selection/status, revisions, optional adapter coordination | SavedVariables, profiles, automatic discovery of unrelated frames |
+| LibYvSkins core | Per-addon contexts, constructor-owned registry, renderer selection/status, revisions, external integration coordination | SavedVariables, profiles, automatic discovery of unrelated frames |
 | Pixel primitives | Physical-pixel borders/lines, scale-aware layout rounding, visual alignment and invalidation | Changing UIParent scale, CVars, saved positions, inventory row geometry |
-| Window/component layer | Shared window parts and chrome layout, visuals/states for declared controls | Bank semantics, use/drag scripts, search filtering, persistence |
+| Window/component layer | Creates ordinary frames and canonical parts, owns chrome layout and visual states, uses native template behavior | Bank semantics, item use/drag, search filtering, persistence |
 | Modern/Flat renderers | Assets, colors, visual metrics, state drawing and restoration | Domain queries and native item interaction |
 | EUI adapter | Public API registration per consuming addon, facade translation, availability and reload policy | Private EUI tables, forcing EUI settings, copying its engine |
-| YvBags Appearance module | LSDB preference, context setup, window/list adapters, safe apply routing, Settings notifications | A second copy of common skin renderers |
+| YvBags Appearance module | Context/media setup, LSDB preference, safe apply requests, Settings notifications | Frame adapters, part-discovery maps, constructor wrappers, duplicated renderers |
 | Existing YvBags modules | Inventory, columns, virtualized lists, native bridges, geometry persistence, footer/bank behavior | Continuing to overwrite skin-owned art |
 
 ### Small Public Contract
@@ -168,16 +189,26 @@ the first release:
   reason, and pending combat/reload state. `RequestSkin(id)` manages runtime
   application only; the addon owns persisting the preference and displaying
   confirmation UI.
-- `RegisterWindow(frame, parts, options)` describes an existing window's
-  declared template art, header slots, optional leading controls, content,
-  footer, drag region, close, and resize controls.
-- `CreateWindow(parent, options)` creates the same canonical parts and delegates
-  to the same registration/layout path. Return ordinary WoW frames/parts, not
-  a replacement input/data-binding abstraction. Exercise this factory in the
-  library harness even while YvBags adapts existing construction.
-- `RegisterComponent(role, target, parts, options)` returns a stable appearance
-  handle. Supported roles cover window/panel, command/icon button, checkbox,
-  tab, search/edit box, scrollbar, resize grip, icon, separator, and text.
+- `CreateWindow(parent, options)` is the only window construction path. It
+  returns an ordinary WoW Frame with canonical `header`, `content`, `footer`,
+  and `resizeButton` parts, plus the native title/portrait/close controls.
+  YvBags supplies name/title/artwork, minimum/maximum size constraints, and
+  move/resize completion callbacks. The library creates and owns the parts;
+  YvBags mounts its content and restores/saves geometry on the returned frame.
+- `GetWindowChromeWidth()` reports the current layout's horizontal content
+  overhead so the consumer can calculate window bounds without copying the
+  library's inset constants.
+- `CreateSeparator(parent, options)` creates the texture and its appearance
+  handle together, returning both. The window itself is the geometry root;
+  no addon-side window-to-list map or region-construction wrapper is needed.
+- Add focused constructors for command/icon button, checkbox, tab, search/edit
+  box, scrollbar, icon, and text as each actual consumer is converted. Return
+  ordinary controls and their declared visual state handles, not field/value
+  wrappers. Constructors register their own visual parts internally.
+- `RegisterComponent(role, target, parts, options)` remains the low-level
+  visual registration backend and an explicit external extension point, not
+  the primary YvBags integration path. Do not add `RegisterWindow` or
+  `SkinExistingWindow` APIs for this MVP.
 - Appearance handles accept visual state such as selected/enabled/focused,
   semantic border color, visibility, and sizing. State changes update reusable
   regions; they do not reconstruct components.
@@ -187,23 +218,28 @@ the first release:
 
 Skin implementation and structural layout are separate. A Flat window may
 still have a title in a future addon; YvBags explicitly requests compact chrome
-for Flat/EUI. Window layout owns only declared outer slots. Lists and footers
-own their interior layouts and behaviors.
+for Flat/EUI. The library's window layout owns the outer slots. Lists and
+footers own their interior layouts and behaviors, composing library-created
+visual components inside those slots.
 
 Use a fixed MVP component vocabulary rather than a universal widget framework.
-Adapters supply exact parts; do not recursively inspect arbitrary frame trees.
+The library knows the parts it created; do not recursively inspect arbitrary
+frame trees. Where a Blizzard behavior template is required, compose it in the
+appropriate constructor without moving domain behavior into the library.
 Keep native callbacks, setters, text/value access, and custom extensions
-accessible on the original controls.
+accessible on the returned controls. Native container/bank item-button bridges
+remain addon-owned; create only their separate custom visuals with LibYvSkins.
 
 ### State And Restoration
 
 - Register visual state in side tables; never put library metadata onto native
   container/bank item-button tables. Skin custom row visuals only.
-- Establish ownership once. Remove addon atlas/color writers as each component
-  is adopted, replacing them with explicit state updates to its handle.
+- Establish ownership at construction. Replace addon-owned visual construction
+  and atlas/color writers with direct factory calls and explicit state updates.
+  Do not construct an old control and then pass it through a YvBags adapter.
 - Modern and Flat must completely restore each other's declared art, alphas,
   texture coordinates/masks, font settings, focus/selection layers, and layout.
-  Record the declared native baseline once, not a deep copy of frame objects
+  Retain the known constructor baseline once, not a deep copy of frame objects
   and not a fresh snapshot of already-skinned state on every switch.
 - Hook visual notifications once without replacing behavior scripts. Avoid
   adding permanent hooks for each renderer switch. Native checkbox and tab
@@ -267,7 +303,10 @@ relative offsets alone cannot fix a fractional ancestor or scroll origin.
 All new list separator strokes start at one physical pixel. Retain existing
 category/section row extents and column separator hit widths; replace the old
 texture's padded offsets with placement inside the intended visible bounds.
-Clip to the inner list, including its scrollbar gutter.
+The header owns the full inner-frame width above the scrollbar, including
+titles and controls. Only scrolling rows reserve the scrollbar gutter. Join
+column strokes to the header line using physical-pixel insets, not scaled
+UI-unit gaps.
 
 Geometry invalidation must cover window scale/size/move completion, parent UI
 scale, display size, layout changes, and row placement. Use the exported
@@ -315,7 +354,7 @@ in our package. Preserve YvBags' existing IconBrowser optional dependency.
   styling. Preserve native placeholder, clear button, text-change behavior,
   focus, Escape, and Ctrl+F behavior.
 - Expose standard label references for custom tab/button visuals. Feed bank
-  selection to the declared tab adapter and invoke the public tab primitive
+  selection through the library tab handle and invoke the public tab primitive
   on state refresh; do not leave a second Modern selected/hover renderer active.
 - Use public EUI primitives where they fit. For our custom list dividers,
   markers, semantic icon borders, and focus indicators, use library drawing
@@ -332,8 +371,8 @@ in our package. Preserve YvBags' existing IconBrowser optional dependency.
   adapter failures clearly; do not pretend an already partially applied skin
   was successfully rolled back. Restore through reload if necessary.
 
-The adapter belongs in LibYvSkins, not YvBags. Future addons still register
-their own named context and components and declare dependencies, but should
+The adapter belongs in LibYvSkins, not YvBags. Future addons create their own
+named context and library controls and declare dependencies, but should
 not need to duplicate EUI-specific integration code for supported roles.
 
 ## Module And Dependency Map
@@ -345,7 +384,7 @@ Libs/LibYvSkins-1.0/
   LibYvSkins-1.0.lua       # LibStub bootstrap, persistent shared prototypes
   Context.lua             # registrations, selection/status, revisions
   Pixel.lua               # physical borders/lines and geometry helpers
-  Window.lua              # shared parts, factory, existing-window adapter
+  Window.lua              # canonical window constructor, chrome, lifecycle
   Components/             # visual contracts used by both built-in skins
   Skins/Modern.lua
   Skins/Flat.lua
@@ -363,24 +402,23 @@ Libs/LibYvSkins-1.0/
 
 YvBags changes:
 
-- New `Modules/Appearance/Appearance.lua`: context, preference/application
-  routing, token access and presentation invalidation.
-- New `Modules/Appearance/Window.lua`: YvBags-specific mapping of existing
-  window parts and compact/Modern chrome requirements. Generic algorithms
-  remain in the library, not duplicated per bag/bank.
+- `Modules/Appearance/Appearance.lua`: expose the shared `NS.Skins` context;
+  later own preference/application requests and Settings notifications. Do not
+  add constructor proxies, window/list maps, or an Appearance/Window adapter.
 - `Defaults.lua`, `Settings.lua`: shared preference, inline selectors,
   pending/unavailable status, reset and reload UI, targeted notifications.
 - `Media.lua`: retain addon artwork and semantic media; supply context inputs
   without globally changing LMS or other consumers' colors/fonts.
-- MainFrame and Bank frame/layout/geometry modules: register windows, delegate
-  chrome anchoring and refresh pixel metrics, preserve geometry storage and
-  native lifecycle. Bank refreshes report visible/selected tabs to the layout
-  instead of unconditionally restoring old search anchors.
-- Both footers and Controls/SearchBox modules: register visual parts and remove
-  competing style writers. Preserve all native click/drag/money/deposit flows,
-  icon preloading, and disabled readiness states.
-- ItemList Header/GroupRow/DividerRow/ItemRow and Layout/List: registered visual
-  primitives, style/pixel revision refreshes, and viewport-pool capacity.
+- MainFrame and Bank frame/layout/geometry modules: construct roots through
+  `NS.Skins:CreateWindow`, use library slots and chrome measurements, and keep
+  geometry storage and native lifecycle. Bank refreshes report visible/selected
+  tabs to the eventual library toolbar layout instead of restoring old anchors.
+- Both footers and Controls/SearchBox modules: populate library-created slots
+  and use component constructors as they become available. Remove competing
+  style writers. Preserve native click/drag/money/deposit flows, icon preloading,
+  and disabled readiness states.
+- ItemList Header/GroupRow/DividerRow/ItemRow and Layout/List: directly created
+  visual primitives, style/pixel revision refreshes, and viewport-pool capacity.
   Do not alter Model, inventory normalization, sorting, category rules, or
   native item-button bridges to implement appearance.
 - `YvBags.toc`: LibStub before the new embed; Appearance after Media and before
@@ -406,19 +444,18 @@ because it may require upstream changes to make functional.
 
 ### Phase 0: Bootstrap And Contract Harness
 
-- [ ] Recheck worktrees, remote refs, branch, and any existing library files.
-- [ ] Because the remote is initially empty, clone into the intended Libs path
-  without requesting a nonexistent branch. Scaffold on `main` and stop for an
-  explicitly authorized/user-performed initial library commit before recording
-  a gitlink. Do not repeatedly run submodule-add against an unborn HEAD.
-- [ ] Register that existing committed clone as the submodule using the supplied
+- [x] Recheck worktrees, remote refs, branch, and any existing library files.
+- [x] Bootstrap the initially empty repository on `main` in the intended Libs
+  path. The user created and published its initial commit before registering
+  the gitlink; no attempt to register an unborn HEAD is needed.
+- [x] Register that existing committed clone as the submodule using the supplied
   SSH URL and branch `main`; normalize its Git directory with Git's supported
   submodule workflow. Never replace an existing directory or discard work.
-- [ ] Add library metadata, neutral API family `LibYvSkins-1.0`, MINOR `1`,
+- [x] Add library metadata, neutral API family `LibYvSkins-1.0`, MINOR `1`,
   ordered embed, the agreed license, and Lua 5.1 harness.
-- [ ] Implement context/registration skeleton and fixture components sufficient
+- [x] Implement context/registration skeleton and fixture components sufficient
   for two independent consumers, not a broad speculative widget toolkit.
-- [ ] Add mixed-copy tests before expanding the public API.
+- [x] Add mixed-copy tests before expanding the public API.
 
 Gate: valid committed library HEAD available for the submodule; loader and
 context-isolation tests pass; no duplicate registrations on mixed-copy loading.
@@ -426,34 +463,59 @@ Initial commits/pushes require the user's explicit Git authorization.
 
 ### Phase 1: Pixel Primitives And Existing List Dividers
 
-- [ ] Implement tested physical thickness, scale-aware rounding, solid lines
+- [x] Implement tested physical thickness, scale-aware rounding, solid lines
   and four-edge borders, plus explicit geometry invalidation.
-- [ ] Load the new embed and initial Appearance context in YvBags.
-- [ ] Replace header bottom, column separators, group/category, and new/pinned
+- [x] Load the new embed and initial Appearance context in YvBags.
+- [x] Replace header bottom, column separators, group/category, and new/pinned
   section divider drawing in both lists. Keep hit targets and row extents.
-- [ ] Connect both Geometry scale paths and list placement callbacks to targeted
+- [x] Connect both Geometry scale paths and list placement callbacks to targeted
   pixel refreshes. Correct fractional-origin alignment without moving native
   item buttons or changing column settings.
 
-Gate: verify crisp 1px strokes in Modern at 50%, 75%, 100%, 125%, and 150%
+Initial in-game review found a header join gap at 125%+ and premature header
+clipping at the scrollbar. Physical-pixel join insets and full-width header
+bounds are implemented; recheck those fixes before approving this gate.
+
+Gate (pending in game): verify crisp 1px strokes in Modern at 50%, 75%, 100%, 125%, and 150%
 frame scales, multiple UI scales, and 1080p/1440p/4K where available. Test drag,
 resize, reload, smooth scrolling, clipping, and header interactions. No overall
 skin/layout change yet. Stop for visual approval before broad restyling.
 
+### Phase 1.5: Creation-First Window Foundation
+
+User-directed architecture update before continuing broader skin work:
+
+- [x] Build the canonical library window constructor, preserving the current
+  Modern shell, outer background, tiled inset, title/portrait, footer height,
+  and toolbar/content positions.
+- [x] Create bag/bank windows directly through the library. Remove duplicated
+  shell/content/footer/resize creation and addon-owned chrome measurements.
+- [x] Replace the temporary Appearance separator wrapper and window/list map
+  with direct separator factories and window-root geometry refreshes.
+- [x] Keep ordinary frames/controls directly accessible and preserve native
+  close/resize behavior with consumer-owned persistence callbacks.
+- [x] Add constructor, geometry/lifecycle, raw-control, and mixed-copy tests.
+
+Gate: verify the current Modern appearance, open/close, move/resize/scale,
+toolbar interactions, footer alignment, bank switching, and pixel corrections
+in game. This foundation does not imply the remaining control skins are done.
+
 ### Phase 2: Modern Ownership And Window/Component Layer
 
-- [ ] Implement the common window parts/factory/adapter and supported component
-  state handles. Preserve independent layout and skin selection.
+- [x] Establish the common window constructor and direct first-consumer path
+  in Phase 1.5. No legacy-window adapter is required.
+- [ ] Implement the remaining concrete control factories and supported state
+  handles. Preserve independent layout and skin selection.
 - [ ] Move generic Modern assets/state drawing out of addon-owned controls.
-  Register window chrome, search, scale/close/resize, tabs, footer controls,
-  list accents/text, and icon surfaces.
+  Build search, scale/close/resize presentation, tabs, footer controls, list
+  accents/text, and icon surfaces through library constructors.
 - [ ] Remove competing hover/refresh atlas writers as components are converted.
   Preserve tab selection precedence, correct atlas families/outsets, disabled
   controls, and input focus behavior.
 - [ ] Establish a presentation-only refresh path for both windows and pooled
   rows. Keep the old geometry/storage and all native banking actions intact.
-- [ ] Exercise new-window factory and existing-window registration in the
-  library harness; verify raw controls remain directly accessible.
+- [ ] Exercise the same window/control constructors in YvBags and the second
+  library harness consumer; verify raw controls remain directly accessible.
 
 Gate: Modern matches the existing frame/portrait/header/footer appearance
 apart from Phase 1's deliberate divider change. Bank tab changes, cold icon
@@ -548,6 +610,8 @@ disabled, unsupported, or blocked for this addon, the built-in skins still work.
 
 - [ ] Lua 5.1 syntax and public-contract tests, including invalid required
   parts/roles and optional external capability failures.
+- [ ] Canonical constructors are the actual consumer path; no YvBags existing-
+  window adapters, frame-tree maps, or duplicated chrome constructors remain.
 - [ ] Physical thickness and rounded layout values at multiple resolutions,
   effective scales, negative offsets, fractional origins, and odd/even sizes.
 - [ ] Border edges do not overlap at corners, clips are respected, and repeated
