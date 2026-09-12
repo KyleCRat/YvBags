@@ -14,7 +14,7 @@ function ColumnMenu.PopulateColumnActions(rootDescription, scope, columnKey)
         ListSettings.SetColumnVisible(scope, columnKey, false)
         return MenuResponse.Refresh
     end):SetEnabled(function()
-        return ListSettings.CanEditColumns() and not ListSettings.GetColumns(scope).hidden[columnKey]
+        return ListSettings.CanEditColumns() and ListSettings.IsColumnVisible(scope, columnKey)
     end)
 
     local reset = rootDescription:CreateButton("Reset " .. label, function()
@@ -34,7 +34,7 @@ function ColumnMenu.Populate(rootDescription, scope)
     end
 
     local function IsVisible(key)
-        return not ListSettings.GetColumns(scope).hidden[key]
+        return ListSettings.IsColumnVisible(scope, key)
     end
     local function ToggleVisible(key)
         ListSettings.SetColumnVisible(scope, key, not IsVisible(key))

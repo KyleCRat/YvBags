@@ -302,6 +302,26 @@ local function LayoutHeaderContent(button, sorted)
     button.sortIcon:SetPoint("LEFT", button, "CENTER", (textWidth - arrowSpace) / 2 + HEADER_SORT_ICON_GAP, 0)
 end
 
+local function RefreshButtonSortState(button, list, layoutChanged)
+    local sorted = button.column.sortKey ~= nil and button.column.sortKey == list.sortKey
+    local sortChanged = button.isSorted ~= sorted
+    if sortChanged then
+        button.sortIcon:SetShown(sorted)
+        button.isSorted = sorted
+    end
+    if sorted and (sortChanged or button.sortAscending ~= list.sortAscending) then
+        if list.sortAscending then
+            button.sortIcon:SetTexCoord(0, 1, 0, 1)
+        else
+            button.sortIcon:SetTexCoord(0, 1, 1, 0)
+        end
+        button.sortAscending = list.sortAscending
+    end
+    if layoutChanged or sortChanged then
+        LayoutHeaderContent(button, sorted)
+    end
+end
+
 local function UpdateButtonVisualState(button)
     button.pressedTexture:SetShown(button.isPressed == true)
     button.hoverTexture:SetShown(button.isHovered == true and button.isPressed ~= true)
@@ -439,23 +459,43 @@ function Header.ApplyColumnLayout(header, list)
     for index, button in ipairs(header.buttons) do
         local entry = list.columnLayout.byKey[button.column.key]
         local separator = header.separators[index]
-        button:SetShown(entry ~= nil)
-        separator:SetShown(entry ~= nil)
+        local shown = entry ~= nil
+        local visibilityChanged = button.columnShown ~= shown
+        local widthChanged = entry ~= nil and button.columnWidth ~= entry.width
+        local separatorChanged = visibilityChanged
+        if visibilityChanged then
+            button:SetShown(shown)
+            separator:SetShown(shown)
+            button.columnShown = shown
+        end
         if entry then
-            button:ClearAllPoints()
-            button:SetPoint("LEFT", header.content, "LEFT", entry.x, 0)
-            button:SetWidth(entry.width)
+            if button.columnX ~= entry.x then
+                button:ClearAllPoints()
+                button:SetPoint("LEFT", header.content, "LEFT", entry.x, 0)
+                button.columnX = entry.x
+            end
+            if widthChanged then
+                button:SetWidth(entry.width)
+                button.columnWidth = entry.width
+            end
             local separatorX = entry.x + entry.width + Columns.GetColumnGap() / 2
             if entry == lastEntry then
                 -- The trailing handle must remain inside the clipped content.
                 separatorX = entry.x + entry.width - HEADER_SEPARATOR_HANDLE_WIDTH / 2
             end
-            separator:ClearAllPoints()
-            separator:SetPoint("LEFT", header.content, "LEFT", separatorX - HEADER_SEPARATOR_HANDLE_WIDTH / 2, 0)
+            if separator.columnX ~= separatorX then
+                separator:ClearAllPoints()
+                separator:SetPoint("LEFT", header.content, "LEFT", separatorX - HEADER_SEPARATOR_HANDLE_WIDTH / 2, 0)
+                separator.columnX = separatorX
+                separatorChanged = true
+            end
         end
+        if separatorChanged then
+            separator.line:RefreshGeometry()
+        end
+        RefreshButtonSortState(button, list, visibilityChanged or widthChanged)
     end
-    Header.RefreshPixelGeometry(header)
-    Header.Refresh(header, list)
+    header.bottomDivider:RefreshGeometry()
 end
 
 function Header.Refresh(header, list)
@@ -464,16 +504,7 @@ function Header.Refresh(header, list)
     end
 
     for _, button in ipairs(header.buttons) do
-        local sorted = button.column.sortKey ~= nil and button.column.sortKey == list.sortKey
-        button.sortIcon:SetShown(sorted)
-        if sorted then
-            if list.sortAscending then
-                button.sortIcon:SetTexCoord(0, 1, 0, 1)
-            else
-                button.sortIcon:SetTexCoord(0, 1, 1, 0)
-            end
-        end
-        LayoutHeaderContent(button, sorted)
+        RefreshButtonSortState(button, list, true)
     end
 end
 
@@ -590,6 +621,7 @@ function Header.Create(parent, list)
         -- hidden. Remeasure once after it becomes visible, without polling.
         C_Timer.After(0, function()
             if self:IsVisible() then
+                Header.RefreshPixelGeometry(self)
                 Header.Refresh(self, list)
             end
         end)

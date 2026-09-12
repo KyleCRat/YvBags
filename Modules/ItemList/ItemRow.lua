@@ -127,38 +127,43 @@ local function LayoutRow(row)
         return
     end
 
-    for key, text in pairs(row.text) do
-        text:SetShown(layout.byKey[key] ~= nil)
-    end
-    row.icon:SetShown(row.item ~= nil and layout.byKey.icon ~= nil)
-    row.iconAppearance:SetBorderShown(row.item ~= nil and layout.byKey.icon ~= nil)
-    row.bindingIcon:SetShown(row.hasBindingIcon == true and layout.byKey.binding ~= nil)
-    row.professionQualityIcon:SetShown(row.hasProfessionQualityIcon == true and layout.byKey.professionQuality ~= nil)
-
-    for _, entry in ipairs(layout.entries) do
-        local column = entry.column
-        local xOffset = entry.x
-        local columnCenterX = xOffset + (entry.width / 2)
-
-        if column.key == "icon" then
-            local iconCenterX = columnCenterX + ICON_LEFT_OFFSET + (ICON_FRAME_SIZE - column.width) / 2
-            row.icon:ClearAllPoints()
-            row.icon:SetPoint("CENTER", row.contentClip, "LEFT", iconCenterX, 0)
-            row.icon:SetSize(ICON_SIZE, ICON_SIZE)
-        elseif column.key == "binding" then
-            row.bindingIcon:ClearAllPoints()
-            row.bindingIcon:SetPoint("CENTER", row.contentClip, "LEFT", columnCenterX, 0)
-        elseif column.key == "professionQuality" then
-            row.professionQualityIcon:ClearAllPoints()
-            row.professionQualityIcon:SetPoint("CENTER", row.contentClip, "LEFT", columnCenterX, 0)
+    for _, column in ipairs(Columns.GetAvailableColumns()) do
+        local key = column.key
+        local entry = layout.byKey[key]
+        local shown = entry ~= nil
+        if row.columnVisibility[key] ~= shown then
+            row.columnVisibility[key] = shown
+            if key == "icon" then
+                row.icon:SetShown(row.item ~= nil and shown)
+                row.iconAppearance:SetBorderShown(row.item ~= nil and shown)
+            elseif key == "binding" then
+                row.bindingIcon:SetShown(row.hasBindingIcon == true and shown)
+            elseif key == "professionQuality" then
+                row.professionQualityIcon:SetShown(row.hasProfessionQualityIcon == true and shown)
+            else
+                row.text[key]:SetShown(shown)
+            end
         end
 
-        if IsTextColumn(column) then
-            local text = row.text[column.key]
-            text:ClearAllPoints()
-            text:SetPoint("LEFT", row.contentClip, "LEFT", xOffset, 0)
-            text:SetSize(entry.width, ROW_HEIGHT)
-            text:SetJustifyH(column.justify or "LEFT")
+        if entry then
+            local region, point, x = row.text[key], "LEFT", entry.x
+            if key == "icon" then
+                region, point = row.icon, "CENTER"
+                x = x + entry.width / 2 + ICON_LEFT_OFFSET + (ICON_FRAME_SIZE - column.width) / 2
+            elseif key == "binding" then
+                region, point, x = row.bindingIcon, "CENTER", x + entry.width / 2
+            elseif key == "professionQuality" then
+                region, point, x = row.professionQualityIcon, "CENTER", x + entry.width / 2
+            end
+            if row.columnPositions[key] ~= x then
+                region:ClearAllPoints()
+                region:SetPoint(point, row.contentClip, "LEFT", x, 0)
+                row.columnPositions[key] = x
+            end
+            if IsTextColumn(column) and row.columnWidths[key] ~= entry.width then
+                region:SetWidth(entry.width)
+                row.columnWidths[key] = entry.width
+            end
         end
     end
     row.columnLayout = layout
@@ -172,6 +177,8 @@ local function CreateTextColumns(row, columns)
             local text = NS.Skins:CreateText(row.contentClip, {
                 geometryRoot = row.list.window, fontSize = ROW_TEXT_SIZE,
             })
+            text:SetHeight(ROW_HEIGHT)
+            text:SetJustifyH(column.justify or "LEFT")
             text:SetJustifyV("MIDDLE")
             text:SetWordWrap(false)
             text:SetMaxLines(1)
@@ -208,6 +215,11 @@ local function InitializeRow(row, list)
     row.list = list
     row.itemButtonAdapter = list.context.itemButtonAdapter
     local columns = Columns.GetAvailableColumns()
+    -- Retain applied geometry through pool resets. These scalar snapshots also
+    -- let rows catch up after several layout revisions while they were inactive.
+    row.columnPositions = {}
+    row.columnWidths = {}
+    row.columnVisibility = {}
 
     row:SetHeight(ROW_HEIGHT)
     row:SetClipsChildren(true)

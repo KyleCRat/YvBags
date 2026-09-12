@@ -65,6 +65,17 @@ end
 
 -- Column transactions use detached, normalized configurations. Reads never
 -- rewrite a profile, and the complete registry remains available to sorting.
+local function IsColumnHidden(column, hidden)
+    if type(hidden) ~= "table" then
+        return column.defaultHidden == true
+    end
+    local value = hidden[column.key]
+    if type(value) ~= "boolean" then
+        return column.defaultHidden == true
+    end
+    return value
+end
+
 function ListSettings.NormalizeColumns(value)
     value = type(value) == "table" and value or {}
     local order = type(value.order) == "table" and value.order or {}
@@ -85,10 +96,7 @@ function ListSettings.NormalizeColumns(value)
         if not included[key] then
             result.order[#result.order + 1] = key
         end
-        local isHidden = hidden[key]
-        if type(isHidden) ~= "boolean" then
-            isHidden = column.defaultHidden == true
-        end
+        local isHidden = IsColumnHidden(column, hidden)
         if isHidden or column.defaultHidden then
             -- Retain explicit false so showing a default-hidden column persists.
             result.hidden[key] = isHidden
@@ -103,6 +111,17 @@ end
 
 function ListSettings.GetColumns(scope)
     return ListSettings.NormalizeColumns(ListSettings.GetListValue(scope, "columns"))
+end
+
+function ListSettings.IsColumnVisible(scope, key)
+    local column = Columns.GetColumn(key)
+    if not column then
+        return false
+    end
+    -- Menu predicates read the current effective profile without constructing
+    -- a transaction snapshot or retaining one across profile/mirroring changes.
+    local value = ListSettings.GetListValue(scope, "columns")
+    return not IsColumnHidden(column, type(value) == "table" and value.hidden)
 end
 
 function ListSettings.ColumnsEqual(left, right)
