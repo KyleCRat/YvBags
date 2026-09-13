@@ -959,10 +959,9 @@ local function AddListDropdown(flow, options)
     })
 end
 
-local function AddAppearanceSettings(root)
-    root:AddSection("Appearance")
-    local row = root:BeginColumns()
-    local skin = AddListDropdown(row.left, {
+local function AddAppearanceSettings(flow)
+    flow:AddSection("Appearance", { marginTop = 0 })
+    local skin = AddListDropdown(flow, {
         label = "Skin",
         choices = {
             { value = "modern", label = "WoW Modern" },
@@ -971,13 +970,7 @@ local function AddAppearanceSettings(root)
         tooltip = "Change both the bag and bank windows. Skin selection is shared across profiles. Changes wait until combat or moving, resizing, and scaling finish.",
         onChanged = NS.Appearance.SetSkin,
     })
-    row.right:AddControl("button", {
-        text = "Reset Appearance",
-        tooltip = "Restore WoW Modern for bags and bank without changing profiles, list settings, or window sizes and positions.",
-        onClick = NS.Appearance.Reset,
-    })
-    row:Finish()
-    local status = root:AddText({ text = NS.Appearance.GetStatusText(), fontObject = GameFontHighlightSmall, height = 32 })
+    local status = flow:AddText({ text = NS.Appearance.GetStatusText(), fontObject = GameFontHighlightSmall, height = 32 })
     local function Refresh()
         skin:GetControl():SetValue(NS.Appearance.GetSkin())
         status:SetText(NS.Appearance.GetStatusText())
@@ -1037,11 +1030,10 @@ local function BuildMainSettingsFrame(frame, measurementFrame)
     )
     profileSelectors:Finish({ marginBottom = 12 })
 
-    AddAppearanceSettings(root)
-
     local columns = root:BeginColumns()
 
-    columns.left:AddSection("General", { marginTop = 0 })
+    AddAppearanceSettings(columns.left)
+    columns.left:AddSection("General")
     controls.replaceBlizzardBags = columns.left:AddControl("checkbox", {
         label = "Replace Blizzard Bags",
         tooltip = ("Use %s for standard player bag open, close, and toggle actions."):format(
@@ -1131,11 +1123,10 @@ local function BuildBankSettingsFrame(frame, measurementFrame)
         "Configure the combined Character and Warband bank window."
     )
 
-    AddAppearanceSettings(root)
-
     local columns = root:BeginColumns()
 
-    columns.left:AddSection("General", { marginTop = 0 })
+    AddAppearanceSettings(columns.left)
+    columns.left:AddSection("General")
     bankControls.replaceBlizzardBank = columns.left:AddControl(
         "checkbox",
         {

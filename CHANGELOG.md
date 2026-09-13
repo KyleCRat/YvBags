@@ -68,6 +68,10 @@
 - Restored Mythic Keystones to their own prioritized category and gave keystone pins a stable identity across dungeon and level changes.
 
 ### Changed
+- Stacked Appearance above General in the left column of Bags and Bank
+  settings, keeping List alongside them in the right column. Removed the
+  redundant Reset Appearance button; choose WoW Modern in the Skin dropdown
+  to restore the default look.
 - Enlarged item, bag-slot, and bank-tab artwork by 1px on every side in both
   skins, preserving border footprints, button sizes, and spacing.
 - Switched bag/bank settings, scale, money, purchase, and sort indicators to

@@ -126,7 +126,7 @@ removes the portrait/title strip and keeps settings, scale, search, close,
 and bank-view selectors in one header. Switching skins preserves the window's
 size and position; the shorter header leaves more space for items. Changes
 wait for combat or an active move, resize, or scale drag to finish.
-**Reset Appearance** restores WoW Modern without resetting profiles or geometry.
+Choose **WoW Modern** in the Skin dropdown to restore the default look.
 
 **Use Bag List Settings** also mirrors column visibility, order, and widths.
 Changes from either window update both while enabled. Disabling it initially
