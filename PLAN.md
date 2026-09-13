@@ -6,6 +6,27 @@ compact chrome, and built-in skin selection are implemented, pending the
 user's in-game visual/interaction approval. EUI integration and the first
 library release remain later work.
 
+Visual iteration policy: while Flat appearance is being tuned, use changed-file
+Lua syntax checks, focused diff review, and the user's in-game visual feedback.
+Defer new visual test scaffolding and full suite/diagnostic reruns until the
+skin is close to approval; retain targeted checks for nonvisual behavior changes.
+
+Flat visual follow-up (2026-09-12): corrected text baselines, checkmark sizing,
+action-icon accent tinting, symmetric compact padding and content framing,
+scrollbar gutter centering and arrow alignment/gaps, outside icon borders,
+bundled centered Vertex glyphs, a separate native checkmark offset, and the
+flush unboxed resize grip with footer clearance. Flat header lines join the inset border; Modern
+retains its texture-aware offsets. Column contents and row geometry stay fixed.
+Both skins support non-action background dragging. Compact controls start at
+the toolbar's left edge, with 4-unit control and section gaps and no reserved
+drag slot. Flat footer controls now match the 24-unit bag/tab button footprints,
+with a 4-unit content gap, 8-unit outer padding, and no extra inset before the
+first icon; Modern footer geometry is retained. Modern restoration and native interactions remain
+covered at the previous checkpoint by 59 passing library tests, 73-file Lua 5.1 syntax checks, and
+whitespace checks. Actual popup integration and temporary list/appearance
+diagnostics also pass. Recheck both skins in game before accepting the
+Phase 3 gate; implementation MINOR remains unchanged.
+
 Phase 3 checkpoint (2026-09-12): the shared addon-global Modern/Flat selector,
 compact toolbar, physical-pixel Flat surfaces/icon borders, and deferred live
 transitions are implemented. Additional viewport rows are prewarmed without
@@ -18,11 +39,10 @@ required; stop here before Phase 4. MINOR and release/package pins are unchanged
 
 Popup dependency follow-up (2026-09-12): converted the vendored LibPopupSlider
 to its canonical Git submodule after updating the standalone checkout from
-upstream `1.1.0`. Prepared `1.2.0` / MINOR `3` with the public presentation API
+upstream `1.1.0`. Published `1.2.0` / MINOR `3` with the public presentation API
 and the existing `showBorder` option so older addon embeds cannot mask Flat
-support. The consumer package pin is prepared for `1.2.0`; publish that library
-release and update the parent gitlink before committing/shipping this dependency
-change. Local skin validation can continue against the updated worktree.
+support. The consumer package pin and committed parent gitlink now reference
+`1.2.0`; the standalone checkout was reset and pulled to the same release.
 Public popup API tests and both legacy load orders pass, including an active
 popup created before upgrade. Actual popup/skin Modern-Flat-Modern diagnostics,
 the 50-test skin suite, 125-file Lua syntax checks, and whitespace checks pass.
@@ -55,7 +75,7 @@ Deliver these capabilities in order:
    bag and bank lists, before changing their overall appearance.
 2. A library-owned WoW Modern skin that preserves the current appearance.
 3. A pixel-perfect Flat skin based on RaidGroupManager's visual technique,
-   including compact window headers and two-physical-pixel icon borders.
+   including compact window headers and one-physical-pixel icon borders.
 4. Selectable EllesmereUI integration through its public API, with a reload
    required when entering or leaving that skin.
 5. Reusable window/component constructors so YvBags and future addons build
@@ -114,14 +134,14 @@ These decisions guide the implementation:
 | Outer frame | Existing ButtonFrame art, portrait, title | Dark flat surface, 1px physical border, no portrait/title | EUI shell, no portrait/title |
 | Header controls | Existing title/subheader arrangement | One compact header | Same compact structural layout, EUI controls |
 | List dividers | New crisp 1px physical lines | Same pixel technique | Same pixel technique with EUI appearance tokens |
-| Item/container icon borders | Existing custom textured frame | 2px physical border | Pixel border preserving semantic color; EUI-compatible presentation |
+| Item/container icon borders | Existing custom textured frame | 1px physical border | Pixel border preserving semantic color; EUI-compatible presentation |
 | Accent and fonts | Current YvBags media | Current YvBags media, flat surfaces | EUI's live public accent/font values |
 | Interaction/data | Unchanged | Unchanged | Unchanged |
 
 The EUI icon adapter will use the public crop operation without requesting a
 second EUI border, then use the library's semantic-color border. This avoids
-replacing rarity/reagent meaning with an unconditional black frame. The 2px
-requirement is for Flat; EUI can use a 1px physical semantic border.
+replacing rarity/reagent meaning with an unconditional black frame. Flat uses
+a 1px physical semantic border; EUI can use the same thickness.
 
 Compact bag header: square settings cog, square scale control, flexible search,
 close. Compact bank header: square settings cog, square scale control,
@@ -465,11 +485,11 @@ The scale popup remains LibPopupSlider-owned behavior. Its public
 `GetVisualParts`, `IsInteracting`, and `SetFontAppearance` contract is developed
 in the canonical LibPopupSlider submodule and consumed by
 `Integrations/PopupSlider.lua`. Font fitting is deferred during an active drag.
-The prepared `1.2.0` / MINOR `3` release preserves RGM's `showBorder` option and
+The published `1.2.0` / MINOR `3` release preserves RGM's `showBorder` option and
 supersedes older embeds. Legacy popup instances retain their original working
 behavior; an external instance without the public API still reports unavailable
-styling so skin selection can reject incomplete transitions. Publish the popup
-contract with its own release workflow before shipping skins that depend on it.
+styling so skin selection can reject incomplete transitions. YvBags pins this
+published popup contract independently of the unreleased skinning library.
 
 ## Implementation Phases And Gates
 
@@ -564,7 +584,7 @@ it does not replace the full release regression matrix below.
 ### Phase 3: Flat Skin, Compact Chrome, And Built-In Selection
 
 - [x] Implement Flat surfaces and all control states; use 1px physical window/
-  input borders and 2px physical item/container icon borders.
+  input borders and 1px physical item/container icon borders.
 - [x] Remove portrait/title visually in Flat while preserving the ButtonFrame
   structural root. Anchor the existing actions in the compact header and
   retain a non-intercepting drag region around its interactive controls.
@@ -684,7 +704,7 @@ not proof of visual correctness, protected-frame safety, or EUI compatibility.
 - [ ] Pixel checks at the scales/resolutions in Phase 1, including stationary
   and scrolling rows, fractional positions, move/resize, UI/display changes,
   and independently scaled bag/bank windows.
-- [ ] Search icon/clear button/focus/placeholder/Ctrl+F, scale popup, drag space,
+- [ ] Search icon/clear button/focus/placeholder/Ctrl+F, scale popup, background dragging,
   close/Escape, input hit areas, and no invisible title region intercepting
   compact-header clicks. Modern restores its portrait/title/selected atlases.
 - [ ] Column reordering/resizing/hiding, hide-all recovery, header/cell

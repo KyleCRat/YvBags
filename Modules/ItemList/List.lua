@@ -91,19 +91,18 @@ end
 
 function ListController:RefreshVisiblePixelGeometry()
     -- ScrollBox has positioned its scroll target before OnScroll. Only adjust
-    -- custom strokes on active rows, never the pooled native item buttons.
+    -- custom group layout and strokes, never the pooled native item buttons.
+    local flat = NS.Skins:GetAppliedSkin() == "flat"
     for _, row in ipairs(self.view:GetFrames()) do
         if row.sectionDividerInitialized then
             row.divider:RefreshGeometry()
-        elseif NS.Skins:GetAppliedSkin() == "flat" then
-            if row.rowInitialized then
-                row.iconAppearance:RefreshGeometry()
-            elseif row.groupInitialized then
-                row.headerAppearance:RefreshGeometry()
-            end
+        elseif row.groupInitialized and row.groupData then
+            GroupRow.RefreshGeometry(row)
+        elseif flat and row.rowInitialized then
+            row.iconAppearance:RefreshGeometry()
         end
     end
-    if NS.Skins:GetAppliedSkin() == "flat" then self.scrollBarAppearance:RefreshGeometry() end
+    if flat then self.scrollBarAppearance:RefreshGeometry() end
 end
 
 -- Appearance-only updates never rebuild the inventory provider or native bridge.
@@ -398,7 +397,7 @@ local function CreateScrollView(list)
         if elementData.rowType == ListModel.GetRowTypeDivider() then
             return DividerRow.GetRowHeight()
         elseif elementData.rowType == ListModel.GetRowTypeGroup() then
-            return GroupRow.GetRowHeight()
+            return GroupRow.GetRowHeight(elementData)
         end
 
         return ItemRow.GetRowHeight()
@@ -503,19 +502,21 @@ function ItemList.Create(parent, context)
     frame:SetClipsChildren(true)
     list.frame = frame
 
-    local header = Header.Create(frame, list)
-    header:SetPoint("TOPLEFT", frame, "TOPLEFT", Layout.HeaderLeftOffset, Layout.HeaderTopOffset)
-    header:SetPoint("TOPRIGHT", frame, "TOPRIGHT", Layout.HeaderRightOffset, 0)
+    local header = Header.Create(list.window.Inset, list)
     list.header = header
 
     local scrollBox = CreateFrame("Frame", nil, frame, SCROLL_BOX_TEMPLATE)
-    scrollBox:SetPoint("TOPLEFT", header, "BOTTOMLEFT", Layout.ScrollBoxLeftOffset, Layout.ScrollBoxTopGap)
+    scrollBox:SetPoint("TOPLEFT", header.content, "BOTTOMLEFT", Layout.ScrollBoxLeftOffset, Layout.ScrollBoxTopGap)
     scrollBox:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", Layout.ScrollBoxRightOffset, Layout.ScrollBoxBottomOffset)
     scrollBox:SetClipsChildren(true)
     list.scrollBox = scrollBox
+    NS.Skins:RegisterWindowDragRegion(list.window, header)
+    NS.Skins:RegisterWindowDragRegion(list.window, scrollBox)
 
-    local scrollBar, scrollBarAppearance = NS.Skins:CreateScrollBar(frame, { geometryRoot = list.window })
-    Layout.PositionScrollBar(scrollBar, scrollBox)
+    local scrollBar, scrollBarAppearance = NS.Skins:CreateScrollBar(frame, {
+        geometryRoot = list.window, anchor = scrollBox, gutterWidth = Layout.ScrollBarContentPadding,
+        rightOffset = Layout.ScrollBarRightOffset, topOffset = Layout.ScrollBarTopOffset, bottomOffset = Layout.ScrollBarBottomOffset,
+    })
     list.scrollBar = scrollBar
     list.scrollBarAppearance = scrollBarAppearance
 

@@ -667,6 +667,7 @@ function ListModel.BuildRows(items, state)
             local collapsed = collapsedGroups[PINNED_GROUP_ID] == true
             rows[#rows + 1] = {
                 rowType = ROW_TYPE_GROUP,
+                hasPreviousRow = #rows > 0,
                 groupID = PINNED_GROUP_ID,
                 groupKey = PINNED_GROUP_KEY,
                 label = PINNED_GROUP_LABEL,
@@ -764,6 +765,7 @@ function ListModel.BuildRows(items, state)
         local pinnedCount = group.pinnedItems and #group.pinnedItems or 0
         rows[#rows + 1] = {
             rowType = ROW_TYPE_GROUP,
+            hasPreviousRow = #rows > 0,
             groupID = group.id,
             groupKey = group.key,
             label = group.label,

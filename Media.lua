@@ -8,6 +8,7 @@ local MEDIA_TYPE_BORDER = LSM and LSM.MediaType and LSM.MediaType.BORDER or "bor
 local MEDIA_TYPE_FONT = LSM and LSM.MediaType and LSM.MediaType.FONT or "font"
 local ADDON_NAME = NS.ADDON_NAME
 local ADDON_MEDIA_PATH = NS.ADDON_MEDIA_PATH
+local Skins = LibStub("LibYvSkins-1.0")
 
 local Borders = {
     icon = {
@@ -27,11 +28,14 @@ local Fonts = {
 
 local Textures = {
     insetBackground = "Interface\\FrameGeneral\\UIFrameMidnightBackground",
-    sortArrow = ADDON_MEDIA_PATH .. "Textures\\Vertex-Arrow.tga",
+    sortArrowUp = Skins:GetIconTexture("arrowUp"),
+    sortArrowDown = Skins:GetIconTexture("arrowDown"),
     circle = ADDON_MEDIA_PATH .. "Textures\\Vertex-Circle.tga",
     mover = ADDON_MEDIA_PATH .. "Textures\\Vertex-Mover.tga",
-    settings = "Interface\\WorldMap\\GEAR_64GREY",
-    scale = ADDON_MEDIA_PATH .. "Textures\\Vertex-Scale.tga",
+    settings = Skins:GetIconTexture("settings"),
+    scale = Skins:GetIconTexture("scale"),
+    add = Skins:GetIconTexture("plus"),
+    remove = Skins:GetIconTexture("minus"),
     newItem = ADDON_MEDIA_PATH .. "Textures\\Vertex-New.tga",
     pinned = ADDON_MEDIA_PATH .. "Textures\\Vertex-Pinned.tga",
     soulboundBindingIcon = ADDON_MEDIA_PATH .. "Textures\\Vertex-Lock.tga",
@@ -76,8 +80,8 @@ function Media.GetInsetBackgroundTexture()
     return Textures.insetBackground
 end
 
-function Media.GetSortArrowTexture()
-    return Textures.sortArrow
+function Media.GetSortArrowTexture(ascending)
+    return ascending and Textures.sortArrowUp or Textures.sortArrowDown
 end
 
 function Media.GetCircleTexture()
@@ -122,6 +126,14 @@ end
 
 function Media.GetAddAtlas()
     return Atlases.add
+end
+
+function Media.GetAddTexture()
+    return Textures.add
+end
+
+function Media.GetRemoveTexture()
+    return Textures.remove
 end
 
 function Media.GetRemoveAtlas()

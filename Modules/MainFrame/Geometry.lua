@@ -89,7 +89,7 @@ function Geometry.GetMaxWidth()
     )
     return math.max(
         Layout.MinWidth,
-        listWidth + NS.Skins:GetWindowChromeWidth(),
+        listWidth + NS.Skins:GetWindowChromeWidth(NS.frame),
         NS.charDB:GetRaw("frame", "width") or 0,
         NS.frame and NS.frame:GetWidth() or 0
     )

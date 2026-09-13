@@ -134,15 +134,14 @@ local function SetManualDropActive(list, active)
 
     list.manualDropActive = active
     list.scrollBox:ClearAllPoints()
-    list.scrollBox:SetPoint("TOPLEFT", list.header, "BOTTOMLEFT", Layout.ScrollBoxLeftOffset, Layout.ScrollBoxTopGap)
+    list.scrollBox:SetPoint("TOPLEFT", list.header.content, "BOTTOMLEFT", Layout.ScrollBoxLeftOffset, Layout.ScrollBoxTopGap)
 
     if active then
         list.scrollBox:SetPoint("BOTTOMRIGHT", list.cursorDropOverlay, "TOPRIGHT", Layout.ScrollBoxRightOffset, 0)
     else
         list.scrollBox:SetPoint("BOTTOMRIGHT", list.frame, "BOTTOMRIGHT", Layout.ScrollBoxRightOffset, Layout.ScrollBoxBottomOffset)
     end
-
-    Layout.PositionScrollBar(list.scrollBar, list.scrollBox)
+    -- LibYvSkins anchors the scrollbar to this viewport; it follows automatically.
 end
 
 local function SetOverlayMode(list, mode)

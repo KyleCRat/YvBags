@@ -22,7 +22,6 @@ local AUTO_DEPOSIT_MIN_WIDTH = 120
 local AUTO_DEPOSIT_TEXT_PADDING = 18
 local WARBAND_DEPOSIT_ICON_WIDTH = 18
 local WARBAND_DEPOSIT_ICON_HEIGHT = 24
-local SQUARE_BUTTON_SIZE = 28
 local MONEY_ACTION_ICON_SIZE = 14
 local CHECKMARK_SCALE = 1
 local MONEY_FRAME_RIGHT_OFFSET = 2
@@ -36,7 +35,6 @@ local ICON_BROWSER_LABEL_Y_OFFSET = -10
 local HIGHLIGHT_ALPHA = 0.18
 local BORDER_ALPHA = 0.95
 local PURCHASE_DISABLED_ALPHA = 0.4
-local PURCHASE_ATLAS = "Garr_Building-AddFollowerPlus"
 local TAB_SETTINGS_LOADING_TOOLTIP = "Bank tab settings are still loading."
 local TAB_SETTINGS_UNAVAILABLE_TOOLTIP = "Bank tab settings are unavailable."
 local INCLUDE_REAGENTS_TOOLTIP = "Include tradeable reagents when depositing all into the Warband bank."
@@ -193,9 +191,10 @@ local function CreateTabButton(frame, footer, index)
     highlight:Hide()
     button.highlight = highlight
 
-    local icon, iconAppearance = NS.Skins:CreateIcon(button, { geometryRoot = frame, width = TAB_ICON_SIZE })
+    local icon, iconAppearance = NS.Skins:CreateIcon(button, {
+        geometryRoot = frame, width = TAB_ICON_SIZE, artworkOutset = 1,
+    })
     icon:SetPoint("CENTER")
-    icon:SetSize(TAB_ICON_SIZE, TAB_ICON_SIZE)
     button.icon = icon
     button.iconAppearance = iconAppearance
     iconAppearance:SetBorderColor(0.86, 0.86, 0.86, BORDER_ALPHA)
@@ -237,7 +236,6 @@ end
 
 local function SetPurchaseButtonEnabled(button, enabled)
     button:SetEnabled(enabled)
-    button.icon:SetDesaturated(not enabled)
     button.icon:SetAlpha(enabled and 1 or PURCHASE_DISABLED_ALPHA)
     button.iconAppearance:SetBorderAlpha(enabled and 1 or PURCHASE_DISABLED_ALPHA)
 end
@@ -254,11 +252,10 @@ local function CreatePurchaseButton(frame, footer, bankType)
     button.owner = frame
 
     local icon, iconAppearance = NS.Skins:CreateIcon(button, {
-        geometryRoot = frame, width = TAB_ICON_SIZE, crop = false,
+        geometryRoot = frame, width = TAB_ICON_SIZE, crop = false, actionIcon = true, artworkOutset = 1,
     })
     icon:SetPoint("CENTER")
-    icon:SetSize(TAB_ICON_SIZE, TAB_ICON_SIZE)
-    icon:SetAtlas(PURCHASE_ATLAS, false)
+    icon:SetTexture(NS.Media.GetAddTexture())
     button.icon = icon
     button.iconAppearance = iconAppearance
     iconAppearance:SetBorderColor(0.86, 0.86, 0.86, BORDER_ALPHA)
@@ -422,11 +419,12 @@ local function ShowMoneyActionTooltip(button)
     GameTooltip:Show()
 end
 
-local function CreateMoneyActionButton(frame, parent, mixin, iconAtlas, tooltip)
+local function CreateMoneyActionButton(frame, parent, mixin, iconTexture, tooltip)
+    local size = frame.footer:GetHeight()
     local button = NS.Skins:CreateButton(parent, {
         geometryRoot = frame, template = "DisabledTooltipButtonTemplate",
-        variant = "square", width = SQUARE_BUTTON_SIZE, height = SQUARE_BUTTON_SIZE,
-        iconAtlas = iconAtlas, iconWidth = MONEY_ACTION_ICON_SIZE, pressIcon = true,
+        variant = "square", width = size, height = size,
+        icon = iconTexture, iconWidth = MONEY_ACTION_ICON_SIZE, pressIcon = true,
     })
     -- Compose Blizzard's original bank action and disabled-tooltip behavior on
     -- the library-created control; do not reproduce the money-transfer action.
@@ -521,6 +519,7 @@ local function RefreshAutoDepositLayout(frame, bankType)
     local depositButton = autoDepositFrame.DepositButton
     local checkbox = autoDepositFrame.IncludeReagentsCheckbox
     local usesWarbandIcon = bankType == ACCOUNT_BANK
+    local size = frame.footer:GetHeight()
 
     depositButton.usesWarbandDepositIcon = usesWarbandIcon
     depositButton.appearance:SetVariant(usesWarbandIcon and "square" or "command")
@@ -528,15 +527,15 @@ local function RefreshAutoDepositLayout(frame, bankType)
     depositButton.warbandDepositIcon:SetShown(usesWarbandIcon)
     depositButton:ClearAllPoints()
     depositButton:SetPoint("LEFT", autoDepositFrame, "LEFT", 0, 0)
+    depositButton:SetHeight(size)
+    checkbox:SetSize(size, size)
 
     local width
     if usesWarbandIcon then
-        depositButton:SetWidth(SQUARE_BUTTON_SIZE)
+        depositButton:SetWidth(size)
         checkbox:ClearAllPoints()
         checkbox:SetPoint("LEFT", depositButton, "RIGHT", CONTROL_GAP, 0)
-        width = SQUARE_BUTTON_SIZE
-            + CONTROL_GAP
-            + SQUARE_BUTTON_SIZE
+        width = size + CONTROL_GAP + size
     else
         width = math.max(
             AUTO_DEPOSIT_MIN_WIDTH,
@@ -554,6 +553,23 @@ local function RefreshAutoDepositLayout(frame, bankType)
         -AUTO_DEPOSIT_MONEY_GAP,
         0
     )
+end
+
+local function RefreshFooterLayout(frame, height)
+    local tabGroup = frame.bankTabGroup
+    local xOffset = NS.Skins:IsWindowCompact(frame) and -TAB_BUTTONS_X_OFFSET or 0
+    tabGroup:ClearAllPoints()
+    tabGroup:SetPoint("TOPLEFT", frame.footer, "TOPLEFT", xOffset, 0)
+    tabGroup:SetPoint("BOTTOMRIGHT", frame.footer, "BOTTOMRIGHT", 0, 0)
+
+    local moneyFrame = frame.bankMoneyFrame
+    moneyFrame:SetHeight(height)
+    moneyFrame.customMoneyDisplay:SetHeight(height)
+    for _, button in ipairs(moneyFrame.actionButtons) do
+        button:SetSize(height, height)
+    end
+    LayoutMoneyFrame(moneyFrame)
+    RefreshAutoDepositLayout(frame, NS.BankInventory:GetActiveBankType())
 end
 
 local function RefreshTabButtons(frame)
@@ -759,6 +775,7 @@ end
 
 function Footer.Create(frame)
     local footer = frame.footer
+    local footerHeight = footer:GetHeight()
 
     local tabGroup = CreateFrame("Frame", nil, footer)
     tabGroup:SetAllPoints(footer)
@@ -830,11 +847,11 @@ function Footer.Create(frame)
     frame.autoDepositFrame = autoDepositFrame
 
     local autoDepositButton, depositAppearance = NS.Skins:CreateButton(autoDepositFrame, {
-        geometryRoot = frame, width = AUTO_DEPOSIT_MIN_WIDTH, height = SQUARE_BUTTON_SIZE,
+        geometryRoot = frame, width = AUTO_DEPOSIT_MIN_WIDTH, height = footerHeight,
         fontObject = GameFontNormal, labelOffsetY = 0,
         iconAtlas = NS.Media.GetWarbandTransferAtlas(), iconWidth = WARBAND_DEPOSIT_ICON_WIDTH,
         iconHeight = WARBAND_DEPOSIT_ICON_HEIGHT, iconAlpha = 0.82, disabledIconAlpha = 0.4,
-        pressIcon = true,
+        pressIcon = true, preserveIconColor = true,
     })
     Mixin(autoDepositButton, BankPanelItemDepositButtonMixin)
     autoDepositButton:SetScript("OnClick", BankPanelItemDepositButtonMixin.OnClick)
@@ -848,7 +865,7 @@ function Footer.Create(frame)
     end)
 
     local includeReagentsCheckbox = NS.Skins:CreateCheckbox(autoDepositFrame, {
-        geometryRoot = frame, width = SQUARE_BUTTON_SIZE, height = SQUARE_BUTTON_SIZE,
+        geometryRoot = frame, width = footerHeight, height = footerHeight,
         checkmarkScale = CHECKMARK_SCALE,
     })
     Mixin(includeReagentsCheckbox, BankPanelIncludeReagentsCheckboxMixin)
@@ -872,10 +889,10 @@ function Footer.Create(frame)
     nativeMoneyDisplay:Hide()
     moneyFrame.MoneyDisplay = nativeMoneyDisplay
     moneyFrame.WithdrawButton = CreateMoneyActionButton(
-        frame, moneyFrame, BankPanelWithdrawMoneyButtonMixin, NS.Media.GetRemoveAtlas(), MONEY_WITHDRAW_TOOLTIP
+        frame, moneyFrame, BankPanelWithdrawMoneyButtonMixin, NS.Media.GetRemoveTexture(), MONEY_WITHDRAW_TOOLTIP
     )
     moneyFrame.DepositButton = CreateMoneyActionButton(
-        frame, moneyFrame, BankPanelDepositMoneyButtonMixin, NS.Media.GetAddAtlas(), MONEY_DEPOSIT_TOOLTIP
+        frame, moneyFrame, BankPanelDepositMoneyButtonMixin, NS.Media.GetAddTexture(), MONEY_DEPOSIT_TOOLTIP
     )
     moneyFrame.actionButtons = { moneyFrame.WithdrawButton, moneyFrame.DepositButton }
     frame.bankMoneyFrame = moneyFrame
@@ -884,6 +901,7 @@ function Footer.Create(frame)
     moneyDisplay:SetPoint("LEFT", moneyFrame, "LEFT", 0, 0)
     moneyDisplay:SetSize(MONEY_DISPLAY_MIN_WIDTH, footer:GetHeight())
     moneyDisplay:EnableMouse(true)
+    NS.Skins:RegisterWindowDragRegion(frame, moneyDisplay)
     moneyDisplay:SetScript("OnEnter", ShowMoneyTooltip)
     moneyDisplay:SetScript("OnLeave", HideMoneyTooltip)
     moneyFrame.customMoneyDisplay = moneyDisplay
@@ -933,4 +951,11 @@ function Footer.Create(frame)
             self.tabSettingsMenu:OnOpenTabSettingsRequested(tabID)
         end
     end
+
+    RefreshFooterLayout(frame, footerHeight)
+    footer:HookScript("OnSizeChanged", function(_, _width, height)
+        if height == footerHeight then return end
+        footerHeight = height
+        RefreshFooterLayout(frame, height)
+    end)
 end

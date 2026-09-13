@@ -325,6 +325,9 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
   accent regions, and drop glows; do not introduce existing-window adapters or
   part-discovery maps. Keep raw native controls directly accessible and domain behavior,
   position/size/scale persistence, and item-button bridges addon-owned.
+- Window backgrounds share library-owned dragging in both skins. Register
+  additional non-action regions with `NS.Skins:RegisterWindowDragRegion`;
+  never place a movement overlay over items or steal native action drags.
 - LibYvSkins components own generic Modern/Flat art and visual-state drawing.
   Use tab handles for selection and icon handles for border color/visibility;
   keep raw controls for values and native scripts. Do not restore competing
@@ -383,6 +386,10 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 6. Update defaults, settings, TOC load order, README, `TODO.md`, or changelog when the behavior changes their contract.
 7. Run `git diff --check` and inspect the final diff. Do not introduce unrelated formatting or metadata churn.
 8. Run applicable reusable-library suites for library changes, run Lua 5.1 syntax checks for addon code, then validate in game in proportion to risk.
+   During active Flat visual iteration, limit appearance-only checks to the
+   changed Lua files and focused diff/whitespace review. Defer full suites,
+   visual test scaffolding, and broad diagnostics until the skin is near
+   approval; still check behavioral or security changes in proportion to risk.
 9. Do not commit, tag, or push unless the user explicitly asks.
 
 ## In-Game Regression Checklist

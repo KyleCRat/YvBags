@@ -366,10 +366,9 @@ function Footer.UpdateBagButtons(frame)
     end
 end
 
-local function CreateBagButton(frame, parent, index)
+local function CreateBagButton(frame, parent)
     local button = CreateFrame(BUTTON_TYPE, nil, parent)
     button:SetSize(FOOTER_BAG_BUTTON_SIZE, FOOTER_BAG_BUTTON_SIZE)
-    button:SetPoint("LEFT", parent, "LEFT", FOOTER_BAG_BUTTONS_X_OFFSET + ((index - 1) * (FOOTER_BAG_BUTTON_SIZE + FOOTER_BAG_BUTTON_GAP)), 0)
     button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     button:RegisterForDrag("LeftButton")
 
@@ -381,12 +380,11 @@ local function CreateBagButton(frame, parent, index)
     button.highlight:Hide()
 
     button.icon, button.iconAppearance = NS.Skins:CreateIcon(button, {
-        geometryRoot = frame, width = FOOTER_BAG_BUTTON_ICON_SIZE,
+        geometryRoot = frame, width = FOOTER_BAG_BUTTON_ICON_SIZE, artworkOutset = 1,
         borderOutset = (FOOTER_BAG_BUTTON_BORDER_SIZE - FOOTER_BAG_BUTTON_ICON_SIZE) / 2,
         layer = TEXTURE_LAYER_ARTWORK, borderLayer = TEXTURE_LAYER_OVERLAY,
     })
     button.icon:SetPoint("CENTER", button, "CENTER", 0, 0)
-    button.icon:SetSize(FOOTER_BAG_BUTTON_ICON_SIZE, FOOTER_BAG_BUTTON_ICON_SIZE)
 
     button:SetScript("OnClick", OnBagButtonClick)
     button:SetScript("OnDragStart", OnBagButtonDragStart)
@@ -396,27 +394,28 @@ local function CreateBagButton(frame, parent, index)
     return button
 end
 
-local function GetBagButtonGroupWidth(buttonCount)
-    if buttonCount <= 0 then
-        return 0
-    end
-
-    return FOOTER_BAG_BUTTONS_X_OFFSET + (buttonCount * FOOTER_BAG_BUTTON_SIZE) + ((buttonCount - 1) * FOOTER_BAG_BUTTON_GAP)
-end
-
 local function CreateBagButtons(frame, footer)
     frame.bagButtons = {}
 
     local maxButtons = 1 + (NUM_BAG_SLOTS or 4) + (NUM_REAGENTBAG_SLOTS or 0)
     for index = 1, maxButtons do
-        frame.bagButtons[index] = CreateBagButton(frame, footer, index)
+        frame.bagButtons[index] = CreateBagButton(frame, footer)
     end
 
     function frame:UpdateBagButtons()
         Footer.UpdateBagButtons(self)
     end
+end
 
-    return GetBagButtonGroupWidth(maxButtons)
+local function RefreshFooterLayout(frame, height)
+    local xOffset = NS.Skins:IsWindowCompact(frame) and 0 or FOOTER_BAG_BUTTONS_X_OFFSET
+    for index, button in ipairs(frame.bagButtons) do
+        button:ClearAllPoints()
+        button:SetPoint("LEFT", frame.footer, "LEFT",
+            xOffset + (index - 1) * (FOOTER_BAG_BUTTON_SIZE + FOOTER_BAG_BUTTON_GAP), 0)
+    end
+    frame.statsHoverFrame:SetHeight(height)
+    frame.moneyHoverFrame:SetHeight(height)
 end
 
 -- Footer lifecycle
@@ -429,10 +428,11 @@ end
 function Footer.Create(frame)
     local footer = frame.footer
 
-    local bagButtonGroupWidth = CreateBagButtons(frame, footer)
+    CreateBagButtons(frame, footer)
 
     local statsHoverFrame = CreateFrame(BUTTON_TYPE, nil, footer)
-    statsHoverFrame:SetPoint("LEFT", footer, "LEFT", bagButtonGroupWidth + FOOTER_STATS_TO_BAG_BUTTON_PADDING, FOOTER_STATS_Y_OFFSET)
+    statsHoverFrame:SetPoint("LEFT", frame.bagButtons[#frame.bagButtons], "RIGHT",
+        FOOTER_STATS_TO_BAG_BUTTON_PADDING, FOOTER_STATS_Y_OFFSET)
     statsHoverFrame:SetSize(FOOTER_STATS_HOVER_MIN_WIDTH, footer:GetHeight())
     statsHoverFrame:RegisterForClicks("LeftButtonUp")
     statsHoverFrame:SetScript("OnEnter", ShowInventoryStatsTooltip)
@@ -455,6 +455,7 @@ function Footer.Create(frame)
     moneyHoverFrame:SetPoint("RIGHT", footer, "RIGHT", FOOTER_MONEY_X_OFFSET, FOOTER_MONEY_Y_OFFSET)
     moneyHoverFrame:SetSize(FOOTER_MONEY_HOVER_MIN_WIDTH, footer:GetHeight())
     moneyHoverFrame:EnableMouse(true)
+    NS.Skins:RegisterWindowDragRegion(frame, moneyHoverFrame)
     moneyHoverFrame:SetScript("OnEnter", ShowMoneyTooltip)
     moneyHoverFrame:SetScript("OnLeave", HideMoneyTooltip)
     frame.moneyHoverFrame = moneyHoverFrame
@@ -471,4 +472,12 @@ function Footer.Create(frame)
     frame.moneyText = moneyText
 
     NS.FooterCurrencies.Create(frame, footer, statsHoverFrame, moneyHoverFrame)
+
+    local footerHeight = footer:GetHeight()
+    RefreshFooterLayout(frame, footerHeight)
+    footer:HookScript("OnSizeChanged", function(_, _width, height)
+        if height == footerHeight then return end
+        footerHeight = height
+        RefreshFooterLayout(frame, height)
+    end)
 end

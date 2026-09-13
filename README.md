@@ -48,6 +48,9 @@ When **Replace Blizzard Bank** is enabled, interacting with a banker opens the
 custom bank window. Use its Character and Warband buttons to switch views;
 YvBags remembers the last available view used by each character.
 
+Outside combat, drag any non-action background to move either window.
+Item rows, column headers, scrollbars, and action buttons keep their own behavior.
+
 Middle-click an item row to pin or unpin that item type. Pinning a Mythic Keystone applies to every future keystone regardless of its dungeon or level.
 
 Pinned-item presentation can place pins above the full list, in one collapsible Pinned group, at the top of their respective groups, or in normal sort order. Manual sorting preserves physical bag-slot order within each resulting section.

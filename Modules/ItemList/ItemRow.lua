@@ -273,7 +273,7 @@ local function InitializeRow(row, list)
     row.icon, row.iconAppearance = NS.Skins:CreateIcon(row.contentClip, {
         clip = list.scrollBox,
         geometryRoot = list.window, width = ICON_SIZE, layer = ROW_ICON_LAYER, sublevel = ROW_ICON_SUBLEVEL,
-        borderLayer = ICON_BORDER_LAYER, borderSublevel = ICON_BORDER_SUBLEVEL,
+        borderLayer = ICON_BORDER_LAYER, borderSublevel = ICON_BORDER_SUBLEVEL, artworkOutset = 1,
     })
     row.icon:Hide()
     row.iconAppearance:SetBorderShown(false)

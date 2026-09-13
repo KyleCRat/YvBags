@@ -19,12 +19,11 @@ local HEADER_SORT_ICON_GAP = 1
 local HEADER_TOOLTIP_TEXT_COLOR_R = 0.86
 local HEADER_TOOLTIP_TEXT_COLOR_G = 0.86
 local HEADER_TOOLTIP_TEXT_COLOR_B = 0.86
-local HEADER_BOTTOM_DIVIDER_LEFT_OFFSET = 2
-local HEADER_BOTTOM_DIVIDER_RIGHT_OFFSET = 2
+local MODERN_HEADER_SIDE_INSET = 2
+local MODERN_SEPARATOR_TOP_INSET = 1
 local HEADER_DIVIDER_THICKNESS = 1
 local HEADER_DIVIDER_ALPHA = 0.68
 local HEADER_SEPARATOR_HANDLE_WIDTH = 6
-local HEADER_SEPARATOR_TOP_OFFSET = 1
 local HEADER_SEPARATOR_HOVER_ALPHA = 0.14
 local HEADER_SEPARATOR_PRESSED_ALPHA = 0.28
 local HEADER_SEPARATOR_LINE_HOVER_ALPHA = 0.86
@@ -310,11 +309,7 @@ local function RefreshButtonSortState(button, list, layoutChanged)
         button.isSorted = sorted
     end
     if sorted and (sortChanged or button.sortAscending ~= list.sortAscending) then
-        if list.sortAscending then
-            button.sortIcon:SetTexCoord(0, 1, 0, 1)
-        else
-            button.sortIcon:SetTexCoord(0, 1, 1, 0)
-        end
+        button.sortIcon:SetTexture(Media.GetSortArrowTexture(list.sortAscending))
         button.sortAscending = list.sortAscending
     end
     if layoutChanged or sortChanged then
@@ -395,13 +390,24 @@ local function CreateSeparator(parent, xOffset, list)
     pressedTexture:Hide()
     separator.pressedTexture = pressedTexture
 
-    separator.lineTexture, separator.line = NS.Skins:CreateSeparator(separator, {
+    -- Only the line spans the inset's top margin; the resize hit area and
+    -- column contents keep their original viewport geometry.
+    local lineBounds = CreateFrame("Frame", nil, separator)
+    local header = parent:GetParent()
+    lineBounds:SetPoint("BOTTOMLEFT", separator, "BOTTOMLEFT", 0, 0)
+    lineBounds:SetSize(HEADER_SEPARATOR_HANDLE_WIDTH, header:GetHeight())
+    separator.lineBounds = lineBounds
+    separator.lineTexture, separator.line = NS.Skins:CreateSeparator(header, {
         geometryRoot = list.window,
+        bounds = lineBounds,
         orientation = "vertical",
-        top = HEADER_SEPARATOR_TOP_OFFSET,
-        pixelInsets = { bottom = HEADER_DIVIDER_THICKNESS },
-        clip = parent,
+        pixelInsets = { top = HEADER_DIVIDER_THICKNESS, bottom = HEADER_DIVIDER_THICKNESS },
+        clip = header,
         alpha = HEADER_DIVIDER_ALPHA,
+        modernLayout = {
+            bounds = separator, orientation = "vertical", top = MODERN_SEPARATOR_TOP_INSET,
+            pixelInsets = { bottom = HEADER_DIVIDER_THICKNESS }, clip = parent,
+        },
     })
 
     separator:SetScript("OnEnter", function(self)
@@ -447,8 +453,14 @@ function Header.CancelInteraction(header)
 end
 
 function Header.RefreshPixelGeometry(header)
+    local height = header:GetHeight()
+    local heightChanged = header.lineHeight ~= height
+    header.lineHeight = height
     header.bottomDivider:RefreshGeometry()
     for _, separator in ipairs(header.separators) do
+        if heightChanged then
+            separator.lineBounds:SetHeight(height)
+        end
         separator.line:RefreshGeometry()
     end
 end
@@ -466,6 +478,7 @@ function Header.ApplyColumnLayout(header, list)
         if visibilityChanged then
             button:SetShown(shown)
             separator:SetShown(shown)
+            separator.line:SetShown(shown)
             button.columnShown = shown
         end
         if entry then
@@ -511,7 +524,9 @@ end
 function Header.Create(parent, list)
     local columns = Columns.GetAvailableColumns()
     local header = CreateFrame("Frame", nil, parent)
-    header:SetHeight(Layout.HeaderHeight)
+    header:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, 0)
+    header:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, 0)
+    header:SetPoint("BOTTOM", list.frame, "TOP", 0, -Layout.HeaderHeight)
     header:SetClipsChildren(true)
     header:EnableMouse(true)
     header:SetScript("OnMouseUp", function(_, mouseButton)
@@ -522,17 +537,21 @@ function Header.Create(parent, list)
 
     local content = CreateFrame("Frame", nil, header)
     -- The header owns the space above the scrollbar; only rows reserve its gutter.
-    content:SetAllPoints(header)
+    content:SetPoint("TOPLEFT", list.frame, "TOPLEFT", Layout.HeaderLeftOffset, Layout.HeaderTopOffset)
+    content:SetPoint("BOTTOMRIGHT", list.frame, "TOPRIGHT", Layout.HeaderRightOffset, -Layout.HeaderHeight)
     content:SetClipsChildren(true)
     header.content = content
 
-    header.bottomDividerTexture, header.bottomDivider = NS.Skins:CreateSeparator(content, {
+    header.bottomDividerTexture, header.bottomDivider = NS.Skins:CreateSeparator(header, {
         geometryRoot = list.window,
         align = "end",
         thickness = HEADER_DIVIDER_THICKNESS,
-        left = HEADER_BOTTOM_DIVIDER_LEFT_OFFSET,
-        right = HEADER_BOTTOM_DIVIDER_RIGHT_OFFSET,
+        pixelInsets = { left = HEADER_DIVIDER_THICKNESS, right = HEADER_DIVIDER_THICKNESS },
         alpha = HEADER_DIVIDER_ALPHA,
+        modernLayout = {
+            bounds = content, align = "end", thickness = HEADER_DIVIDER_THICKNESS,
+            left = MODERN_HEADER_SIDE_INSET, right = MODERN_HEADER_SIDE_INSET,
+        },
     })
 
     header.buttons = {}
@@ -616,6 +635,7 @@ function Header.Create(parent, list)
 
     Header.ApplyColumnLayout(header, list)
     Interaction.Attach(header, list)
+    header:SetScript("OnSizeChanged", Header.RefreshPixelGeometry)
     header:SetScript("OnShow", function(self)
         -- Custom font metrics may be unavailable while the window is built
         -- hidden. Remeasure once after it becomes visible, without polling.

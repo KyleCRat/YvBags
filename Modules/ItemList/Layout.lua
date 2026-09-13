@@ -50,17 +50,3 @@ function Layout.UpdateColumns(layout, config)
     layout.width = count > 0 and x - gap or 0
     layout.revision = layout.revision + 1
 end
-
-local function SetPixelPoint(region, point, relativeTo, relativePoint, offsetX, offsetY)
-    if PixelUtil and PixelUtil.SetPoint then
-        PixelUtil.SetPoint(region, point, relativeTo, relativePoint, offsetX, offsetY)
-    else
-        region:SetPoint(point, relativeTo, relativePoint, offsetX, offsetY)
-    end
-end
-
-function Layout.PositionScrollBar(scrollBar, scrollBox)
-    scrollBar:ClearAllPoints()
-    SetPixelPoint(scrollBar, "TOPRIGHT", scrollBox, "TOPRIGHT", Layout.ScrollBarRightOffset, Layout.ScrollBarTopOffset)
-    SetPixelPoint(scrollBar, "BOTTOMRIGHT", scrollBox, "BOTTOMRIGHT", Layout.ScrollBarRightOffset, Layout.ScrollBarBottomOffset)
-end

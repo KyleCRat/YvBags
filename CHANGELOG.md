@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Added
+- Added background dragging for both skins; item, column, scrollbar, and button
+  actions retain their own interactions.
 - Added a shared WoW Modern / Flat skin selector for bags and bank. Flat uses
   pixel-aligned borders, compact single-row toolbars, and neutral controls;
   skin changes preserve list state and wait for combat or active frame drags.
@@ -66,6 +68,20 @@
 - Restored Mythic Keystones to their own prioritized category and gave keystone pins a stable identity across dungeon and level changes.
 
 ### Changed
+- Enlarged item, bag-slot, and bank-tab artwork by 1px on every side in both
+  skins, preserving border footprints, button sizes, and spacing.
+- Switched bag/bank settings, scale, money, purchase, and sort indicators to
+  shared Vertex artwork, with separate up/down sort textures. Flat uses
+  centered Vertex close and caret glyphs; the Warband deposit icon retains
+  its original colors, and only the native checkmark is lowered one pixel.
+  Flat button/close glyphs share their borders' snapped pixel bounds for equal
+  margins across scales, with original icon sizing restored in Modern.
+  Modern settings, scale, money +/-, and bank-slot + glyphs now share the same
+  gold tint without recoloring item artwork or changing Flat's accent colors.
+  Raised Modern tertiary-square button glyphs by 1px to balance their frame's
+  heavier bottom edge, without shifting Flat or item/slot artwork.
+  Removed unused duplicate textures from YvBags while retaining their
+  identical library copies, still-referenced addon textures, and source artwork.
 - Reduced column-editing overhead in bags and bank: visibility menus read
   current settings without copying the column configuration, and resizing
   updates only changed header/cell geometry while preserving pooled rows and
@@ -153,6 +169,31 @@
 - Classified Utility Curio, Combat Curio, and Relic consumables as Openable instead of general Consumables.
 
 ### Fixed
+- Inset Flat group headers to keep their top border visible and give them a
+  4px left margin. Added 4px before subsequent group headers in both skins,
+  without adding that gap above a header at the start of the list.
+- Matched Flat footer action squares to the 24px bag/tab buttons, tightened
+  both footers to a 4px content gap with matching 8px outer padding, and aligned
+  their first icons with the scroll-frame edge. Modern footer sizing and
+  offsets remain unchanged.
+- Removed Flat's reserved toolbar drag space and matched toolbar control gaps
+  to the 4px gap above the scroll frame; Modern spacing remains unchanged.
+- Fixed Flat scrollbar arrows turning green when mouse-wheel scrolling enabled
+  them, keeping their accent tint consistent with hover and click updates.
+- Fixed a cursor-drop layout error when opening bags or the bank after the
+  scrollbar ownership change; preserved header/row alignment when toggling
+  the Manual-mode drop area.
+- Refined Flat toolbar/input text alignment, outer padding, content framing,
+  scrollbar centering, and one-physical-pixel icon borders without changing
+  Modern visuals or icon sizes.
+  Preserved the native checkbox glyph and size, normalized generic action
+  icons to the accent color without a blanket downward offset, and used
+  tintable close artwork. Tightened scrollbar
+  arrow gaps, placed the unboxed resize grip flush with the corner, and reserved
+  money-display clearance.
+- Joined Flat column-header divider lines to the inner frame border while
+  preserving Modern's texture-aware insets, without shifting column contents,
+  resize handles, or item rows.
 - Refreshed cached item tooltip text when Blizzard's asynchronous tooltip data
   resolves, allowing delayed lines such as `Use:` effects to participate in
   search and category rules without reloading.
