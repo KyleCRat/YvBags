@@ -364,8 +364,8 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
   expansion, and text. In Flat, refresh visible header and icon borders after
   ScrollBox positioning; Modern group rows do not need pixel-border refreshes.
 - Skin development is gated by `PLAN.md`. Phase 3 Modern/Flat MVP appearances
-  are accepted. Smoke-test the subsequent window-shell refactor before beginning
-  the optional EllesmereUI provider; its implementation remains deferred.
+  and the subsequent window-shell refactor are accepted in game. The optional
+  EllesmereUI provider remains the next planned phase.
 - `NS.globalDB` owns `appearance.skin`, shared by bags/bank and independent
   of profiles. `NS.Appearance` connects storage/status to the library context.
   Live Modern/Flat switches coalesce after input and defer during combat or

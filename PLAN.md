@@ -3,9 +3,8 @@
 Status: approved, with a creation-first architecture. Phases 0, 1, 1.5, and 2
 are complete with their in-game gates accepted. Phase 3 Modern/Flat styling and
 built-in selection are accepted as MVP. The subsequent renderer separation and
-explicit window-layout refactor preserve that appearance and need a consumer
-smoke test before Phase 4. EUI integration and the first library release remain
-later work.
+explicit window-layout refactor are also confirmed working and visually intact
+in game. EUI integration and the first library release remain later work.
 
 Window-shell follow-up: LYS now owns generic Header/Body/Footer allocation,
 optional Title Bar/native controls, and independent toolbars. YvBags owns its
@@ -19,7 +18,7 @@ Refactor checks: 62 Lua 5.1 library tests and 16 changed/new Lua syntax checks
 pass, including optional sections, taller footers, Flat titles, search-free
 toolbars, copied layouts, native-input preservation, and mixed-MINOR loading.
 Both repositories pass whitespace checks. Modern/Flat bag/bank visual parity
-after this refactor remains an in-game check; MINOR and package pins are unchanged.
+after this refactor is confirmed by the user; MINOR and package pins are unchanged.
 
 Visual iteration policy: while Flat appearance is being tuned, use changed-file
 Lua syntax checks, focused diff review, and the user's in-game visual feedback.
@@ -647,12 +646,12 @@ it does not replace the full release regression matrix below.
 - [x] Preserve and restore Modern art on repeated round trips. Update active
   custom row art in place and mark hidden pool members for the next revision.
 
-MVP appearance accepted by the user. After the window-shell refactor, repeat
-Modern -> Flat -> Modern in both windows without lost search,
+MVP appearance and subsequent window-shell refactor accepted by the user.
+Retain Modern -> Flat -> Modern checks in both windows without lost search,
 changed bank selection, scroll jumps beyond unavoidable viewport clamping,
 provider replacement, duplicate regions/hooks, or saved-position changes.
 Validate narrow headers, all-hidden columns, footer alignment, both bank
-views, and combat transitions. Confirm refactor parity before Phase 4.
+views, and combat transitions during subsequent work.
 
 ### Phase 4: Optional EllesmereUI Provider
 
