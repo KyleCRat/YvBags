@@ -185,7 +185,9 @@
   icons without changing their alignment or adding polling.
 - Corrected selected tertiary-button text positioning through LibYvSkins.
   Modern text returns to its normal baseline after clicking; Flat text no
-  longer moves on mouse-down. Icon offsets are unchanged.
+  longer moves on mouse-down. Raised Flat button labels and search text,
+  including the placeholder, by one UI pixel and lowered Flat's search clear
+  button by one UI pixel. Other icon offsets are unchanged.
 - Inset Flat group headers to keep their top border visible and give them a
   4px left margin. Added 4px before subsequent group headers in both skins,
   without adding that gap above a header at the start of the list.
