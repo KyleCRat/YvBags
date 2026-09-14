@@ -397,8 +397,7 @@ local function InitializeRuleRow(row)
     end)
 
     row.fieldDropdown = ModernSettings:CreateDropdown(row, {
-        label = "Field",
-        showLabel = false,
+        height = CONTROL_HEIGHT,
         leftInset = DROPDOWN_EDGE_INSET,
         rightInset = 0,
         choices = Rules.GetFieldChoices(),
@@ -414,8 +413,7 @@ local function InitializeRuleRow(row)
     })
 
     row.operatorDropdown = ModernSettings:CreateDropdown(row, {
-        label = "Operator",
-        showLabel = false,
+        height = CONTROL_HEIGHT,
         leftInset = 0,
         rightInset = DROPDOWN_EDGE_INSET,
         choices = {},
@@ -431,8 +429,7 @@ local function InitializeRuleRow(row)
     })
 
     row.valueDropdown = ModernSettings:CreateDropdown(row, {
-        label = "Value",
-        showLabel = false,
+        height = CONTROL_HEIGHT,
         leftInset = DROPDOWN_EDGE_INSET,
         rightInset = DROPDOWN_EDGE_INSET,
         choices = {},
@@ -1104,12 +1101,12 @@ local function CreateHeader(editor)
     )
 
     local modeDropdown = ModernSettings:CreateDropdown(header, {
-        label = "Match",
-        showLabel = false,
+        height = HEADER_HEIGHT,
         leftInset = DROPDOWN_EDGE_INSET,
         rightInset = DROPDOWN_EDGE_INSET,
         width = MODE_DROPDOWN_WIDTH,
         choices = Rules.GetModeChoices(),
+        tooltipTitle = "Match",
         tooltip = "Require all rules or any one rule to match.",
         onChanged = function(mode)
             editor:ChangeMode(mode)

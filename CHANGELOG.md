@@ -36,9 +36,9 @@
   Warbound Items, and the Include Tradeable Reagents option.
 - Added optional Icon Browser integration for searchable, filterable bank-tab
   icon selection while retaining Blizzard's native selector by default.
-- Added a Bank settings page with independent replacement and scale controls
-  plus profile-owned list settings that mirror bag settings by default and can
-  be detached without losing their prior independent configuration.
+- Added bank replacement and scale controls plus profile-owned list settings
+  that mirror bag settings by default and can be detached without losing
+  their prior independent configuration.
 - Added an accent-highlighted new-item partition above pins and groups, with
   hover acknowledgement that stops the breathing background while retaining
   the new-item marker, stable placement until the next bag open, and a divider
@@ -68,6 +68,26 @@
 - Restored Mythic Keystones to their own prioritized category and gave keystone pins a stable identity across dungeon and level changes.
 
 ### Changed
+- Removed the temporary dropdown and slider layout examples from Appearance,
+  leaving the shared Skin field and its description.
+- Move the Skin status message into an LMS Field description that wraps and
+  sizes to its text, removing the fixed-height status row and preserving the
+  normal gap before the next control.
+- Consolidated Bags and Bank General/List options into an Inventory settings
+  page opened by both frame cogs, with both List sections aligned below the
+  taller General section. The main page now owns Profiles and one
+  shared Appearance section with a single-column Skin selector using the
+  same stacked-label spacing as Active Profile.
+  Kept live refreshes and defaults scoped to the owning page, and enlarged
+  LMS page titles and section headings without enlarging control labels.
+  Normalized LMS stacked Fields and built-in dropdown/slider labels through
+  shared, content-sized layouts with no unused row space. All dropdowns default
+  to zero side insets; non-empty label text alone determines label visibility.
+  Controls reflow internally when resized, preserving edits and focus. Kept
+  the category editor's explicitly sized rows and deliberate edge insets.
+  LMS canvases now retain layout definitions and reflow after control-size
+  changes, enabling future default-appearance upgrades while preserving explicit
+  overrides. Older embeds without that metadata need a one-time update.
 - Moved bag/bank window structure into explicit addon-owned Modern/Flat layouts
   using LibYvSkins' flexible Header/Body/Footer shell and generic toolbars.
   Preserved approved geometry, toolbar/search sizes, native actions, and
@@ -180,6 +200,19 @@
 - Classified Utility Curio, Combat Curio, and Relic consumables as Openable instead of general Consumables.
 
 ### Fixed
+- Initialize the Skin description's font before its text, preventing a settings
+  startup error that also left Inventory unregistered and broke the settings cogs.
+- Give LMS dropdowns room for their border/shadow so inline list selectors
+  and controls following stacked dropdowns do not appear crowded. Keep native
+  artwork, label spacing, and the configurable 4px canvas gap unchanged.
+- Avoid redundant Settings reflows from negligible size rounding or duplicate
+  embedded LMS copies, while preserving genuine library upgrades.
+- Stabilized LMS Field resizing to address Category Name text disappearing
+  while the input still accepted and saved edits.
+- Fixed an LMS canvas initialization error that prevented settings categories
+  from registering and caused the bag/bank settings cogs to fail.
+- Refresh LMS dropdown visuals after the settings canvas becomes visible so
+  opening Inventory directly from a frame cog does not leave blank selectors.
 - Removed LibYvSkins' Flat glyph-position cache so normal refreshes always
   reapply button/close glyph geometry, targeting intermittent missing close
   icons without changing their alignment or adding polling.

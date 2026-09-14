@@ -98,22 +98,16 @@ and Warband deposit controls, including the tradeable-reagent option.
 
 Open settings with `/ybags settings` or through the Blizzard AddOns settings panel.
 
-Settings include:
+- **YvBags:** profile selection and management, plus the shared Appearance
+  section with a single-column Skin dropdown.
+- **Inventory:** Bags and Bank columns, each with General and List options for
+  replacement, scale, grouping, pins, sorting, and columns. Bags also includes
+  junk selling and cooldown-name display; Bank includes list mirroring.
+- **Categories:** category and Rule Set management.
 
-- Active profile plus create, copy, rename, reset, and delete actions
-- Replace Blizzard Bags
-- Sell Gray Junk At Vendors
-- Show Cooldowns In Item Names
-- Frame scale
-- Shared skin selection and appearance reset
-- Group By
-- Pinned Items presentation
-- Primary Sort and direction
-- Secondary Sort and direction
-- Columns visibility and layout reset
-- Categories subpage with category and Rule Set management
-- Bank subpage with replacement, frame scale, list mirroring, grouping, pin
-  presentation, sorting, and column controls
+Both window settings cogs open Inventory. Page defaults reset appearance on
+the main page and bag/bank options on Inventory; resetting an entire profile
+remains an explicit **Reset Active** action.
 
 Profile settings include bag grouping, sorting, and column layout, bank list mirroring or its
 independent list configuration, pinned-item presentation, cooldown-name
@@ -121,7 +115,7 @@ display, and the complete shared category registry. Bag and bank replacement,
 gray-junk selling, skin selection, and pinned item identities remain shared across the addon.
 Bag and bank frame position, size, and scale remain stored per character.
 
-Choose **Appearance > Skin** on either the main or Bank settings page. Flat
+Choose **Appearance > Skin** on the main YvBags settings page. Flat
 removes the portrait/title strip and keeps settings, scale, search, close,
 and bank-view selectors in one header. Switching skins preserves the window's
 size and position; the shorter header leaves more space for items. Changes

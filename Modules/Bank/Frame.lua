@@ -206,7 +206,7 @@ local function CreateToolbarControls(frame)
     Controls.CreateSettingsButton(frame, {
         tooltip = "Open YvBags bank settings.",
         onClick = function()
-            NS.Settings.OpenBank()
+            NS.Settings.OpenInventory()
         end,
     })
     Controls.CreateScaleButton(frame, {

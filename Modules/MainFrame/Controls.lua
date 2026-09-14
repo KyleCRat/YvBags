@@ -112,7 +112,7 @@ function Controls.CreateSettingsButton(frame, options)
         if options.onClick then
             options.onClick()
         else
-            NS.Settings.Open()
+            NS.Settings.OpenInventory()
         end
     end)
 

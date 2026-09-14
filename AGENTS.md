@@ -131,9 +131,9 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - `Modules/Settings/CategoryEditor.lua`: virtualized profile-backed category list, reorder interaction, category detail composition, and category canvas lifecycle.
 - `Media.lua`: centralized fonts, textures, atlases, colors, and LibSharedMedia registration.
 - `Formatting/Money.lua`: shared compact and exact money formatting.
-- `Settings.lua`: LibModernSettings bag and bank canvas composition, Blizzard
-  Settings registrations, profile management, confirmations, and live setting
-  callbacks.
+- `Settings.lua`: LibModernSettings main Profiles/Appearance and combined
+  Inventory canvas composition, Blizzard Settings registrations, profile
+  management, confirmations, and live setting callbacks.
 - `Commands.lua`: slash commands and diagnostics.
 
 ## Critical Implementation Invariants
@@ -317,6 +317,17 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
   discard the newly focused control.
 - Add defaults in `Defaults.lua` before reading new settings. Use `Get` and `Set`, and register callbacks when a setting must refresh live UI.
 - Expose user settings and profile management through Blizzard's standard Settings API. Columns menus share actions with the direct header controls.
+- Use LMS Fields for new separate label/input combinations, inline or stacked.
+  Built-in stacked dropdown/slider labels remain supported; only Fields own
+  inline labels and custom label gaps. Omit label text for an unlabeled input;
+  do not pass a hidden label with `showLabel`. Inputs own their content bounds,
+  label layouts own the inner gap, and parent layouts own external spacing.
+  Checkboxes are the exception: their right-side clickable caption belongs to
+  the checkbox control itself, not a Field.
+- Keep Profiles and the shared Appearance selector on the main settings page.
+  Inventory contains Bags and Bank columns with General/List options; both
+  window cogs open it. Scope canvas refreshes and defaults to their owning page,
+  and retain the explicit Reset Active action for whole-profile resets.
 - UI that displays active profile identity or profile descriptors listens to manager lifecycle callbacks. `OnCharacterInfoChanged` refreshes identity-backed permanent descriptors even when the active profile does not change. Features that apply effective profile data listen to active-DB `OnDataChanged`/`OnReset`; do not refresh one feature through both manager and active-DB paths.
 - A character without a stored selection performs the manager's one-time Character > Specialization > Class > Realm > Faction > Global search. If specialization identity is still loading, the manager completes that search during login without deferring construction. The persisted result is not promoted later.
 - Preserve the frame's reported point, relative point, x, and y. `SetDontSavePosition(true)` and `SetUserPlaced(false)` prevent the client from applying a second saved position.

@@ -18,7 +18,7 @@ local PIN_DISPLAY_GROUP_TOP_LABEL = "Top of Groups"
 local PIN_DISPLAY_NORMAL_LABEL = "Normal Sort Order"
 local PROFILE_ACTION_NONE_TOKEN = "profile-action:none"
 
--- Inline List field geometry, shared by the bag and bank canvases.
+-- Inline List field geometry, shared by the bag and bank sections.
 local LIST_LABEL_WIDTH = 160
 local LIST_FIELD_GAP = 8
 
@@ -655,15 +655,6 @@ local function SelectDeleteProfileToken(token)
 end
 
 -- Canvas synchronization
-local function MainFrameIsShown()
-    return AddonSettings.frame and AddonSettings.frame:IsShown()
-end
-
-local function BankSettingsFrameIsShown()
-    return AddonSettings.bankSettingsFrame
-        and AddonSettings.bankSettingsFrame:IsShown()
-end
-
 local function RefreshProfileControls()
     RefreshProfileDescriptors()
 
@@ -758,13 +749,7 @@ local function RefreshProfileSettingControls()
     )
 end
 
-local function RefreshMainFrame()
-    RefreshProfileControls()
-    RefreshGlobalAndCharacterControls()
-    RefreshProfileSettingControls()
-end
-
-local function RefreshBankSettingsFrame()
+local function RefreshBankControls()
     local ListModel = NS.ItemListModel
     local primarySortKey = ListModel.NormalizeSortKey(
         GetBankListValue("sortKey")
@@ -816,8 +801,14 @@ local function RefreshBankSettingsFrame()
     )
 end
 
-local function ScheduleControlRefresh(key, callback)
-    if not MainFrameIsShown() or controlRefreshScheduled[key] then
+local function RefreshInventorySettingsFrame()
+    RefreshGlobalAndCharacterControls()
+    RefreshProfileSettingControls()
+    RefreshBankControls()
+end
+
+local function ScheduleControlRefresh(frame, key, callback)
+    if not frame:IsShown() or controlRefreshScheduled[key] then
         return
     end
 
@@ -825,44 +816,41 @@ local function ScheduleControlRefresh(key, callback)
     C_Timer.After(0, function()
         controlRefreshScheduled[key] = nil
 
-        if MainFrameIsShown() then
+        if frame:IsShown() then
             callback()
         end
     end)
 end
 
 local function RefreshProfileControlsIfShown()
-    ScheduleControlRefresh("profiles", RefreshProfileControls)
+    ScheduleControlRefresh(AddonSettings.frame, "profiles", RefreshProfileControls)
 end
 
 local function RefreshGlobalAndCharacterControlsIfShown()
     ScheduleControlRefresh(
+        AddonSettings.inventorySettingsFrame,
         "globalAndCharacter",
         RefreshGlobalAndCharacterControls
     )
 end
 
 local function RefreshProfileSettingControlsIfShown()
-    ScheduleControlRefresh("profileSettings", RefreshProfileSettingControls)
+    ScheduleControlRefresh(
+        AddonSettings.inventorySettingsFrame,
+        "profileSettings",
+        RefreshProfileSettingControls
+    )
 end
 
 local function RefreshBankSettingsIfShown()
-    if not BankSettingsFrameIsShown()
-        or controlRefreshScheduled.bankSettings then
-        return
-    end
-
-    controlRefreshScheduled.bankSettings = true
-    C_Timer.After(0, function()
-        controlRefreshScheduled.bankSettings = nil
-        if BankSettingsFrameIsShown() then
-            RefreshBankSettingsFrame()
-        end
-    end)
+    ScheduleControlRefresh(
+        AddonSettings.inventorySettingsFrame,
+        "bankSettings",
+        RefreshBankControls
+    )
 end
 
-local function ResetMainSettings()
-    NS.Appearance.Reset()
+local function ResetBagSettings()
     local globalDefaults = NS.defaults.global.features
     local profileDefaults = NS.defaults.profile
     local listDefaults = profileDefaults.list
@@ -883,7 +871,6 @@ local function ResetMainSettings()
 end
 
 local function ResetBankSettings()
-    NS.Appearance.Reset()
     NS.globalDB:Set(
         "features",
         "replaceBlizzardBank",
@@ -893,6 +880,11 @@ local function ResetBankSettings()
     SetBankFrameScalePercent(
         NS.defaults.character.bankFrame.scale * 100
     )
+end
+
+local function ResetInventorySettings()
+    ResetBagSettings()
+    ResetBankSettings()
 end
 
 -- Main page composition
@@ -949,9 +941,6 @@ local function AddListDropdown(flow, options)
         gap = LIST_FIELD_GAP,
         controlType = "dropdown",
         controlOptions = {
-            showLabel = false,
-            leftInset = 0,
-            rightInset = 0,
             choices = options.choices,
             tooltip = options.tooltip,
             onChanged = options.onChanged,
@@ -961,19 +950,22 @@ end
 
 local function AddAppearanceSettings(flow)
     flow:AddSection("Appearance", { marginTop = 0 })
-    local skin = AddListDropdown(flow, {
+    local skin = flow:AddControl("field", {
         label = "Skin",
-        choices = {
-            { value = "modern", label = "WoW Modern" },
-            { value = "flat", label = "Flat" },
+        description = NS.Appearance.GetStatusText(),
+        controlType = "dropdown",
+        controlOptions = {
+            choices = {
+                { value = "modern", label = "WoW Modern" },
+                { value = "flat", label = "Flat" },
+            },
+            onChanged = NS.Appearance.SetSkin,
         },
         tooltip = "Change both the bag and bank windows. Skin selection is shared across profiles. Changes wait until combat or moving, resizing, and scaling finish.",
-        onChanged = NS.Appearance.SetSkin,
     })
-    local status = flow:AddText({ text = NS.Appearance.GetStatusText(), fontObject = GameFontHighlightSmall, height = 32 })
     local function Refresh()
         skin:GetControl():SetValue(NS.Appearance.GetSkin())
-        status:SetText(NS.Appearance.GetStatusText())
+        skin:SetDescription(NS.Appearance.GetStatusText())
     end
     NS.Appearance.RegisterCallback(Refresh)
     Refresh()
@@ -988,7 +980,7 @@ local function BuildMainSettingsFrame(frame, measurementFrame)
 
     layout:AddHeader(
         ADDON_NAME,
-        "Configure profiles, bag behavior, appearance, and list organization."
+        "Manage profiles and the shared appearance of your bag and bank windows."
     )
     root:AddSection("Profiles", { marginTop = 0 })
 
@@ -1030,28 +1022,36 @@ local function BuildMainSettingsFrame(frame, measurementFrame)
     )
     profileSelectors:Finish({ marginBottom = 12 })
 
-    local columns = root:BeginColumns()
+    local appearanceColumns = root:BeginColumns()
 
-    AddAppearanceSettings(columns.left)
-    columns.left:AddSection("General")
-    controls.replaceBlizzardBags = columns.left:AddControl("checkbox", {
+    AddAppearanceSettings(appearanceColumns.left)
+    appearanceColumns:Finish()
+    layout:Finalize()
+    frame.layout = layout
+end
+
+-- Inventory page composition
+local function AddBagGeneralSettings(flow)
+    flow:AddSection("Bags", { fontObject = GameFontNormalHuge, marginTop = 0 })
+    flow:AddSection("General", { marginTop = 0 })
+    controls.replaceBlizzardBags = flow:AddControl("checkbox", {
         label = "Replace Blizzard Bags",
         tooltip = ("Use %s for standard player bag open, close, and toggle actions."):format(
             ADDON_NAME
         ),
         onChanged = SetReplaceBlizzardBags,
     })
-    controls.autosellGrayJunk = columns.left:AddControl("checkbox", {
+    controls.autosellGrayJunk = flow:AddControl("checkbox", {
         label = "Sell Gray Junk At Vendors",
         tooltip = "Automatically sell Blizzard gray-quality junk items when a merchant opens.",
         onChanged = SetAutosellGrayJunk,
     })
-    controls.showCooldownsInName = columns.left:AddControl("checkbox", {
+    controls.showCooldownsInName = flow:AddControl("checkbox", {
         label = "Show Cooldowns In Item Names",
         tooltip = "Prefix item cooldown timers in the item name column.",
         onChanged = SetShowCooldownsInName,
     })
-    controls.frameScale = columns.left:AddControl("slider", {
+    controls.frameScale = flow:AddControl("slider", {
         label = "Scale",
         minValue = SCALE_MIN_PERCENT,
         maxValue = SCALE_MAX_PERCENT,
@@ -1060,74 +1060,59 @@ local function BuildMainSettingsFrame(frame, measurementFrame)
         tooltip = ("Resize the %s frame."):format(ADDON_NAME),
         onChanged = SetFrameScalePercent,
     })
+end
 
-    columns.right:AddSection("List", { marginTop = 0 })
-    controls.groupKey = AddListDropdown(columns.right, {
+local function AddBagListSettings(flow)
+    flow:AddSection("List")
+    controls.groupKey = AddListDropdown(flow, {
         label = "Group By",
         choices = CreateGroupChoices(),
         tooltip = "Choose how the list groups visible bag items.",
         onChanged = SetGroup,
     })
-    controls.pinDisplayMode = AddListDropdown(columns.right, {
+    controls.pinDisplayMode = AddListDropdown(flow, {
         label = "Pinned Items",
         choices = CreatePinDisplayChoices(),
         tooltip = "Choose how pinned items participate in the active grouping and sort order. Pin state is retained in every mode.",
         onChanged = SetPinDisplayMode,
     })
-    controls.primarySortKey = AddListDropdown(columns.right, {
+    controls.primarySortKey = AddListDropdown(flow, {
         label = "Primary Sort",
         choices = CreateSortChoices(),
         tooltip = "Choose the primary item sort order.",
         onChanged = SetPrimarySort,
     })
-    controls.primarySortDirection = AddListDropdown(columns.right, {
+    controls.primarySortDirection = AddListDropdown(flow, {
         label = "Primary Sort Direction",
         choices = CreateDirectionChoices(),
         tooltip = "Choose the primary sort direction.",
         onChanged = SetPrimarySortDirection,
     })
-    controls.secondarySortKey = AddListDropdown(columns.right, {
+    controls.secondarySortKey = AddListDropdown(flow, {
         label = "Secondary Sort",
         choices = CreateSecondarySortChoices(),
         tooltip = "Choose the secondary item sort order.",
         onChanged = SetSecondarySort,
     })
-    controls.secondarySortDirection = AddListDropdown(columns.right, {
+    controls.secondarySortDirection = AddListDropdown(flow, {
         label = "Secondary Sort Direction",
         choices = CreateDirectionChoices(),
         tooltip = "Choose the secondary sort direction.",
         onChanged = SetSecondarySortDirection,
     })
-    controls.columns = columns.right:AddControl("button", {
+    controls.columns = flow:AddControl("button", {
         text = "Columns",
         tooltip = "Show, hide, or reset columns. Drag list headers to reorder and their dividers to resize. Column editing is unavailable during combat.",
         onClick = function(button)
             NS.ItemListColumnMenu.Open(button, NS.ItemListSettings.Scopes.Bags)
         end,
     })
-
-    columns:Finish()
-    layout:Finalize()
-    frame.layout = layout
 end
 
-local function BuildBankSettingsFrame(frame, measurementFrame)
-    local layout = ModernSettings:CreateCanvasLayout(frame, {
-        measurementFrame = measurementFrame,
-        scrollable = true,
-    })
-    local root = layout:GetRootFlow()
-
-    layout:AddHeader(
-        "Bank",
-        "Configure the combined Character and Warband bank window."
-    )
-
-    local columns = root:BeginColumns()
-
-    AddAppearanceSettings(columns.left)
-    columns.left:AddSection("General")
-    bankControls.replaceBlizzardBank = columns.left:AddControl(
+local function AddBankGeneralSettings(flow)
+    flow:AddSection("Bank", { fontObject = GameFontNormalHuge, marginTop = 0 })
+    flow:AddSection("General", { marginTop = 0 })
+    bankControls.replaceBlizzardBank = flow:AddControl(
         "checkbox",
         {
             label = "Replace Blizzard Bank",
@@ -1135,7 +1120,7 @@ local function BuildBankSettingsFrame(frame, measurementFrame)
             onChanged = SetReplaceBlizzardBank,
         }
     )
-    bankControls.useBagListSettings = columns.left:AddControl(
+    bankControls.useBagListSettings = flow:AddControl(
         "checkbox",
         {
             label = "Use Bag List Settings",
@@ -1143,7 +1128,7 @@ local function BuildBankSettingsFrame(frame, measurementFrame)
             onChanged = SetBankMirroring,
         }
     )
-    bankControls.frameScale = columns.left:AddControl("slider", {
+    bankControls.frameScale = flow:AddControl("slider", {
         label = "Scale",
         minValue = SCALE_MIN_PERCENT,
         maxValue = SCALE_MAX_PERCENT,
@@ -1152,16 +1137,18 @@ local function BuildBankSettingsFrame(frame, measurementFrame)
         tooltip = "Resize the YvBags bank frame.",
         onChanged = SetBankFrameScalePercent,
     })
+end
 
-    columns.right:AddSection("List", { marginTop = 0 })
-    bankControls.groupKey = AddListDropdown(columns.right, {
+local function AddBankListSettings(flow)
+    flow:AddSection("List")
+    bankControls.groupKey = AddListDropdown(flow, {
         label = "Group By",
         choices = CreateGroupChoices(),
         tooltip = "Choose how both bank views group items.",
         onChanged = SetBankGroup,
     })
     bankControls.pinDisplayMode = AddListDropdown(
-        columns.right,
+        flow,
         {
             label = "Pinned Items",
             choices = CreatePinDisplayChoices(),
@@ -1170,7 +1157,7 @@ local function BuildBankSettingsFrame(frame, measurementFrame)
         }
     )
     bankControls.primarySortKey = AddListDropdown(
-        columns.right,
+        flow,
         {
             label = "Primary Sort",
             choices = CreateSortChoices(),
@@ -1179,7 +1166,7 @@ local function BuildBankSettingsFrame(frame, measurementFrame)
         }
     )
     bankControls.primarySortDirection = AddListDropdown(
-        columns.right,
+        flow,
         {
             label = "Primary Sort Direction",
             choices = CreateDirectionChoices(),
@@ -1188,7 +1175,7 @@ local function BuildBankSettingsFrame(frame, measurementFrame)
         }
     )
     bankControls.secondarySortKey = AddListDropdown(
-        columns.right,
+        flow,
         {
             label = "Secondary Sort",
             choices = CreateSecondarySortChoices(),
@@ -1197,7 +1184,7 @@ local function BuildBankSettingsFrame(frame, measurementFrame)
         }
     )
     bankControls.secondarySortDirection = AddListDropdown(
-        columns.right,
+        flow,
         {
             label = "Secondary Sort Direction",
             choices = CreateDirectionChoices(),
@@ -1205,15 +1192,32 @@ local function BuildBankSettingsFrame(frame, measurementFrame)
             onChanged = SetBankSecondarySortDirection,
         }
     )
-    bankControls.columns = columns.right:AddControl("button", {
+    bankControls.columns = flow:AddControl("button", {
         text = "Columns",
         tooltip = "Show, hide, or reset columns for both bank views. Drag list headers to reorder and their dividers to resize. Column editing is unavailable during combat.",
         onClick = function(button)
             NS.ItemListColumnMenu.Open(button, NS.ItemListSettings.Scopes.Bank)
         end,
     })
+end
 
-    columns:Finish()
+local function BuildInventorySettingsFrame(frame, measurementFrame)
+    local layout = ModernSettings:CreateCanvasLayout(frame, {
+        measurementFrame = measurementFrame,
+        scrollable = true,
+    })
+    local root = layout:GetRootFlow()
+    local generalColumns = root:BeginColumns()
+
+    AddBagGeneralSettings(generalColumns.left)
+    AddBankGeneralSettings(generalColumns.right)
+    generalColumns:Finish()
+
+    local listColumns = root:BeginColumns()
+
+    AddBagListSettings(listColumns.left)
+    AddBankListSettings(listColumns.right)
+    listColumns:Finish()
     layout:Finalize()
     frame.layout = layout
 end
@@ -1265,11 +1269,8 @@ function AddonSettings.Open(categoryID)
     return true
 end
 
-function AddonSettings.OpenBank()
-    return AddonSettings.Open(
-        AddonSettings.bankCategory
-            and AddonSettings.bankCategory:GetID()
-    )
+function AddonSettings.OpenInventory()
+    return AddonSettings.Open(AddonSettings.inventoryCategory:GetID())
 end
 
 function AddonSettings.NotifyFrameScaleChanged()
@@ -1299,21 +1300,21 @@ function AddonSettings.Register()
 
     BuildMainSettingsFrame(mainFrame, measurementFrame)
 
-    mainFrame.OnRefresh = RefreshMainFrame
-    mainFrame.OnDefault = ResetMainSettings
+    mainFrame.OnRefresh = RefreshProfileControls
+    mainFrame.OnDefault = NS.Appearance.Reset
 
     local category = Settings.RegisterCanvasLayoutCategory(
         mainFrame,
         ADDON_NAME
     )
-    local bankFrame = CreateFrame("Frame")
-    BuildBankSettingsFrame(bankFrame, measurementFrame)
-    bankFrame.OnRefresh = RefreshBankSettingsFrame
-    bankFrame.OnDefault = ResetBankSettings
-    local bankCategory = Settings.RegisterCanvasLayoutSubcategory(
+    local inventoryFrame = CreateFrame("Frame")
+    BuildInventorySettingsFrame(inventoryFrame, measurementFrame)
+    inventoryFrame.OnRefresh = RefreshInventorySettingsFrame
+    inventoryFrame.OnDefault = ResetInventorySettings
+    local inventoryCategory = Settings.RegisterCanvasLayoutSubcategory(
         category,
-        bankFrame,
-        "Bank"
+        inventoryFrame,
+        "Inventory"
     )
     local categoriesFrame = NS.CategoryEditor.CreateFrame(measurementFrame)
     local categoriesCategory = Settings.RegisterCanvasLayoutSubcategory(
@@ -1326,8 +1327,8 @@ function AddonSettings.Register()
 
     AddonSettings.frame = mainFrame
     AddonSettings.category = category
-    AddonSettings.bankSettingsFrame = bankFrame
-    AddonSettings.bankCategory = bankCategory
+    AddonSettings.inventorySettingsFrame = inventoryFrame
+    AddonSettings.inventoryCategory = inventoryCategory
     AddonSettings.categoriesFrame = categoriesFrame
     AddonSettings.categoriesCategory = categoriesCategory
 
@@ -1379,8 +1380,8 @@ function AddonSettings.Register()
     )
 
     AddonSettings.registered = true
-    RefreshMainFrame()
-    RefreshBankSettingsFrame()
+    RefreshProfileControls()
+    RefreshInventorySettingsFrame()
 end
 
 NS:RegisterInitCallback(AddonSettings.Register)
