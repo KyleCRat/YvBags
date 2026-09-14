@@ -27,6 +27,8 @@ local COMPACT_ICON_COLUMN_WIDTH = 28
 local HEADER_GOLD_ICON_SIZE = 12
 local BINDING_HEADER_ICON_SIZE = 16
 local RARITY_HEADER_ICON_SIZE = 12
+local EXPANSION_ICON_WIDTH = 28
+local EXPANSION_ICON_HEIGHT = 16
 local PROFESSION_QUALITY_HEADER_ATLAS = "Professions-ChatIcon-Quality-12-Tier2"
 local PROFESSION_QUALITY_HEADER_ICON_SIZE = 16
 local RARE_QUALITY = Enum and Enum.ItemQuality and Enum.ItemQuality.Rare or 3
@@ -53,6 +55,7 @@ local EXPANSION_LABELS = {
 }
 
 local professionQualityAtlasCache = {}
+local expansionIconInfoCache = {}
 local availableColumns
 local columnsByKey
 
@@ -417,6 +420,29 @@ function Columns.GetProfessionQualityAtlas(item)
     local atlas = qualityInfo and (qualityInfo.icon or qualityInfo.iconSmall or qualityInfo.iconChat or qualityInfo.iconInventory)
     professionQualityAtlasCache[cacheKey] = atlas or false
     return professionQualityAtlasCache[cacheKey]
+end
+
+function Columns.GetExpansionIconInfo(expansionID)
+    if expansionID == nil then
+        return nil
+    end
+
+    if expansionIconInfoCache[expansionID] == nil then
+        local icon = Media.GetExpansionIconInfo(expansionID)
+        if not icon then
+            expansionIconInfoCache[expansionID] = false
+        else
+            local scale = math.min(1, EXPANSION_ICON_WIDTH / icon.width, EXPANSION_ICON_HEIGHT / icon.height)
+            expansionIconInfoCache[expansionID] = {
+                texture = icon.texture,
+                texCoord = icon.texCoord,
+                width = math.max(1, math.floor(icon.width * scale + 0.5)),
+                height = math.max(1, math.floor(icon.height * scale + 0.5)),
+            }
+        end
+    end
+
+    return expansionIconInfoCache[expansionID] or nil
 end
 
 function Columns.GetBindingIconInfo(item)

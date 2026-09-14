@@ -45,11 +45,14 @@ local PROFESSION_QUALITY_LAYER = "ARTWORK"
 local PROFESSION_QUALITY_SUBLEVEL = 7
 local BINDING_ICON_LAYER = "ARTWORK"
 local BINDING_ICON_SUBLEVEL = 7
+local EXPANSION_ICON_LAYER = "ARTWORK"
+local EXPANSION_ICON_SUBLEVEL = 7
 local ITEM_MARKER_LAYER = "OVERLAY"
 local ITEM_MARKER_SUBLEVEL = 2
 
 local function IsTextColumn(column)
-    return column.key ~= "icon" and column.key ~= "binding" and column.key ~= "professionQuality"
+    return column.key ~= "icon" and column.key ~= "binding"
+        and column.key ~= "professionQuality" and column.key ~= "expansion"
 end
 
 local function GetRightClipPadding(row)
@@ -140,6 +143,8 @@ local function LayoutRow(row)
                 row.bindingIcon:SetShown(row.hasBindingIcon == true and shown)
             elseif key == "professionQuality" then
                 row.professionQualityIcon:SetShown(row.hasProfessionQualityIcon == true and shown)
+            elseif key == "expansion" then
+                row.expansionIcon:SetShown(row.hasExpansionIcon == true and shown)
             else
                 row.text[key]:SetShown(shown)
             end
@@ -154,6 +159,8 @@ local function LayoutRow(row)
                 region, point, x = row.bindingIcon, "CENTER", x + entry.width / 2
             elseif key == "professionQuality" then
                 region, point, x = row.professionQualityIcon, "CENTER", x + entry.width / 2
+            elseif key == "expansion" then
+                region, point, x = row.expansionIcon, "CENTER", x + entry.width / 2
             end
             if row.columnPositions[key] ~= x then
                 region:ClearAllPoints()
@@ -297,6 +304,11 @@ local function InitializeRow(row, list)
     row.bindingIcon:SetDrawLayer(BINDING_ICON_LAYER, BINDING_ICON_SUBLEVEL)
     row.bindingIcon:Hide()
 
+    row.expansionIcon = NS.Skins:CreateTexture(row.contentClip, {
+        geometryRoot = list.window, layer = EXPANSION_ICON_LAYER, sublevel = EXPANSION_ICON_SUBLEVEL,
+    })
+    row.expansionIcon:Hide()
+
     LayoutRow(row)
     row.rowInitialized = true
 end
@@ -336,6 +348,20 @@ local function RenderBinding(row, item)
         row.bindingIcon:SetVertexColor(1, 1, 1, 1)
     end
     row.bindingIcon:SetShown(row.list.columnLayout.byKey.binding ~= nil)
+end
+
+local function RenderExpansion(row, item)
+    local iconInfo = Columns.GetExpansionIconInfo(item.expansionID)
+    row.hasExpansionIcon = iconInfo ~= nil
+    if not iconInfo then
+        row.expansionIcon:Hide()
+        return
+    end
+
+    row.expansionIcon:SetTexture(iconInfo.texture)
+    row.expansionIcon:SetTexCoord(unpack(iconInfo.texCoord))
+    row.expansionIcon:SetSize(iconInfo.width, iconInfo.height)
+    row.expansionIcon:SetShown(row.list.columnLayout.byKey.expansion ~= nil)
 end
 
 local function RenderText(row, item)
@@ -424,6 +450,7 @@ function ItemRow.Render(row, item, list)
 
     RenderProfessionQuality(row, item)
     RenderBinding(row, item)
+    RenderExpansion(row, item)
     RenderText(row, item)
     Cooldown.Update(row, item)
 end
@@ -432,6 +459,7 @@ function ItemRow.Reset(row)
     row.item = nil
     row.hasBindingIcon = false
     row.hasProfessionQualityIcon = false
+    row.hasExpansionIcon = false
     row.highlightedBagID = nil
     row:SetID(0)
     StopNewItemAnimation(row)
@@ -447,6 +475,9 @@ function ItemRow.Reset(row)
     row.iconAppearance:SetBorderShown(false)
     row.itemButtonAdapter.Reset(row.itemButton)
     row.professionQualityIcon:Hide()
+
+    row.expansionIcon:SetTexture(nil)
+    row.expansionIcon:Hide()
 
     row.bindingIcon:SetSize(BINDING_ICON_SIZE, BINDING_ICON_SIZE)
     row.bindingIcon:SetTexture(nil)

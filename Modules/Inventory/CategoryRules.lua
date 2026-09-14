@@ -9,6 +9,10 @@ local DEFAULT_CATEGORY_ROOT = NS.defaults.profile.categories
 local OTHER_CATEGORY_ID = "other"
 local RULE_ID_PREFIX = "rule:"
 local DEFAULT_MODE = "all"
+local RARITY_ICON_SIZE = 12
+local PROFESSION_QUALITY_ICON_SIZE = 20
+local EXPANSION_ICON_WIDTH = 32
+local EXPANSION_ICON_HEIGHT = 16
 
 CategoryRules.Modes = {
     All = "all",
@@ -304,7 +308,7 @@ local function BuildDefaultCategoryChoices()
     return choices
 end
 
-local function BuildQualityChoices()
+local function BuildRarityChoices()
     local choices = {}
     local qualityValues = {}
     local seenQualities = {}
@@ -319,8 +323,18 @@ local function BuildQualityChoices()
     table.sort(qualityValues)
 
     for _, quality in ipairs(qualityValues) do
+        local color = ITEM_QUALITY_COLORS[quality].color
+        -- Embedded textures need their own RGB tint, separate from text color.
+        local icon = ("|T%s:%d:%d:0:0:64:64:0:64:0:64:%d:%d:%d|t"):format(
+            NS.Media.GetCircleTexture(),
+            RARITY_ICON_SIZE,
+            RARITY_ICON_SIZE,
+            color:GetRGBAsBytes()
+        )
         choices[#choices + 1] = {
-            label = _G["ITEM_QUALITY" .. quality .. "_DESC"],
+            label = icon .. " " .. color:WrapTextInColorCode(
+                _G["ITEM_QUALITY" .. quality .. "_DESC"]
+            ),
             value = quality,
         }
     end
@@ -470,28 +484,23 @@ local function BuildBindingChoices()
             value = BindingKeys.Account,
         },
         {
-            label = ITEM_BIND_TO_ACCOUNT_UNTIL_EQUIPPED,
+            label = ITEM_BIND_TO_ACCOUNT_UNTIL_EQUIP,
             value = BindingKeys.AccountUntilEquipped,
         },
         { label = "Bound", value = BindingKeys.Bound },
     }
 end
 
-local function GetExpansionName(expansionID)
-    local expansionInfo = GetExpansionDisplayInfo(expansionID)
-    if expansionInfo and expansionInfo.name then
-        return expansionInfo.name
-    end
-
-    return "Expansion " .. tostring(expansionID)
-end
-
 local function BuildExpansionChoices()
     local choices = {}
 
     for expansionID = 0, LE_EXPANSION_LEVEL_CURRENT do
+        local label = GetExpansionName(expansionID)
+        local icon = NS.Media.GetExpansionIconMarkup(
+            expansionID, EXPANSION_ICON_WIDTH, EXPANSION_ICON_HEIGHT
+        )
         choices[#choices + 1] = {
-            label = GetExpansionName(expansionID),
+            label = icon and (icon .. " " .. label) or label,
             value = expansionID,
         }
     end
@@ -501,8 +510,18 @@ end
 local function BuildProfessionQualityChoices()
     local choices = {}
     for quality = 1, 5 do
+        local atlas, twoRankAtlas = NS.Media.GetProfessionQualityAtlases(quality)
+        local label = CreateAtlasMarkup(
+            atlas, PROFESSION_QUALITY_ICON_SIZE, PROFESSION_QUALITY_ICON_SIZE
+        )
+        if twoRankAtlas then
+            label = label .. "  " .. CreateAtlasMarkup(
+                twoRankAtlas, PROFESSION_QUALITY_ICON_SIZE, PROFESSION_QUALITY_ICON_SIZE
+            )
+        end
+
         choices[#choices + 1] = {
-            label = "Quality " .. tostring(quality),
+            label = label,
             value = quality,
         }
     end
@@ -520,7 +539,7 @@ end
 
 local VALUE_CHOICE_BUILDERS = {
     defaultCategory = BuildDefaultCategoryChoices,
-    quality = BuildQualityChoices,
+    quality = BuildRarityChoices,
     classID = BuildItemClassChoices,
     classSubclass = BuildItemSubclassChoices,
     equipLoc = BuildEquipmentSlotChoices,
@@ -533,19 +552,23 @@ local valueChoiceCache = {}
 
 -- Field and operator registries
 local OPERATORS = {
-    equals = { id = "equals", label = "Equals", needsValue = true },
-    notEquals = { id = "notEquals", label = "Does Not Equal", needsValue = true },
+    equals = { id = "equals", label = "Equals (=)", needsValue = true },
+    notEquals = { id = "notEquals", label = "Does Not Equal (!=)", needsValue = true },
     contains = { id = "contains", label = "Contains", needsValue = true },
     notContains = { id = "notContains", label = "Does Not Contain", needsValue = true },
-    greaterOrEqual = { id = "greaterOrEqual", label = "At Least", needsValue = true },
-    lessOrEqual = { id = "lessOrEqual", label = "At Most", needsValue = true },
+    greaterThan = { id = "greaterThan", label = "Greater Than (>)", needsValue = true },
+    lessThan = { id = "lessThan", label = "Less Than (<)", needsValue = true },
+    greaterOrEqual = { id = "greaterOrEqual", label = "At Least (>=)", needsValue = true },
+    lessOrEqual = { id = "lessOrEqual", label = "At Most (<=)", needsValue = true },
     isTrue = { id = "isTrue", label = "True", needsValue = false },
     isFalse = { id = "isFalse", label = "False", needsValue = false },
 }
 
 local EQUALITY_OPERATORS = { "equals", "notEquals" }
 local TEXT_OPERATORS = { "contains", "notContains", "equals", "notEquals" }
-local ORDERED_OPERATORS = { "equals", "notEquals", "greaterOrEqual", "lessOrEqual" }
+local ORDERED_OPERATORS = {
+    "equals", "notEquals", "greaterThan", "lessThan", "greaterOrEqual", "lessOrEqual",
+}
 local BOOLEAN_OPERATORS = { "isTrue", "isFalse" }
 local FIELD_ORDER = {
     "defaultCategory",
@@ -571,10 +594,10 @@ local FIELD_ORDER = {
 }
 local FIELDS = {
     defaultCategory = { label = "YvBags Category", property = "defaultCategoryID", kind = CategoryRules.ValueKinds.Enum, operators = EQUALITY_OPERATORS },
-    name = { label = "Item Name", property = "ruleName", kind = CategoryRules.ValueKinds.Text, operators = TEXT_OPERATORS },
-    tooltipText = { label = "Tooltip Text", property = "ruleTooltipText", kind = CategoryRules.ValueKinds.Text, operators = TEXT_OPERATORS },
-    itemID = { label = "Item ID", property = "itemID", kind = CategoryRules.ValueKinds.Integer, operators = EQUALITY_OPERATORS, minimum = 1 },
-    quality = { label = "Quality", property = "quality", kind = CategoryRules.ValueKinds.OrderedEnum, operators = ORDERED_OPERATORS },
+    name = { label = "Item Name", property = "ruleName", kind = CategoryRules.ValueKinds.Text, operators = TEXT_OPERATORS, multipleValues = true },
+    tooltipText = { label = "Tooltip Text", property = "ruleTooltipText", kind = CategoryRules.ValueKinds.Text, operators = TEXT_OPERATORS, multipleValues = true },
+    itemID = { label = "Item ID", property = "itemID", kind = CategoryRules.ValueKinds.Integer, operators = EQUALITY_OPERATORS, minimum = 1, multipleValues = true },
+    quality = { label = "Rarity", property = "quality", kind = CategoryRules.ValueKinds.OrderedEnum, operators = ORDERED_OPERATORS },
     itemLevel = { label = "Item Level", property = "itemLevel", kind = CategoryRules.ValueKinds.Integer, operators = ORDERED_OPERATORS, minimum = 0 },
     requiredLevel = { label = "Required Level", property = "requiredLevel", kind = CategoryRules.ValueKinds.Integer, operators = ORDERED_OPERATORS, minimum = 0 },
     classID = { label = "Item Type", property = "classID", kind = CategoryRules.ValueKinds.Enum, operators = EQUALITY_OPERATORS },
@@ -619,6 +642,11 @@ end
 function CategoryRules.GetFieldValueKind(fieldID)
     local field = FIELDS[fieldID]
     return field and field.kind or nil
+end
+
+function CategoryRules.SupportsMultipleValues(fieldID)
+    local field = FIELDS[fieldID]
+    return field and field.multipleValues == true or false
 end
 
 local function FieldSupportsOperator(field, operatorID)
@@ -715,10 +743,10 @@ local function NormalizeTextValue(value, allowEmpty)
     return value
 end
 
-local function CopyStoredTextValues(value)
+local function CopyStoredAlternatives(value)
     local values = {}
 
-    if type(value) == "string" then
+    if type(value) == "string" or type(value) == "number" then
         values[1] = value
         return values
     end
@@ -728,7 +756,7 @@ local function CopyStoredTextValues(value)
     end
 
     for _, storedValue in ipairs(value) do
-        if type(storedValue) == "string" then
+        if type(storedValue) == "string" or type(storedValue) == "number" then
             values[#values + 1] = storedValue
         end
     end
@@ -736,13 +764,13 @@ local function CopyStoredTextValues(value)
     return values
 end
 
-function CategoryRules.GetRuleTextValues(rule)
-    return CopyStoredTextValues(rule and rule.value)
+function CategoryRules.GetRuleAlternatives(rule)
+    return CopyStoredAlternatives(rule and rule.value)
 end
 
-function CategoryRules.GetRuleTextValueCount(rule)
+function CategoryRules.GetRuleAlternativeCount(rule)
     local value = rule and rule.value
-    if type(value) == "string" then
+    if type(value) == "string" or type(value) == "number" then
         return 1
     end
 
@@ -752,7 +780,7 @@ function CategoryRules.GetRuleTextValueCount(rule)
 
     local count = 0
     for _, storedValue in ipairs(value) do
-        if type(storedValue) == "string" then
+        if type(storedValue) == "string" or type(storedValue) == "number" then
             count = count + 1
         end
     end
@@ -788,15 +816,31 @@ end
 function CategoryRules.NormalizeInputValue(fieldID, value)
     local field = FIELDS[fieldID]
     if not field then
-        return nil, false
+        return nil, false, "Select a supported rule field before entering a value."
     end
 
     if field.kind == CategoryRules.ValueKinds.Text then
         local normalized = NormalizeTextValue(value, true)
-        return normalized, normalized ~= nil
+        if normalized ~= nil then
+            return normalized, true
+        end
+
+        return nil, false, ("%s must be valid single-line text without control characters."):format(field.label)
     elseif field.kind == CategoryRules.ValueKinds.Integer then
+        if field.multipleValues and type(value) == "string" and strtrim(value) == "" then
+            return "", true
+        end
+
         local normalized = NormalizeIntegerValue(field, value)
-        return normalized, normalized ~= nil
+        if normalized ~= nil then
+            return normalized, true
+        end
+
+        if fieldID == "itemID" then
+            return nil, false, "Item IDs must be positive whole numbers, such as 246331. Add a separate value for each ID."
+        end
+
+        return nil, false, ("%s must be a whole number of %d or higher."):format(field.label, field.minimum)
     elseif field.kind == CategoryRules.ValueKinds.Enum
         or field.kind == CategoryRules.ValueKinds.OrderedEnum then
         if IsChoiceValue(fieldID, value) then
@@ -806,7 +850,7 @@ function CategoryRules.NormalizeInputValue(fieldID, value)
         return nil, true
     end
 
-    return nil, false
+    return nil, false, ("Select a listed value for %s."):format(field.label)
 end
 
 function CategoryRules.GetRuleValueText(rule)
@@ -815,8 +859,8 @@ function CategoryRules.GetRuleValueText(rule)
     end
 
     if type(rule.value) == "table" then
-        local values = CopyStoredTextValues(rule.value)
-        return values[1] or ""
+        local values = CopyStoredAlternatives(rule.value)
+        return values[1] ~= nil and tostring(values[1]) or ""
     end
 
     return tostring(rule.value)
@@ -847,7 +891,7 @@ local function CompileStoredTextValues(value)
     local values = {}
     local seenValues = {}
 
-    for _, storedValue in ipairs(CopyStoredTextValues(value)) do
+    for _, storedValue in ipairs(CopyStoredAlternatives(value)) do
         local normalized = NormalizeTextValue(storedValue)
         normalized = normalized and strlower(normalized) or nil
 
@@ -860,6 +904,21 @@ local function CompileStoredTextValues(value)
     return #values > 0 and values or nil
 end
 
+local function CompileStoredIntegerAlternatives(field, value)
+    local valueSet = {}
+    local hasValue = false
+
+    for _, storedValue in ipairs(CopyStoredAlternatives(value)) do
+        local normalized = NormalizeIntegerValue(field, storedValue)
+        if normalized ~= nil then
+            valueSet[normalized] = true
+            hasValue = true
+        end
+    end
+
+    return hasValue and valueSet or nil
+end
+
 local function CompileRule(rule)
     local field = type(rule) == "table" and FIELDS[rule.field]
     if not field or not FieldSupportsOperator(field, rule.operator) then
@@ -869,10 +928,16 @@ local function CompileRule(rule)
     local operator = OPERATORS[rule.operator]
     local value
     local values
+    local valueSet
     if operator.needsValue then
         if field.kind == CategoryRules.ValueKinds.Text then
             values = CompileStoredTextValues(rule.value)
             if not values then
+                return nil
+            end
+        elseif field.multipleValues then
+            valueSet = CompileStoredIntegerAlternatives(field, rule.value)
+            if not valueSet then
                 return nil
             end
         else
@@ -888,6 +953,7 @@ local function CompileRule(rule)
         operator = operator.id,
         value = value,
         values = values,
+        valueSet = valueSet,
         kind = field.kind,
     }
 end
@@ -967,6 +1033,15 @@ local function EvaluateRule(rule, item)
         return EvaluateTextRule(rule, itemValue)
     end
 
+    if rule.valueSet then
+        local matchesAny = rule.valueSet[itemValue] == true
+        if rule.operator == "notEquals" then
+            return not matchesAny
+        end
+
+        return matchesAny
+    end
+
     if rule.operator == "equals" then
         return itemValue == rule.value
     elseif rule.operator == "notEquals" then
@@ -975,6 +1050,10 @@ local function EvaluateRule(rule, item)
         return string.find(itemValue, rule.value, 1, true) ~= nil
     elseif rule.operator == "notContains" then
         return string.find(itemValue, rule.value, 1, true) == nil
+    elseif rule.operator == "greaterThan" then
+        return itemValue > rule.value
+    elseif rule.operator == "lessThan" then
+        return itemValue < rule.value
     elseif rule.operator == "greaterOrEqual" then
         return itemValue >= rule.value
     elseif rule.operator == "lessOrEqual" then

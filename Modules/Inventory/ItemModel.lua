@@ -61,7 +61,7 @@ local BIND_TYPE_INFO = {
     },
     [Enum.ItemBind.ToBnetAccountUntilEquipped] = {
         key = BindingKeys.AccountUntilEquipped,
-        label = ITEM_BIND_TO_BNETACCOUNT_UNTIL_EQUIPPED,
+        label = ITEM_BIND_TO_ACCOUNT_UNTIL_EQUIP,
     },
 }
 
@@ -72,7 +72,7 @@ end
 
 local function GetBindingInfo(bindType, isBound, isAccountBound, isAccountUntilEquipped)
     if isAccountUntilEquipped or IsBindType(bindType, BindingKeys.AccountUntilEquipped) then
-        return BindingKeys.AccountUntilEquipped, ITEM_BIND_TO_ACCOUNT_UNTIL_EQUIPPED
+        return BindingKeys.AccountUntilEquipped, ITEM_BIND_TO_ACCOUNT_UNTIL_EQUIP
     end
 
     if isAccountBound or IsBindType(bindType, BindingKeys.Account) then

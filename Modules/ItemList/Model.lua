@@ -203,16 +203,7 @@ local function GetExpansionName(expansionID)
         return UNKNOWN
     end
 
-    if GetExpansionDisplayInfo then
-        local expansionInfo = GetExpansionDisplayInfo(expansionID)
-        if type(expansionInfo) == "table" and expansionInfo.name then
-            return expansionInfo.name
-        elseif type(expansionInfo) == "string" then
-            return expansionInfo
-        end
-    end
-
-    return "Expansion " .. tostring(expansionID)
+    return _G.GetExpansionName(expansionID)
 end
 
 local function GetTypeSortText(item)

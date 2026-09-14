@@ -48,8 +48,12 @@
 - Added a profile-backed category editor for creating, renaming, reordering, removing, and resetting categories.
 - Added flat All Rules/Any Rule category Rule Sets with structured field,
   operator, and value controls in the virtualized category editor.
-- Added multiple OR alternatives to Item Name and Tooltip Text rules, with
-  grouped negative matching and compact add/remove controls.
+- Added multiple OR alternatives to Item ID, Item Name, and Tooltip Text rules,
+  with grouped negative matching and compact add/remove controls. Existing
+  single-ID rules remain compatible, and blank alternatives are ignored.
+- Added strict Greater Than (>) and Less Than (<) rule comparisons alongside
+  inclusive At Least (>=) and At Most (<=), with readable labels and symbols
+  for all equality and ordered comparisons.
 - Added presentation-only rule reordering and shared gold mover artwork for
   category and rule drag handles.
 - Added custom category matching for normalized item classification, identity,
@@ -68,6 +72,15 @@
 - Restored Mythic Keystones to their own prioritized category and gave keystone pins a stable identity across dungeon and level changes.
 
 ### Changed
+- Replaced the bag/bank Xpac column's abbreviations with bundled expansion
+  icons and added smaller, text-sized icons before full names in the Expansion
+  rule selector.
+  Column icons use compact, centered texture regions that fit the minimum
+  column width without text ellipses or clipping inside their cells.
+  Updated image bounds for all re-exported TGAs, including Mists of Pandaria,
+  removing obsolete padding crops from both list icons and rule-selector icons.
+  Kept expansion sorting, rule values, and abbreviation searches unchanged;
+  search and grouping now use Blizzard's full expansion names correctly.
 - Removed the temporary dropdown and slider layout examples from Appearance,
   leaving the shared Skin field and its description.
 - Move the Skin status message into an LMS Field description that wraps and
@@ -200,6 +213,13 @@
 - Classified Utility Curio, Combat Curio, and Relic consumables as Openable instead of general Consumables.
 
 ### Fixed
+- Category-rule validation now explains each field's requirements and reports
+  rejected edits once while retaining the previous value. Restored the missing
+  Warband-until-equipped binding label and full localized expansion names.
+  Profession Quality choices show icons without numeric labels, including both
+  standard and Midnight two-rank variants for ranks 1 and 2; matching remains numeric.
+  Renamed the item Quality field to Rarity, with matching rarity-colored
+  Vertex circles and labels; existing saved rules retain their field IDs.
 - Refresh the open bag footer when currencies are added to or removed from
   Blizzard's backpack tracking list, without rebuilding the item list.
 - Disable the remaining Bags or Bank settings when its replacement toggle is

@@ -143,6 +143,19 @@ Item Name and Tooltip Text rules can contain multiple text alternatives.
 operators match only when none of the alternatives match. Use separate text
 rules with **All Rules** when multiple text matches must all be present.
 
+Item ID rules also support multiple alternatives: **Equals (=)** matches any
+listed ID, and **Does Not Equal (!=)** excludes every listed ID. Enter one
+positive whole-number ID per row; blank alternatives are ignored.
+
+Ordered comparisons include **Greater Than (>)**, **Less Than (<)**,
+**At Least (>=)**, and **At Most (<=)**. At Least and At Most include the
+selected boundary. Profession Quality compares numeric rank across quality
+systems; ranks 1 and 2 show both standard and Midnight two-rank icons.
+
+The Xpac column displays expansion icons. The Expansion rule selector pairs
+each icon with its full expansion name; names and abbreviations remain
+searchable. Icon sources are recorded in [xpac_icons.md](xpac_icons.md).
+
 Rules can match normalized item properties such as YvBags' built-in category,
 name, tooltip text, item ID, quality, levels, type, subtype, equipment slot,
 binding, expansion, profession quality, collection type, and supported boolean

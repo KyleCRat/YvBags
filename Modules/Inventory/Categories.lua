@@ -300,7 +300,7 @@ local function GetMutableRuleSet(root, categoryID)
     return definition.rules
 end
 
-local function GetMutableTextRule(root, categoryID, ruleID)
+local function GetMutableMultiValueRule(root, categoryID, ruleID)
     local ruleSet, errorCode = GetMutableRuleSet(root, categoryID)
     if not ruleSet then
         return nil, errorCode
@@ -311,7 +311,7 @@ local function GetMutableTextRule(root, categoryID, ruleID)
         return nil, Categories.ErrorCodes.MissingRule
     end
 
-    if Rules.GetFieldValueKind(rule.field) ~= Rules.ValueKinds.Text
+    if not Rules.SupportsMultipleValues(rule.field)
         or not Rules.OperatorNeedsValue(rule.operator) then
         return nil, Categories.ErrorCodes.InvalidRuleValue
     end
@@ -319,7 +319,7 @@ local function GetMutableTextRule(root, categoryID, ruleID)
     return rule
 end
 
-local function NormalizeTextValueIndex(values, valueIndex)
+local function NormalizeValueIndex(values, valueIndex)
     if type(valueIndex) ~= "number"
         or valueIndex % 1 ~= 0
         or valueIndex < 1
@@ -330,20 +330,21 @@ local function NormalizeTextValueIndex(values, valueIndex)
     return valueIndex
 end
 
-local function SetTextRuleValue(rule, valueIndex, value)
-    local values = Rules.GetRuleTextValues(rule)
+local function SetRuleAlternative(rule, valueIndex, value)
+    local values = Rules.GetRuleAlternatives(rule)
 
-    valueIndex = NormalizeTextValueIndex(values, valueIndex)
+    valueIndex = NormalizeValueIndex(values, valueIndex)
     if not valueIndex then
         return nil, nil, Categories.ErrorCodes.InvalidRuleValueIndex
     end
 
     local normalizedValue
     local isValid
+    local errorMessage
 
-    normalizedValue, isValid = Rules.NormalizeInputValue(rule.field, value)
+    normalizedValue, isValid, errorMessage = Rules.NormalizeInputValue(rule.field, value)
     if not isValid then
-        return nil, nil, Categories.ErrorCodes.InvalidRuleValue
+        return nil, nil, Categories.ErrorCodes.InvalidRuleValue, errorMessage
     end
 
     if #values > 0 and values[valueIndex] == normalizedValue then
@@ -645,17 +646,18 @@ function Categories.UpdateRuleValue(categoryID, ruleID, value)
         return nil, Categories.ErrorCodes.InvalidRuleValue
     end
 
-    if Rules.GetFieldValueKind(rule.field) == Rules.ValueKinds.Text then
+    if Rules.SupportsMultipleValues(rule.field) then
         local normalizedValue
         local changed
+        local errorMessage
 
-        normalizedValue, changed, errorCode = SetTextRuleValue(
+        normalizedValue, changed, errorCode, errorMessage = SetRuleAlternative(
             rule,
             1,
             value
         )
         if normalizedValue == nil then
-            return nil, errorCode
+            return nil, errorCode, errorMessage
         end
 
         if not changed then
@@ -668,9 +670,10 @@ function Categories.UpdateRuleValue(categoryID, ruleID, value)
 
     local normalizedValue
     local isValid
-    normalizedValue, isValid = Rules.NormalizeInputValue(rule.field, value)
+    local errorMessage
+    normalizedValue, isValid, errorMessage = Rules.NormalizeInputValue(rule.field, value)
     if not isValid then
-        return nil, Categories.ErrorCodes.InvalidRuleValue
+        return nil, Categories.ErrorCodes.InvalidRuleValue, errorMessage
     end
 
     if rule.value == normalizedValue then
@@ -682,28 +685,29 @@ function Categories.UpdateRuleValue(categoryID, ruleID, value)
     return normalizedValue
 end
 
-function Categories.UpdateRuleTextValue(
+function Categories.UpdateRuleAlternative(
     categoryID,
     ruleID,
     valueIndex,
     value
 )
     local root = CopyTable(activeRoot)
-    local rule, errorCode = GetMutableTextRule(root, categoryID, ruleID)
+    local rule, errorCode = GetMutableMultiValueRule(root, categoryID, ruleID)
     if not rule then
         return nil, errorCode
     end
 
     local normalizedValue
     local changed
+    local errorMessage
 
-    normalizedValue, changed, errorCode = SetTextRuleValue(
+    normalizedValue, changed, errorCode, errorMessage = SetRuleAlternative(
         rule,
         valueIndex,
         value
     )
     if normalizedValue == nil then
-        return nil, errorCode
+        return nil, errorCode, errorMessage
     end
 
     if not changed then
@@ -714,14 +718,14 @@ function Categories.UpdateRuleTextValue(
     return normalizedValue
 end
 
-function Categories.AddRuleTextValue(categoryID, ruleID)
+function Categories.AddRuleAlternative(categoryID, ruleID)
     local root = CopyTable(activeRoot)
-    local rule, errorCode = GetMutableTextRule(root, categoryID, ruleID)
+    local rule, errorCode = GetMutableMultiValueRule(root, categoryID, ruleID)
     if not rule then
         return nil, errorCode
     end
 
-    local values = Rules.GetRuleTextValues(rule)
+    local values = Rules.GetRuleAlternatives(rule)
     if #values == 0 then
         values[1] = ""
     end
@@ -732,14 +736,14 @@ function Categories.AddRuleTextValue(categoryID, ruleID)
     return #values
 end
 
-function Categories.RemoveRuleTextValue(categoryID, ruleID, valueIndex)
+function Categories.RemoveRuleAlternative(categoryID, ruleID, valueIndex)
     local root = CopyTable(activeRoot)
-    local rule, errorCode = GetMutableTextRule(root, categoryID, ruleID)
+    local rule, errorCode = GetMutableMultiValueRule(root, categoryID, ruleID)
     if not rule then
         return nil, errorCode
     end
 
-    local values = Rules.GetRuleTextValues(rule)
+    local values = Rules.GetRuleAlternatives(rule)
     if type(valueIndex) ~= "number"
         or valueIndex % 1 ~= 0
         or valueIndex < 1

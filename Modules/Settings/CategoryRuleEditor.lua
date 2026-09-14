@@ -22,7 +22,7 @@ local VALUE_ROW_HEIGHT =
     (CONTROL_HEIGHT * 2)
         + RULE_LINE_GAP
         + (RULE_VERTICAL_PADDING * 2)
-local TEXT_VALUE_ROW_STEP = CONTROL_HEIGHT + RULE_LINE_GAP
+local ALTERNATIVE_ROW_STEP = CONTROL_HEIGHT + RULE_LINE_GAP
 local CONTROL_GAP = 8
 local DROPDOWN_EDGE_INSET = 2
 local SCROLLBAR_GAP = 6
@@ -39,17 +39,17 @@ local RULE_ERROR_MESSAGES = {
     [Categories.ErrorCodes.InvalidRuleMode] = "Select All Rules or Any Rule.",
     [Categories.ErrorCodes.InvalidRuleField] = "Select a supported rule field.",
     [Categories.ErrorCodes.InvalidRuleOperator] = "Select an operator supported by this field.",
-    [Categories.ErrorCodes.InvalidRuleValue] = "Enter or select a valid value for this field.",
-    [Categories.ErrorCodes.InvalidRuleValueIndex] = "That text match no longer exists.",
+    [Categories.ErrorCodes.InvalidRuleValue] = "Select a field and operator that accept this value.",
+    [Categories.ErrorCodes.InvalidRuleValueIndex] = "That alternative no longer exists.",
     [Categories.ErrorCodes.InvalidIndex] = "That rule position is no longer available.",
     [Categories.ErrorCodes.MissingRule] = "That rule no longer exists.",
     [Categories.ErrorCodes.RulesNotAllowed] = "Other is the unconditional fallback and cannot have rules.",
 }
 
-local function ReportRuleError(action, errorCode)
+local function ReportRuleError(action, errorCode, errorMessage)
     NS:Print(("%s failed: %s"):format(
         action,
-        RULE_ERROR_MESSAGES[errorCode] or tostring(errorCode)
+        errorMessage or RULE_ERROR_MESSAGES[errorCode] or tostring(errorCode)
     ))
 end
 
@@ -64,9 +64,9 @@ local function IsBooleanRule(rule)
         == Rules.ValueKinds.Boolean
 end
 
-local function IsTextValueRule(rule)
+local function IsMultiValueRule(rule)
     return RuleUsesValueRow(rule)
-        and Rules.GetFieldValueKind(rule.field) == Rules.ValueKinds.Text
+        and Rules.SupportsMultipleValues(rule.field)
 end
 
 local function GetRuleRowHeight(rule)
@@ -74,10 +74,10 @@ local function GetRuleRowHeight(rule)
         return SINGLE_LINE_ROW_HEIGHT
     end
 
-    if IsTextValueRule(rule) then
+    if IsMultiValueRule(rule) then
         return VALUE_ROW_HEIGHT
-            + ((Rules.GetRuleTextValueCount(rule) - 1)
-                * TEXT_VALUE_ROW_STEP)
+            + ((Rules.GetRuleAlternativeCount(rule) - 1)
+                * ALTERNATIVE_ROW_STEP)
     end
 
     return VALUE_ROW_HEIGHT
@@ -96,7 +96,7 @@ local function LayoutRuleRow(row)
     )
     local hasValueRow = row.hasValueRow == true
     local isBoolean = row.isBoolean == true
-    local textValueCount = row.textValueCount or 0
+    local alternativeCount = row.alternativeCount or 0
     local firstRowControlsWidth = math.max(
         64,
         contentWidth - ACTION_BUTTON_SIZE - CONTROL_GAP
@@ -131,13 +131,13 @@ local function LayoutRuleRow(row)
         operatorWidth = math.max(32, controlsWidth - fieldWidth)
     end
 
-    local textActionCount = textValueCount > 1 and 2 or 1
+    local alternativeActionCount = alternativeCount > 1 and 2 or 1
     local scalarValueWidth = math.max(32, contentWidth)
-    local textValueWidth = math.max(
+    local alternativeWidth = math.max(
         32,
         contentWidth
-            - (ACTION_BUTTON_SIZE * textActionCount)
-            - (CONTROL_GAP * textActionCount)
+            - (ACTION_BUTTON_SIZE * alternativeActionCount)
+            - (CONTROL_GAP * alternativeActionCount)
     )
 
     row.fieldDropdown:SetControlWidth(fieldWidth)
@@ -145,8 +145,8 @@ local function LayoutRuleRow(row)
     row.valueDropdown:SetControlWidth(scalarValueWidth)
     row.scalarValueEdit:SetWidth(scalarValueWidth)
 
-    for _, control in ipairs(row.textValueControls) do
-        control.input:SetWidth(textValueWidth)
+    for _, control in ipairs(row.alternativeControls) do
+        control.input:SetWidth(alternativeWidth)
     end
 
     row.fieldDropdown:ClearAllPoints()
@@ -204,7 +204,7 @@ local function LayoutRuleRow(row)
     )
 
     local previousInput
-    for _, control in ipairs(row.textValueControls) do
+    for _, control in ipairs(row.alternativeControls) do
         control.input:ClearAllPoints()
         if previousInput then
             control.input:SetPoint(
@@ -235,22 +235,22 @@ local function LayoutRuleRow(row)
         previousInput = control.input
     end
 
-    row.addTextValueButton:ClearAllPoints()
-    local firstTextControl = row.textValueControls[1]
-    local lastTextControl = row.textValueControls[textValueCount]
+    row.addAlternativeButton:ClearAllPoints()
+    local firstAlternativeControl = row.alternativeControls[1]
+    local lastAlternativeControl = row.alternativeControls[alternativeCount]
 
-    if textValueCount > 1 and lastTextControl then
-        row.addTextValueButton:SetPoint(
+    if alternativeCount > 1 and lastAlternativeControl then
+        row.addAlternativeButton:SetPoint(
             "LEFT",
-            lastTextControl.removeButton,
+            lastAlternativeControl.removeButton,
             "RIGHT",
             CONTROL_GAP,
             0
         )
-    elseif firstTextControl then
-        row.addTextValueButton:SetPoint(
+    elseif firstAlternativeControl then
+        row.addAlternativeButton:SetPoint(
             "LEFT",
-            firstTextControl.input,
+            firstAlternativeControl.input,
             "RIGHT",
             CONTROL_GAP,
             0
@@ -271,14 +271,14 @@ local function UpdateRenderedRuleValue(row, value)
     row.rule.value = value
 end
 
-local function UpdateRenderedRuleTextValue(row, valueIndex, value)
-    local values = Rules.GetRuleTextValues(row.rule)
+local function UpdateRenderedRuleAlternative(row, valueIndex, value)
+    local values = Rules.GetRuleAlternatives(row.rule)
 
     values[valueIndex] = value
     row.rule.value = values
 end
 
-local function CreateTextValueControl(row)
+local function CreateAlternativeControl(row)
     local control = {}
 
     control.input = ModernSettings:CreateTextInput(row, {
@@ -291,7 +291,7 @@ local function CreateTextValueControl(row)
             end
 
             local valueIndex = control.valueIndex
-            local updated, errorCode = row.owner:CommitRuleTextValue(
+            local updated, errorCode = row.owner:CommitRuleAlternative(
                 row.categoryID,
                 row.ruleID,
                 valueIndex,
@@ -302,24 +302,21 @@ local function CreateTextValueControl(row)
                 return nil, errorCode
             end
 
-            UpdateRenderedRuleTextValue(row, valueIndex, updated)
-            return updated
-        end,
-        onError = function(errorCode)
-            ReportRuleError("Updating rule value", errorCode)
+            UpdateRenderedRuleAlternative(row, valueIndex, updated)
+            return tostring(updated)
         end,
     })
     control.removeButton = ModernSettings:CreateButton(row, {
         variant = "square",
         width = ACTION_BUTTON_SIZE,
         iconAtlas = Media.GetRemoveAtlas(),
-        tooltip = "Remove this text match.",
+        tooltip = "Remove this alternative.",
         onClick = function()
             if row.owner
                 and row.categoryID
                 and row.ruleID
                 and control.valueIndex then
-                row.owner:RemoveRuleTextValue(
+                row.owner:RemoveRuleAlternative(
                     row.categoryID,
                     row.ruleID,
                     control.valueIndex
@@ -329,13 +326,13 @@ local function CreateTextValueControl(row)
     })
     control.input:Hide()
     control.removeButton:Hide()
-    row.textValueControls[#row.textValueControls + 1] = control
+    row.alternativeControls[#row.alternativeControls + 1] = control
     return control
 end
 
-local function EnsureTextValueControls(row, count)
-    while #row.textValueControls < count do
-        CreateTextValueControl(row)
+local function EnsureAlternativeControls(row, count)
+    while #row.alternativeControls < count do
+        CreateAlternativeControl(row)
     end
 end
 
@@ -467,25 +464,22 @@ local function InitializeRuleRow(row)
             UpdateRenderedRuleValue(row, updated)
             return updated
         end,
-        onError = function(errorCode)
-            ReportRuleError("Updating rule value", errorCode)
-        end,
     })
 
-    row.textValueControls = {}
-    row.addTextValueButton = ModernSettings:CreateButton(row, {
+    row.alternativeControls = {}
+    row.addAlternativeButton = ModernSettings:CreateButton(row, {
         variant = "square",
         width = ACTION_BUTTON_SIZE,
         iconAtlas = Media.GetAddAtlas(),
-        tooltip = "Add another text alternative. Positive operators match any "
+        tooltip = "Add another alternative. Positive operators match any "
             .. "alternative; negative operators require none to match.",
         onClick = function()
             if row.owner and row.categoryID and row.ruleID then
-                row.owner:AddRuleTextValue(row.categoryID, row.ruleID)
+                row.owner:AddRuleAlternative(row.categoryID, row.ruleID)
             end
         end,
     })
-    row.addTextValueButton:Hide()
+    row.addAlternativeButton:Hide()
 
     row.booleanIsText = ModernSettings:CreateText(row, {
         fontObject = GameFontHighlight,
@@ -517,9 +511,9 @@ local function ShowRuleValueControl(row, rule)
 
     row.valueDropdown:Hide()
     row.scalarValueEdit:Hide()
-    row.addTextValueButton:Hide()
-    row.textValueCount = nil
-    for _, control in ipairs(row.textValueControls) do
+    row.addAlternativeButton:Hide()
+    row.alternativeCount = nil
+    for _, control in ipairs(row.alternativeControls) do
         control.valueIndex = nil
         control.input:Hide()
         control.removeButton:Hide()
@@ -537,25 +531,25 @@ local function ShowRuleValueControl(row, rule)
     elseif fieldID
         and rule.operator
         and needsValue
-        and valueKind == Rules.ValueKinds.Text then
-        local values = Rules.GetRuleTextValues(rule)
+        and Rules.SupportsMultipleValues(fieldID) then
+        local values = Rules.GetRuleAlternatives(rule)
         if #values == 0 then
             values[1] = ""
         end
 
-        EnsureTextValueControls(row, #values)
-        row.textValueCount = #values
+        EnsureAlternativeControls(row, #values)
+        row.alternativeCount = #values
         local hasMultipleValues = #values > 1
 
         for valueIndex, value in ipairs(values) do
-            local control = row.textValueControls[valueIndex]
+            local control = row.alternativeControls[valueIndex]
 
             control.valueIndex = valueIndex
-            control.input:SetValue(value)
+            control.input:SetValue(tostring(value))
             control.input:Show()
             control.removeButton:SetShown(hasMultipleValues)
         end
-        row.addTextValueButton:Show()
+        row.addAlternativeButton:Show()
     elseif fieldID and rule.operator and needsValue then
         row.scalarValueEdit:SetValue(Rules.GetRuleValueText(rule))
         row.scalarValueEdit:Show()
@@ -590,17 +584,17 @@ local function RenderRuleRow(row, rule, editor)
     ShowRuleValueControl(row, rule)
     LayoutRuleRow(row)
 
-    if editor.pendingTextValueIndex
-        and editor.pendingTextValueCategoryID == row.categoryID
-        and editor.pendingTextValueRuleID == row.ruleID then
-        local control = row.textValueControls[
-            editor.pendingTextValueIndex
+    if editor.pendingAlternativeIndex
+        and editor.pendingAlternativeCategoryID == row.categoryID
+        and editor.pendingAlternativeRuleID == row.ruleID then
+        local control = row.alternativeControls[
+            editor.pendingAlternativeIndex
         ]
 
         if control then
-            editor.pendingTextValueCategoryID = nil
-            editor.pendingTextValueRuleID = nil
-            editor.pendingTextValueIndex = nil
+            editor.pendingAlternativeCategoryID = nil
+            editor.pendingAlternativeRuleID = nil
+            editor.pendingAlternativeIndex = nil
             control.input:FocusValue()
         end
     end
@@ -615,7 +609,7 @@ local function ResetRuleRow(row)
         end
     end
 
-    for _, control in ipairs(row.textValueControls) do
+    for _, control in ipairs(row.alternativeControls) do
         if control.input:HasFocus() then
             if row.owner and not row.owner.cancelFocusedValueOnReset then
                 control.input:CommitAndClearFocus()
@@ -632,7 +626,7 @@ local function ResetRuleRow(row)
     row.rule = nil
     row.hasValueRow = nil
     row.isBoolean = nil
-    row.textValueCount = nil
+    row.alternativeCount = nil
     row.stripe:Hide()
     row.handle.hoverIcon:Hide()
     row.fieldDropdown:SetValue(nil)
@@ -643,8 +637,8 @@ local function ResetRuleRow(row)
     row.scalarValueEdit:SetValue("")
     row.valueDropdown:Hide()
     row.scalarValueEdit:Hide()
-    row.addTextValueButton:Hide()
-    for _, control in ipairs(row.textValueControls) do
+    row.addAlternativeButton:Hide()
+    for _, control in ipairs(row.alternativeControls) do
         control.valueIndex = nil
         control.input:SetValue("")
         control.input:Hide()
@@ -674,7 +668,7 @@ local function PerformMutation(editor, action, mutation, refreshEditor)
     editor.categoryEditor:FlushPendingCategoryNameEdit()
     editor.categoryEditor.suppressCategoryRefresh = true
 
-    local succeeded, result, errorCode = pcall(mutation)
+    local succeeded, result, errorCode, errorMessage = pcall(mutation)
 
     editor.categoryEditor.suppressCategoryRefresh = nil
     if not succeeded then
@@ -682,7 +676,7 @@ local function PerformMutation(editor, action, mutation, refreshEditor)
     end
 
     if result == nil or result == false then
-        ReportRuleError(action, errorCode)
+        ReportRuleError(action, errorCode, errorMessage)
         return nil, errorCode
     end
 
@@ -711,16 +705,16 @@ local function SetDefinition(editor, definition)
     editor.definition = definition
     editor.categoryID = definition and definition.id or nil
 
-    if editor.pendingTextValueCategoryID
-        and editor.pendingTextValueCategoryID ~= editor.categoryID then
-        editor.pendingTextValueCategoryID = nil
-        editor.pendingTextValueRuleID = nil
-        editor.pendingTextValueIndex = nil
-        editor.pendingTextValueScrollOffset = nil
+    if editor.pendingAlternativeCategoryID
+        and editor.pendingAlternativeCategoryID ~= editor.categoryID then
+        editor.pendingAlternativeCategoryID = nil
+        editor.pendingAlternativeRuleID = nil
+        editor.pendingAlternativeIndex = nil
+        editor.pendingAlternativeScrollOffset = nil
     end
 
-    local pendingTextValueScrollOffset =
-        editor.pendingTextValueScrollOffset
+    local pendingAlternativeScrollOffset =
+        editor.pendingAlternativeScrollOffset
 
     local isOther = editor.categoryID == OTHER_CATEGORY_ID
     local hasDefinition = definition ~= nil
@@ -763,10 +757,10 @@ local function SetDefinition(editor, definition)
     editor.dataProvider = dataProvider
     editor.emptyText:SetShown(hasDefinition and not isOther and #entries == 0)
 
-    if pendingTextValueScrollOffset then
-        editor.pendingTextValueScrollOffset = nil
+    if pendingAlternativeScrollOffset then
+        editor.pendingAlternativeScrollOffset = nil
         editor.scrollBox:ScrollToOffset(
-            pendingTextValueScrollOffset,
+            pendingAlternativeScrollOffset,
             ScrollBoxConstants.NoScrollInterpolation
         )
     end
@@ -800,7 +794,7 @@ local function CommitFocusedValue(editor)
             committed = false
         end
 
-        for _, control in ipairs(row.textValueControls) do
+        for _, control in ipairs(row.alternativeControls) do
             rowCommitted = control.input:CommitAndClearFocus()
             if not rowCommitted then
                 committed = false
@@ -871,7 +865,7 @@ local function CommitRuleScalarValue(editor, categoryID, ruleID, value)
     return tostring(updated)
 end
 
-local function CommitRuleTextValue(
+local function CommitRuleAlternative(
     editor,
     categoryID,
     ruleID,
@@ -882,7 +876,7 @@ local function CommitRuleTextValue(
         editor,
         "Updating rule value",
         function()
-            return Categories.UpdateRuleTextValue(
+            return Categories.UpdateRuleAlternative(
                 categoryID,
                 ruleID,
                 valueIndex,
@@ -898,7 +892,7 @@ local function CommitRuleTextValue(
     return updated
 end
 
-local function AddRuleTextValue(editor, categoryID, ruleID)
+local function AddRuleAlternative(editor, categoryID, ruleID)
     if not editor:CommitFocusedValue() then
         return
     end
@@ -907,21 +901,21 @@ local function AddRuleTextValue(editor, categoryID, ruleID)
 
     local valueIndex = PerformMutation(
         editor,
-        "Adding text match",
+        "Adding alternative",
         function()
-            return Categories.AddRuleTextValue(categoryID, ruleID)
+            return Categories.AddRuleAlternative(categoryID, ruleID)
         end
     )
     if valueIndex then
-        editor.pendingTextValueCategoryID = categoryID
-        editor.pendingTextValueRuleID = ruleID
-        editor.pendingTextValueIndex = valueIndex
-        editor.pendingTextValueScrollOffset =
-            scrollOffset + TEXT_VALUE_ROW_STEP
+        editor.pendingAlternativeCategoryID = categoryID
+        editor.pendingAlternativeRuleID = ruleID
+        editor.pendingAlternativeIndex = valueIndex
+        editor.pendingAlternativeScrollOffset =
+            scrollOffset + ALTERNATIVE_ROW_STEP
     end
 end
 
-local function RemoveRuleTextValue(
+local function RemoveRuleAlternative(
     editor,
     categoryID,
     ruleID,
@@ -931,8 +925,8 @@ local function RemoveRuleTextValue(
         return
     end
 
-    return PerformMutation(editor, "Removing text match", function()
-        return Categories.RemoveRuleTextValue(
+    return PerformMutation(editor, "Removing alternative", function()
+        return Categories.RemoveRuleAlternative(
             categoryID,
             ruleID,
             valueIndex
@@ -1250,9 +1244,9 @@ function CategoryRuleEditor.Create(parent, categoryEditor)
     editor.UpdateRuleOperator = UpdateRuleOperator
     editor.UpdateRuleValue = UpdateRuleValue
     editor.CommitRuleScalarValue = CommitRuleScalarValue
-    editor.CommitRuleTextValue = CommitRuleTextValue
-    editor.AddRuleTextValue = AddRuleTextValue
-    editor.RemoveRuleTextValue = RemoveRuleTextValue
+    editor.CommitRuleAlternative = CommitRuleAlternative
+    editor.AddRuleAlternative = AddRuleAlternative
+    editor.RemoveRuleAlternative = RemoveRuleAlternative
     editor.RemoveRule = RemoveRule
     editor.CancelPendingRefresh = CancelPendingRefresh
     editor.CancelRuleDrag = CancelRuleDrag

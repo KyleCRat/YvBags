@@ -41,12 +41,47 @@ local Textures = {
     soulboundBindingIcon = ADDON_MEDIA_PATH .. "Textures\\Vertex-Lock.tga",
 }
 
+local EXPANSION_TEXTURE_PATH = ADDON_MEDIA_PATH .. "Textures\\Expansions\\"
+-- Expansion icons use the full exported image without added padding.
+local ExpansionIcons = {
+    [0] = { file = "Classic", width = 40, height = 20 },
+    [1] = { file = "BurningCrusade", width = 40, height = 20 },
+    [2] = { file = "WrathOfTheLichKing", width = 36, height = 20 },
+    [3] = { file = "Cataclysm", width = 40, height = 16 },
+    [4] = { file = "MistsOfPandaria", width = 37, height = 20 },
+    [5] = { file = "WarlordsOfDraenor", width = 46, height = 14 },
+    [6] = { file = "Legion", width = 40, height = 16 },
+    [7] = { file = "BattleForAzeroth", width = 80, height = 30 },
+    [8] = { file = "Shadowlands", width = 80, height = 30 },
+    [9] = { file = "Dragonflight", width = 80, height = 38 },
+    [10] = { file = "TheWarWithin", width = 100, height = 54 },
+    [11] = { file = "Midnight", width = 100, height = 42 },
+    [12] = { file = "TheLastTitan", width = 100, height = 54 },
+}
+for _, icon in pairs(ExpansionIcons) do
+    icon.texture = EXPANSION_TEXTURE_PATH .. icon.file .. ".tga"
+    icon.textureWidth = icon.textureWidth or icon.width
+    icon.textureHeight = icon.textureHeight or icon.height
+    icon.texCoord = { 0, icon.width / icon.textureWidth, 0, icon.height / icon.textureHeight }
+end
+
 local Atlases = {
     warboundBindingIcon = "GM-icon-assist-hover",
     warbandTransfer = "warbands-transferable-icon",
     add = "common-icon-plus",
     remove = "common-icon-minus",
     delete = "common-icon-redx",
+    professionQuality = {
+        "Professions-Icon-Quality-Tier1",
+        "Professions-Icon-Quality-Tier2",
+        "Professions-Icon-Quality-Tier3",
+        "Professions-Icon-Quality-Tier4",
+        "Professions-Icon-Quality-Tier5",
+    },
+    professionQualityTwoRank = {
+        "Professions-Icon-Quality-12-Tier1",
+        "Professions-Icon-Quality-12-Tier2",
+    },
 }
 
 local Colors = {
@@ -142,6 +177,33 @@ end
 
 function Media.GetDeleteAtlas()
     return Atlases.delete
+end
+
+function Media.GetProfessionQualityAtlases(quality)
+    return Atlases.professionQuality[quality],
+        Atlases.professionQualityTwoRank[quality]
+end
+
+function Media.GetExpansionIconInfo(expansionID)
+    return ExpansionIcons[expansionID]
+end
+
+function Media.GetExpansionIconMarkup(expansionID, maxWidth, maxHeight)
+    local icon = ExpansionIcons[expansionID]
+    if not icon then
+        return nil
+    end
+
+    local scale = math.min(1, maxWidth / icon.width, maxHeight / icon.height)
+    local width = math.max(1, math.floor(icon.width * scale + 0.5))
+    local height = math.max(1, math.floor(icon.height * scale + 0.5))
+    return CreateTextureMarkup(
+        icon.texture,
+        icon.textureWidth, icon.textureHeight,
+        width, height,
+        0, icon.width / icon.textureWidth,
+        0, icon.height / icon.textureHeight
+    )
 end
 
 function Media.GetAccentColor()
