@@ -40,11 +40,9 @@
 
 ## Fixes
 
-- Adding a new currency to be tracked in the backpack does not show up until after reopening the backpack.
 - is "At least" and "At most" inclusive or exclusive? is there good terms for inclusive and exclusive so we can have all options? or shoudl we swap to == != > < >= <= ?
 - invalid entries need to describe WHAT is invalid, not just that it's invalid. e.g. Item ID field can't just say "Updating rule value failed: Enter or select valid value for this field." It needs to say something like: ID fields only accept numbers, enter a valid number, giving actual context to what about it was invalid
 - Item ID needs to allow multiple values for a single field similar to item name / tooltip
 - Binding has a blank dropdown value between "Binds to Warband" and "Bound" in the 8th slot (7th index from 0), if's a invalid selection we need to not show it
 - Expansion dropdown needs to show the naems of the expansions, not "Expansion X". These should be in"Midnight" "The War Within" full name format.
 - Profession Quality selector needs the icons for what the qualities are, not "Quality 1". Quality 1 and 2 will need both the war within 5 step quality icons, and the midight 2 step quality versions. There is on way to distinguise a 2 step rank 2 from a 5 step rank 2 correct?
-- Turning off "Replace blizzard bank" should disable all other bank settings, ditto for "Replace blizzard bags"

@@ -372,8 +372,13 @@ function FooterCurrencies.Create(frame, footer, leftAnchor, rightAnchor)
     end)
 end
 
-NS:RegisterEventHandler("CURRENCY_DISPLAY_UPDATE", function()
-    if NS.frame then
-        FooterCurrencies.Refresh(NS.frame)
+local function RefreshVisibleCurrencies()
+    local frame = NS.frame
+    if frame and frame:IsShown() then
+        FooterCurrencies.Refresh(frame)
     end
-end)
+end
+
+NS:RegisterEventHandler("CURRENCY_DISPLAY_UPDATE", RefreshVisibleCurrencies)
+-- Tracking changes use Blizzard's callback rather than an amount-update event.
+EventRegistry:RegisterCallback("TokenFrame.OnTokenWatchChanged", RefreshVisibleCurrencies, FooterCurrencies)

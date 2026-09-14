@@ -22,6 +22,10 @@ local PROFILE_ACTION_NONE_TOKEN = "profile-action:none"
 local LIST_LABEL_WIDTH = 160
 local LIST_FIELD_GAP = 8
 
+-- Replacement-dependent settings remain visible and retain their saved values.
+local BAGS_DISABLED_TOOLTIP = "Enable Replace Blizzard Bags to edit these settings."
+local BANK_DISABLED_TOOLTIP = "Enable Replace Blizzard Bank to edit these settings."
+
 local PERMANENT_PROFILE_LABELS = {
     character = "Character",
     spec = "Specialization",
@@ -697,17 +701,19 @@ local function RefreshProfileControls()
 end
 
 local function RefreshGlobalAndCharacterControls()
-    controls.replaceBlizzardBags:SetValue(
-        NS.globalDB:Get("features", "replaceBlizzardBags") ~= false
-    )
+    local enabled = NS.globalDB:Get("features", "replaceBlizzardBags") ~= false
+    controls.replaceBlizzardBags:SetValue(enabled)
     controls.autosellGrayJunk:SetValue(
         GetBooleanSetting(NS.globalDB, "features", "autosellGrayJunk")
     )
     controls.frameScale:SetValue(GetFrameScalePercent())
+    controls.autosellGrayJunk:SetControlEnabled(enabled, BAGS_DISABLED_TOOLTIP)
+    controls.frameScale:SetControlEnabled(enabled, BAGS_DISABLED_TOOLTIP)
 end
 
 local function RefreshProfileSettingControls()
     local ListModel = NS.ItemListModel
+    local enabled = NS.globalDB:Get("features", "replaceBlizzardBags") ~= false
     local primarySortKey =
         ListModel.NormalizeSortKey(GetListValue("sortKey"))
     local secondarySortKey = ListModel.NormalizeSecondarySortKey(
@@ -733,17 +739,25 @@ local function RefreshProfileSettingControls()
         GetListValue("secondarySortAscending") ~= false
     )
 
+    controls.showCooldownsInName:SetControlEnabled(enabled, BAGS_DISABLED_TOOLTIP)
+    controls.groupKey:SetControlEnabled(enabled, BAGS_DISABLED_TOOLTIP)
+    controls.pinDisplayMode:SetControlEnabled(enabled, BAGS_DISABLED_TOOLTIP)
+    controls.primarySortKey:SetControlEnabled(enabled, BAGS_DISABLED_TOOLTIP)
+    controls.columns:SetControlEnabled(enabled, BAGS_DISABLED_TOOLTIP)
     controls.primarySortDirection:SetControlEnabled(
-        not manual,
-        "Manual sorting always follows bag and slot order."
+        enabled and not manual,
+        not enabled and BAGS_DISABLED_TOOLTIP
+            or "Manual sorting always follows bag and slot order."
     )
     controls.secondarySortKey:SetControlEnabled(
-        not manual,
-        "Manual primary sorting disables secondary sorting."
+        enabled and not manual,
+        not enabled and BAGS_DISABLED_TOOLTIP
+            or "Manual primary sorting disables secondary sorting."
     )
     controls.secondarySortDirection:SetControlEnabled(
-        secondaryEnabled,
-        manual
+        enabled and secondaryEnabled,
+        not enabled and BAGS_DISABLED_TOOLTIP
+            or manual
             and "Manual primary sorting disables secondary sorting."
             or "Choose a secondary sort before setting its direction."
     )
@@ -751,6 +765,7 @@ end
 
 local function RefreshBankControls()
     local ListModel = NS.ItemListModel
+    local enabled = NS.globalDB:Get("features", "replaceBlizzardBank") ~= false
     local primarySortKey = ListModel.NormalizeSortKey(
         GetBankListValue("sortKey")
     )
@@ -761,9 +776,7 @@ local function RefreshBankControls()
     local secondaryEnabled = not manual
         and secondarySortKey ~= ListModel.GetNoSecondarySortKey()
 
-    bankControls.replaceBlizzardBank:SetValue(
-        NS.globalDB:Get("features", "replaceBlizzardBank") ~= false
-    )
+    bankControls.replaceBlizzardBank:SetValue(enabled)
     bankControls.useBagListSettings:SetValue(
         NS.ItemListSettings.IsBankMirroring()
     )
@@ -785,17 +798,26 @@ local function RefreshBankControls()
         GetBankListValue("secondarySortAscending") ~= false
     )
 
+    bankControls.useBagListSettings:SetControlEnabled(enabled, BANK_DISABLED_TOOLTIP)
+    bankControls.frameScale:SetControlEnabled(enabled, BANK_DISABLED_TOOLTIP)
+    bankControls.groupKey:SetControlEnabled(enabled, BANK_DISABLED_TOOLTIP)
+    bankControls.pinDisplayMode:SetControlEnabled(enabled, BANK_DISABLED_TOOLTIP)
+    bankControls.primarySortKey:SetControlEnabled(enabled, BANK_DISABLED_TOOLTIP)
+    bankControls.columns:SetControlEnabled(enabled, BANK_DISABLED_TOOLTIP)
     bankControls.primarySortDirection:SetControlEnabled(
-        not manual,
-        "Manual sorting always follows bank tab and slot order."
+        enabled and not manual,
+        not enabled and BANK_DISABLED_TOOLTIP
+            or "Manual sorting always follows bank tab and slot order."
     )
     bankControls.secondarySortKey:SetControlEnabled(
-        not manual,
-        "Manual primary sorting disables secondary sorting."
+        enabled and not manual,
+        not enabled and BANK_DISABLED_TOOLTIP
+            or "Manual primary sorting disables secondary sorting."
     )
     bankControls.secondarySortDirection:SetControlEnabled(
-        secondaryEnabled,
-        manual
+        enabled and secondaryEnabled,
+        not enabled and BANK_DISABLED_TOOLTIP
+            or manual
             and "Manual primary sorting disables secondary sorting."
             or "Choose a secondary sort before setting its direction."
     )
@@ -1342,6 +1364,10 @@ function AddonSettings.Register()
     NS.globalDB:RegisterTreeCallback(
         RefreshGlobalAndCharacterControlsIfShown,
         "features"
+    )
+    NS.globalDB:RegisterTreeCallback(
+        RefreshProfileSettingControlsIfShown,
+        "features", "replaceBlizzardBags"
     )
     NS.globalDB:RegisterTreeCallback(
         RefreshBankSettingsIfShown,

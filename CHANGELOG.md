@@ -200,6 +200,10 @@
 - Classified Utility Curio, Combat Curio, and Relic consumables as Openable instead of general Consumables.
 
 ### Fixed
+- Refresh the open bag footer when currencies are added to or removed from
+  Blizzard's backpack tracking list, without rebuilding the item list.
+- Disable the remaining Bags or Bank settings when its replacement toggle is
+  off, preserving saved values, independent toggles, and sorting restrictions.
 - Initialize the Skin description's font before its text, preventing a settings
   startup error that also left Inventory unregistered and broke the settings cogs.
 - Give LMS dropdowns room for their border/shadow so inline list selectors
