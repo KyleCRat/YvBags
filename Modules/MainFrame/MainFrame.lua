@@ -95,7 +95,7 @@ local function RefreshItemLock(frame, bagID, slotIndex, isLocked)
 end
 
 local function CreateContent(frame)
-    frame.itemList = NS.ItemList.Create(frame.content, {
+    frame.itemList = NS.ItemList.Create(frame.body, {
         window = frame,
         settingsScope = ListSettings.Scopes.Bags,
         onColumnLayoutChanged = function()
@@ -184,7 +184,9 @@ function MainFrame.Create()
         title = ADDON_NAME,
         portrait = FRAME_PORTRAIT,
         insetBackground = NS.Media.GetInsetBackgroundTexture(),
-        compactHeader = true,
+        layouts = NS.WindowLayout.Layouts,
+        onLayout = NS.WindowLayout.OnLayout,
+        getMinimumWidth = NS.WindowLayout.GetMinimumWidth,
         minWidth = Layout.MinWidth,
         minHeight = Layout.MinHeight,
         maxWidth = Geometry.GetMaxWidth(),
@@ -198,6 +200,7 @@ function MainFrame.Create()
             Geometry.PrintDebug(target, "resize-stop")
         end,
     })
+    NS.WindowLayout.CreateToolbar(frame)
     Geometry.PreventClientSaving(frame)
     frame:SetScale(Geometry.GetSavedScale())
     Geometry.RestoreSize(frame)

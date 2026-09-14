@@ -21,6 +21,7 @@ Defaults.lua
 Core.lua
 Media.lua
 Modules\Appearance\Appearance.lua
+Modules\Appearance\WindowLayout.lua
 Constants\Binding.lua
 Formatting\Money.lua
 Modules\Inventory\CategoryRules.lua

@@ -408,7 +408,7 @@ local function CreateBagButtons(frame, footer)
 end
 
 local function RefreshFooterLayout(frame, height)
-    local xOffset = NS.Skins:IsWindowCompact(frame) and 0 or FOOTER_BAG_BUTTONS_X_OFFSET
+    local xOffset = NS.Skins:GetAppliedSkin() == "flat" and 0 or FOOTER_BAG_BUTTONS_X_OFFSET
     for index, button in ipairs(frame.bagButtons) do
         button:ClearAllPoints()
         button:SetPoint("LEFT", frame.footer, "LEFT",

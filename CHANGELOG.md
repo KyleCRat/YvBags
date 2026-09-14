@@ -68,6 +68,13 @@
 - Restored Mythic Keystones to their own prioritized category and gave keystone pins a stable identity across dungeon and level changes.
 
 ### Changed
+- Moved bag/bank window structure into explicit addon-owned Modern/Flat layouts
+  using LibYvSkins' flexible Header/Body/Footer shell and generic toolbars.
+  Preserved approved geometry, toolbar/search sizes, native actions, and
+  calculated viewport prewarming without changing saved settings or positions.
+- Decoupled LibYvSkins' Modern and Flat renderers so each skin owns its
+  appearance without relying on the other's setup; no visual or input changes
+  are intended.
 - Stacked Appearance above General in the left column of Bags and Bank
   settings, keeping List alongside them in the right column. Removed the
   redundant Reset Appearance button; choose WoW Modern in the Skin dropdown

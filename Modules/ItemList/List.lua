@@ -436,7 +436,7 @@ end
 function ListController:PrewarmItemRows()
     local list = self
     local visibleExtent = math.max(list.scrollBox:GetVisibleExtent(), list.frame:GetHeight())
-        + NS.Skins:GetWindowContentReserve(list.window)
+        + NS.Skins:GetWindowBodyReserve(list.window)
     local rowCount = math.max(
         MIN_PREWARMED_ITEM_ROWS,
         math.ceil(visibleExtent / ItemRow.GetRowHeight()) + ITEM_ROW_PREWARM_BUFFER

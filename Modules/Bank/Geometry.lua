@@ -60,7 +60,7 @@ function Geometry.GetMaxWidth()
         math.max(
             NS.ItemList.GetPreferredWidth(),
             NS.ItemList.GetPreferredWidth(NS.ItemListSettings.Scopes.Bank)
-        ) + NS.Skins:GetWindowChromeWidth(NS.bankFrame),
+        ) + NS.Skins:GetWindowBodyWidthOverhead(NS.bankFrame),
         NS.charDB:GetRaw(DB_SECTION, "width") or 0,
         NS.bankFrame and NS.bankFrame:GetWidth() or 0
     )

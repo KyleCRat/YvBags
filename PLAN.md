@@ -1,10 +1,25 @@
 # LibYvSkins And YvBags Appearance Plan
 
 Status: approved, with a creation-first architecture. Phases 0, 1, 1.5, and 2
-are complete with their in-game gates accepted. Phase 3 Flat styling,
-compact chrome, and built-in skin selection are implemented, pending the
-user's in-game visual/interaction approval. EUI integration and the first
-library release remain later work.
+are complete with their in-game gates accepted. Phase 3 Modern/Flat styling and
+built-in selection are accepted as MVP. The subsequent renderer separation and
+explicit window-layout refactor preserve that appearance and need a consumer
+smoke test before Phase 4. EUI integration and the first library release remain
+later work.
+
+Window-shell follow-up: LYS now owns generic Header/Body/Footer allocation,
+optional Title Bar/native controls, and independent toolbars. YvBags owns its
+per-skin sections, control arrangement, search minimum, and footer clearance in
+`Modules/Appearance/WindowLayout.lua`. The library no longer infers structure
+from `compactHeader` or requires a search field. See the terminology and current
+API contracts below. Historical checkpoints follow; their pending approvals
+were superseded by the MVP acceptance above.
+
+Refactor checks: 62 Lua 5.1 library tests and 16 changed/new Lua syntax checks
+pass, including optional sections, taller footers, Flat titles, search-free
+toolbars, copied layouts, native-input preservation, and mixed-MINOR loading.
+Both repositories pass whitespace checks. Modern/Flat bag/bank visual parity
+after this refactor remains an in-game check; MINOR and package pins are unchanged.
 
 Visual iteration policy: while Flat appearance is being tuned, use changed-file
 Lua syntax checks, focused diff review, and the user's in-game visual feedback.
@@ -149,15 +164,16 @@ Character/Warband selectors, flexible search, close. Preserve the Vertex-Scale i
 placement immediately beside settings, matching square-button styling, and
 shared toolbar spacing. Modern uses one shared 2-unit gap between buttons and
 search; preserve this tuned value. Its search field retains the
-native search/clear controls with a tertiary-depressed background and anchors
-to the adjacent button's height. Hide only bank types the bank controller
+native search/clear controls with a tertiary-depressed background and matches
+the adjacent button's height. Hide only bank types the bank controller
 reports unavailable; do not move or merge their inventory states.
 
-Start with a 36 UI-unit compact header band, 28-unit controls, 2-unit gaps,
-8-unit horizontal padding, and a minimum 96-unit search width. These are
-scale-aware layout units, not fixed physical-pixel sizes. Keep existing footer
-height and icon/control sizes, and current 420/520 bag/bank minimum widths as
-initial lower bounds. Compute the actual chrome minimum from visible controls
+YvBags declares a 28 UI-unit Flat Toolbar, 4-unit control/section gaps,
+8-unit outer padding, a 24-unit Footer, and a minimum 96-unit search width.
+Modern retains its Title Bar, 28-unit Toolbar/Footer, and texture-aware spacing.
+These are addon layout choices in scale-aware units, not fixed physical pixels
+or library policies. Keep the current bag/bank minimum widths as lower bounds.
+Compute the actual window minimum from visible controls
 and measured labels so required controls cannot overlap. Do not wrap the
 header, shrink icons, or hide required actions to force a narrower width.
 
@@ -189,10 +205,10 @@ hovered, pressed, focused, disabled, and disabled-checked states distinguishable
 Important implementation findings:
 
 - Bag/bank roots remain `ButtonFrameTemplate`, now created by LibYvSkins with
-  shared header/content/footer slots, inset/background layout, title/portrait,
-  close/resize controls, and geometry lifecycle. YvBags no longer duplicates
-  this construction. Toolbar interior layout and bank tab refreshes still need
-  conversion when the remaining control factories are implemented.
+  Header/Body/Footer sections, optional Title Bar/portrait, native close/resize
+  controls, and geometry lifecycle. YvBags declares per-skin section dimensions
+  and toolbar layout; LYS allocates the shell and generic control rows without
+  duplicating constructors or requiring inventory-specific controls.
 - Header, column, and new/pinned-section separators use the library's direct
   physical-pixel separator factory without changing their hit areas. Group/
   category headers now use its expandable-header factory; the Modern bar
@@ -217,14 +233,34 @@ Important implementation findings:
 
 ## Ownership And Architecture
 
+### Shared Terminology
+
+- Window: the complete movable/resizable container; the shell is its library
+  construction and layout machinery, not a separate visible section.
+- Header: everything above Body. Title Bar is an optional Header row holding
+  the Title text; neither dragging nor Close is restricted to it.
+- Toolbar: a row of controls that can appear in Header, Body, or Footer. It is
+  optional, may be repeated, and does not inherently require search.
+- Body: the primary working area; content is a general word, not another slot.
+- Footer: the optional lower section, with arbitrary caller-defined contents
+  and height rather than one mandatory short row.
+- Layout: section presence, dimensions, arrangement, and space allocation.
+  Skin/renderer: appearance, default visual measurements, and artwork offsets.
+- Padding is inside a boundary, margin outside a component, gap between
+  siblings, and visual offset affects artwork without moving its control.
+- Qualify nested headers: Window Header, List Header, and Category Header.
+
+### Ownership
+
 | Owner | Responsibilities | Explicit exclusions |
 |---|---|---|
 | LibYvSkins core | Per-addon contexts, constructor-owned registry, renderer selection/status, revisions, external integration coordination | SavedVariables, profiles, automatic discovery of unrelated frames |
 | Pixel primitives | Physical-pixel borders/lines, scale-aware layout rounding, visual alignment and invalidation | Changing UIParent scale, CVars, saved positions, inventory row geometry |
-| Window/component layer | Creates ordinary frames and canonical parts, owns chrome layout and visual states, uses native template behavior | Bank semantics, item use/drag, search filtering, persistence |
-| Modern/Flat renderers | Assets, colors, visual metrics, state drawing and restoration | Domain queries and native item interaction |
+| Window/component layer | Creates ordinary frames, allocates declared sections/Body, provides generic toolbar layout and native controls | Choosing addon structure, bank semantics, search filtering, persistence |
+| Modern/Flat renderers | Independent assets, colors, default measurements, state drawing and optical corrections | Inferring Title Bar/Footer presence or control order, invoking another renderer, native item interaction |
 | EUI adapter | Public API registration per consuming addon, facade translation, availability and reload policy | Private EUI tables, forcing EUI settings, copying its engine |
 | YvBags Appearance module | Context/media setup, LSDB preference, safe apply requests, Settings notifications | Frame adapters, part-discovery maps, constructor wrappers, duplicated renderers |
+| YvBags WindowLayout module | Explicit Modern/Flat sections, toolbar order/anchors, search minimum, footer dimensions/clearance | Rendering skins, duplicating shell constructors or pixel helpers |
 | Existing YvBags modules | Inventory, columns, virtualized lists, native bridges, geometry persistence, footer/bank behavior | Continuing to overwrite skin-owned art |
 
 ### Small Public Contract
@@ -240,14 +276,25 @@ the first release:
   application only; the addon owns persisting the preference and displaying
   confirmation UI.
 - `CreateWindow(parent, options)` is the only window construction path. It
-  returns an ordinary WoW Frame with canonical `header`, `content`, `footer`,
-  and `resizeButton` parts, plus the native title/portrait/close controls.
+  returns an ordinary WoW Frame with `header`, `titleBar`, `body`, `footer`,
+  and `resizeButton` parts, plus native title/portrait/close controls.
   YvBags supplies name/title/artwork, minimum/maximum size constraints, and
   move/resize completion callbacks. The library creates and owns the parts;
   YvBags mounts its content and restores/saves geometry on the returned frame.
-- `GetWindowChromeWidth()` reports the current layout's horizontal content
+  Complete `layout`/per-skin `layouts` specifications select optional sections,
+  their heights/margins/gaps, Body padding, and Title Bar/Close/portrait choices.
+  `onLayout` arranges existing addon contents after section anchors change;
+  `SetWindowLayout` replaces a copied specification without rebuilding frames.
+- `CreateToolbar`, `SetToolbarItems`, `LayoutToolbar`, and
+  `GetToolbarMinimumWidth` are independent row helpers usable in any section.
+  At most one flexible-width control separates fixed leading/trailing items;
+  controls retain their heights and native scripts. Search is addon-owned.
+- `GetWindowBodyWidthOverhead(window)` reports horizontal Body
   overhead so the consumer can calculate window bounds without copying the
   library's inset constants.
+- `GetWindowBodyReserve(window)` derives the largest declared viewport for
+  protected-row prewarming. `GetWindowMinimumWidth` combines constructor bounds
+  with the consumer's optional `getMinimumWidth` measurement callback.
 - `CreateSeparator(parent, options)` creates the texture and its appearance
   handle together, returning both. The window itself is the geometry root;
   no addon-side window-to-list map or region-construction wrapper is needed.
@@ -267,8 +314,8 @@ the first release:
   is not an EUI unskin operation; that still requires reload.
 
 Skin implementation and structural layout are separate. A Flat window may
-still have a title in a future addon; YvBags explicitly requests compact chrome
-for Flat/EUI. The library's window layout owns the outer slots. Lists and
+still have a title in a future addon; YvBags explicitly declares its layouts
+for each skin. The library's window layout owns the outer sections. Lists and
 footers own their interior layouts and behaviors, composing library-created
 visual components inside those slots.
 
@@ -434,7 +481,8 @@ Libs/LibYvSkins-1.0/
   LibYvSkins-1.0.lua       # LibStub bootstrap, persistent shared prototypes
   Context.lua             # registrations, selection/status, revisions
   Pixel.lua               # physical borders/lines and geometry helpers
-  Window.lua              # canonical window constructor, chrome, lifecycle
+  Window.lua              # generic sections, native controls, window lifecycle
+  Toolbar.lua             # optional control-row layout and measurement
   Components/             # visual contracts used by both built-in skins
   Skins/Modern.lua
   Skins/Flat.lua
@@ -588,8 +636,9 @@ it does not replace the full release regression matrix below.
 - [x] Remove portrait/title visually in Flat while preserving the ButtonFrame
   structural root. Anchor the existing actions in the compact header and
   retain a non-intercepting drag region around its interactive controls.
-- [x] Centralize current-skin chrome metrics and calculate content/footer/
-  search/resize bounds from them. Keep fixed columns clipped as before.
+- [x] Separate skin-default metrics from explicit addon-owned section/toolbar
+  layouts. Calculate Body allocation and viewport reserves in LYS; keep search
+  minimums and footer clearance in YvBags. Keep fixed columns clipped as before.
 - [x] Prewarm any additional viewport capacity needed by the shorter header
   before allowing a combat-time open; do not rebuild providers to restyle.
 - [x] Add the shared LSDB preference and LMS selectors/status. Implement
@@ -598,11 +647,12 @@ it does not replace the full release regression matrix below.
 - [x] Preserve and restore Modern art on repeated round trips. Update active
   custom row art in place and mark hidden pool members for the next revision.
 
-Gate pending: repeat Modern -> Flat -> Modern in both windows without lost search,
+MVP appearance accepted by the user. After the window-shell refactor, repeat
+Modern -> Flat -> Modern in both windows without lost search,
 changed bank selection, scroll jumps beyond unavoidable viewport clamping,
 provider replacement, duplicate regions/hooks, or saved-position changes.
 Validate narrow headers, all-hidden columns, footer alignment, both bank
-views, and combat transitions. Stop for visual approval.
+views, and combat transitions. Confirm refactor parity before Phase 4.
 
 ### Phase 4: Optional EllesmereUI Provider
 

@@ -557,7 +557,7 @@ end
 
 local function RefreshFooterLayout(frame, height)
     local tabGroup = frame.bankTabGroup
-    local xOffset = NS.Skins:IsWindowCompact(frame) and -TAB_BUTTONS_X_OFFSET or 0
+    local xOffset = NS.Skins:GetAppliedSkin() == "flat" and -TAB_BUTTONS_X_OFFSET or 0
     tabGroup:ClearAllPoints()
     tabGroup:SetPoint("TOPLEFT", frame.footer, "TOPLEFT", xOffset, 0)
     tabGroup:SetPoint("BOTTOMRIGHT", frame.footer, "BOTTOMRIGHT", 0, 0)

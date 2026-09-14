@@ -87,6 +87,10 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
   and media inputs; future preference/application routing belongs here, not
   frame adapters or constructor proxies. The library creates window chrome
   and separator visuals and owns physical-pixel metrics and display refreshes.
+- `Modules/Appearance/WindowLayout.lua`: shared bag/bank section specifications
+  and toolbar arrangement for Modern and Flat. YvBags chooses Title Bar presence,
+  section heights, control order, search minimum, and footer grip clearance;
+  LYS constructs and lays out the generic shell and controls.
 - `Modules/ItemList/Model.lua`: search, grouping, primary sorting, secondary sorting, manual ordering, and display-row construction. Cache sort values here rather than in row rendering.
 - `Modules/ItemList/List.lua`: inventory-adapted list state, ScrollBox
   composition, data-provider refreshes, and coordination between list-owned
@@ -109,7 +113,7 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 - `Modules/ItemList/Layout.lua`: geometry shared by the list, header, scrollbar, and drop overlay.
 - `Modules/MainFrame/MainFrame.lua`: top-level frame lifecycle, composition, and reason-scoped inventory refresh routing.
 - `Modules/MainFrame/Geometry.lua`: frame scale, size, position persistence, pixel snapping, and position diagnostics.
-- `Modules/MainFrame/Controls.lua`: shared subheader settings, square scale, and search controls for bags and bank.
+- `Modules/MainFrame/Controls.lua`: shared toolbar settings, square scale, and search controls for bags and bank.
 - `Modules/MainFrame/Layout.lua`: bag-specific minimum window bounds. Shared
   chrome geometry and horizontal overhead belong to LibYvSkins.
 - `Modules/MainFrame/Footer.lua`: bag buttons, bag-space display, money, footer layout, and related tooltips.
@@ -320,11 +324,17 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 ### Media And Visual Settings
 
 - YvBags is a native creation-first LibYvSkins consumer. Create window shells
-  with `NS.Skins:CreateWindow` and populate its `header`, `content`, and `footer`
+  with `NS.Skins:CreateWindow` and populate its `header`, `body`, and `footer`
   parts. Use direct component factories for controls, scrollbars, icons, text,
   accent regions, and drop glows; do not introduce existing-window adapters or
   part-discovery maps. Keep raw native controls directly accessible and domain behavior,
   position/size/scale persistence, and item-button bridges addon-owned.
+- Header means everything above Body; Title Bar is an optional row inside
+  Header, and Toolbar is a reusable control row, not a synonym for Header.
+  Keep the Modern Title Bar + Toolbar and Flat Toolbar-only choices in
+  `WindowLayout.lua`; Flat must not imply a title-free library window. Use
+  declared section heights/margins/gaps and generic toolbar measurements rather
+  than re-anchoring shell sections or adding YvBags-specific library policies.
 - Window backgrounds share library-owned dragging in both skins. Register
   additional non-action regions with `NS.Skins:RegisterWindowDragRegion`;
   never place a movement overlay over items or steal native action drags.
@@ -353,16 +363,16 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
   counts; the library owns bar/arrow state. Reset pooled header visibility,
   expansion, and text. In Flat, refresh visible header and icon borders after
   ScrollBox positioning; Modern group rows do not need pixel-border refreshes.
-- Skin development is gated by `PLAN.md`. Phase 2 is accepted; Phase 3 Flat
-  and shared selection are implemented but await in-game approval. Do not begin
-  the optional EllesmereUI provider until that gate passes.
+- Skin development is gated by `PLAN.md`. Phase 3 Modern/Flat MVP appearances
+  are accepted. Smoke-test the subsequent window-shell refactor before beginning
+  the optional EllesmereUI provider; its implementation remains deferred.
 - `NS.globalDB` owns `appearance.skin`, shared by bags/bank and independent
   of profiles. `NS.Appearance` connects storage/status to the library context.
   Live Modern/Flat switches coalesce after input and defer during combat or
   active window/scale drags; cancel column gestures before changing chrome.
   Prewarm the largest skin viewport at creation and before a switch, counting
-  active item rows toward the pool budget. Use library-owned header layout
-  and minimum measurements; never save geometry merely because a skin changed.
+  active item rows toward the pool budget. Use declared window layouts and
+  library toolbar/minimum measurements; never save geometry merely because a skin changed.
   Presentation refreshes must retain values, focus, pooled visibility,
   animation lifetime, and native input without rebuilding inventory/providers.
 - Use regular tertiary command buttons by default. Reserve small buttons for

@@ -8,8 +8,8 @@
 - [PLAN.md](PLAN.md) tracks LibYvSkins development in a YvBags Libs submodule.
   Pixel dividers, creation-first windows, and Modern controls are implemented
   without frame adapters. Phase 2's in-game parity gate passed; Phase 3 Flat
-  skin/selection is implemented and awaiting in-game approval before
-  reload-bound EllesmereUI integration. Masque is
+  skin/selection MVP is accepted. The subsequent flexible window-shell refactor
+  needs a bag/bank smoke test before reload-bound EllesmereUI integration. Masque is
   deferred; preserve its separate icon ownership extension point.
 
 ## Future Appearance Settings

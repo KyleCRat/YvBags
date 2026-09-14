@@ -73,7 +73,7 @@ local function ApplyInventoryRefresh(frame, refreshFooter)
             and Inventory:GetItems(bankType)
             or EMPTY_ITEMS
     )
-    frame.content:Show()
+    frame.body:Show()
     if refreshFooter ~= false then
         NS.BankFooter.Refresh(frame)
     end
@@ -130,7 +130,7 @@ local function RequestInventoryRefresh(frame, refreshFooter)
 end
 
 local function CreateContent(frame)
-    frame.itemList = NS.ItemList.Create(frame.content, {
+    frame.itemList = NS.ItemList.Create(frame.body, {
         window = frame,
         settingsScope = ListSettings.Scopes.Bank,
         onColumnLayoutChanged = function()
@@ -169,7 +169,7 @@ local function RefreshTypeButton(button, activeBankType)
 end
 
 local function CreateTypeButton(frame, text, bankType, width)
-    local button, appearance = NS.Skins:CreateTab(frame.header, {
+    local button, appearance = NS.Skins:CreateTab(frame.toolbar, {
         geometryRoot = frame, width = width, height = TYPE_BUTTON_HEIGHT,
         text = text, fontSize = TYPE_BUTTON_TEXT_SIZE, fontFlags = "OUTLINE",
     })
@@ -198,11 +198,11 @@ local function RefreshTypeButtons(frame)
         end
     end
 
-    NS.Skins:LayoutHeader(frame)
+    NS.Skins:LayoutToolbar(frame.toolbar)
     Geometry.RefreshResizeBounds(frame)
 end
 
-local function CreateSubheaderControls(frame)
+local function CreateToolbarControls(frame)
     Controls.CreateSettingsButton(frame, {
         tooltip = "Open YvBags bank settings.",
         onClick = function()
@@ -287,7 +287,9 @@ function BankFrameController.Create()
         title = "Bank",
         portrait = FRAME_PORTRAIT,
         insetBackground = NS.Media.GetInsetBackgroundTexture(),
-        compactHeader = true,
+        layouts = NS.WindowLayout.Layouts,
+        onLayout = NS.WindowLayout.OnLayout,
+        getMinimumWidth = NS.WindowLayout.GetMinimumWidth,
         minWidth = Layout.MinWidth,
         minHeight = Layout.MinHeight,
         maxWidth = Geometry.GetMaxWidth(),
@@ -299,6 +301,7 @@ function BankFrameController.Create()
             Geometry.Save(target)
         end,
     })
+    NS.WindowLayout.CreateToolbar(frame)
     Geometry.PreventClientSaving(frame)
     frame:SetScale(Geometry.GetSavedScale())
     Geometry.RestoreSize(frame)
@@ -306,7 +309,7 @@ function BankFrameController.Create()
     Geometry.RestorePosition(frame)
 
     CreateContent(frame)
-    CreateSubheaderControls(frame)
+    CreateToolbarControls(frame)
     NS.BankFooter.Create(frame)
     RegisterCallbacks(frame)
     Controls.RegisterSearchShortcut(frame)
@@ -327,7 +330,7 @@ function BankFrameController.Create()
         NS.BankFooter.HideTransientUI(self)
         self.itemList:InvalidateCursorDropTarget()
         RefreshTypeButtons(self)
-        self.content:Hide()
+        self.body:Hide()
         RequestInventoryRefresh(self, true)
     end
 

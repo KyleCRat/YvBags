@@ -1,6 +1,6 @@
 local _, NS = ...
 
--- Shared bag/bank subheader control construction contract.
+-- Shared bag/bank toolbar control construction contract.
 local Controls = {}
 NS.MainFrameControls = Controls
 
@@ -8,9 +8,9 @@ local Geometry = NS.MainFrameGeometry
 local ADDON_NAME = NS.ADDON_NAME
 
 -- Shared square header buttons
-local SQUARE_BUTTON_SIZE = 28
+local SQUARE_BUTTON_SIZE = NS.WindowLayout.ToolbarHeight
 local SQUARE_BUTTON_ICON_SIZE = 18
-local SUBHEADER_FRAME_LEVEL_OFFSET = 8
+local TOOLBAR_FRAME_LEVEL_OFFSET = 8
 
 -- Scale control
 local SCALE_MIN_PERCENT = 50
@@ -22,6 +22,7 @@ local SCALE_POPUP_FONT_SIZE = 12
 local SCALE_POPUP_FONT_FLAGS = "OUTLINE"
 
 -- Settings and search controls
+local SEARCH_MIN_WIDTH = 96
 local SEARCH_FOCUS_KEY = "F"
 local SEARCH_SHORTCUT_LISTENER_TEMPLATE = "InsecureKeyboardInputPropagatorTemplate"
 
@@ -48,12 +49,12 @@ function Controls.CreateScaleButton(frame, options)
     options = options or {}
     local geometry = options.geometry or Geometry
     local frameLabel = options.frameLabel or ADDON_NAME
-    local button = NS.Skins:CreateButton(frame.header, {
+    local button = NS.Skins:CreateButton(frame.toolbar, {
         geometryRoot = frame, variant = "square",
         width = SQUARE_BUTTON_SIZE, height = SQUARE_BUTTON_SIZE,
         icon = NS.Media.GetScaleTexture(), iconWidth = SQUARE_BUTTON_ICON_SIZE,
     })
-    button:SetFrameLevel(frame:GetFrameLevel() + SUBHEADER_FRAME_LEVEL_OFFSET)
+    button:SetFrameLevel(frame:GetFrameLevel() + TOOLBAR_FRAME_LEVEL_OFFSET)
     button:HookScript("OnLeave", function() GameTooltip:Hide() end)
     frame.scaleButton = button
 
@@ -90,12 +91,12 @@ end
 
 function Controls.CreateSettingsButton(frame, options)
     options = options or {}
-    local button = NS.Skins:CreateButton(frame.header, {
+    local button = NS.Skins:CreateButton(frame.toolbar, {
         geometryRoot = frame, variant = "square",
         width = SQUARE_BUTTON_SIZE, height = SQUARE_BUTTON_SIZE,
         icon = NS.Media.GetSettingsTexture(), iconWidth = SQUARE_BUTTON_ICON_SIZE,
     })
-    button:SetFrameLevel(frame:GetFrameLevel() + SUBHEADER_FRAME_LEVEL_OFFSET)
+    button:SetFrameLevel(frame:GetFrameLevel() + TOOLBAR_FRAME_LEVEL_OFFSET)
     button:HookScript("OnLeave", function() GameTooltip:Hide() end)
     button:RegisterForClicks("LeftButtonUp")
 
@@ -167,13 +168,16 @@ function Controls.RegisterSearchShortcut(frame)
 end
 
 function Controls.CreateSearch(frame)
-    local searchBox = frame.itemList:CreateSearchBox(frame.header)
-    searchBox:SetFrameLevel(frame:GetFrameLevel() + SUBHEADER_FRAME_LEVEL_OFFSET)
+    local searchBox = frame.itemList:CreateSearchBox(frame.toolbar)
+    searchBox:SetHeight(SQUARE_BUTTON_SIZE)
+    searchBox:SetFrameLevel(frame:GetFrameLevel() + TOOLBAR_FRAME_LEVEL_OFFSET)
     frame.searchBox = searchBox
     local toolbar = { frame.settingsButton, frame.scaleButton }
     if frame.characterBankButton then
         toolbar[#toolbar + 1] = frame.characterBankButton
         toolbar[#toolbar + 1] = frame.accountBankButton
     end
-    NS.Skins:SetHeaderControls(frame, toolbar, searchBox)
+    toolbar[#toolbar + 1] = { control = searchBox, stretch = true, minWidth = SEARCH_MIN_WIDTH }
+    frame.toolbarItems = toolbar
+    NS.WindowLayout.OnLayout(frame)
 end
