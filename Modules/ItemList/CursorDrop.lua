@@ -28,12 +28,9 @@ local MODE_MANUAL = "manual"
 
 local function GetDropText(itemID, itemLink, textFormat)
     local itemName = itemLink
+
     if not itemName and itemID then
-        if C_Item and C_Item.GetItemInfo then
-            itemName = C_Item.GetItemInfo(itemID)
-        elseif GetItemInfo then
-            itemName = GetItemInfo(itemID)
-        end
+        itemName = C_Item.GetItemInfo(itemID)
     end
 
     return (textFormat or DEFAULT_TEXT_FORMAT):format(

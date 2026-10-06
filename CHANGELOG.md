@@ -213,6 +213,7 @@
 - Classified Utility Curio, Combat Curio, and Relic consumables as Openable instead of general Consumables.
 
 ### Fixed
+- Fixed item placement into reagent and specialty bags on WoW 12.1.5.
 - Category-rule validation now explains each field's requirements and reports
   rejected edits once while retaining the previous value. Restored the missing
   Warband-until-equipped binding label and full localized expansion names.

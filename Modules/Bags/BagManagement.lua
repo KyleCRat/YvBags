@@ -31,43 +31,15 @@ local function AddError(message)
 end
 
 local function PickupContainerItem(containerID, slotIndex)
-    if C_Container and C_Container.PickupContainerItem then
-        C_Container.PickupContainerItem(containerID, slotIndex)
-    elseif _G.PickupContainerItem then
-        _G.PickupContainerItem(containerID, slotIndex)
-    end
+    C_Container.PickupContainerItem(containerID, slotIndex)
 end
 
 local function GetContainerItemInfo(containerID, slotIndex)
-    if C_Container and C_Container.GetContainerItemInfo then
-        return C_Container.GetContainerItemInfo(containerID, slotIndex)
-    elseif _G.GetContainerItemInfo then
-        local texture, count, locked, quality, readable, lootable, link = _G.GetContainerItemInfo(containerID, slotIndex)
-        if texture then
-            return {
-                iconFileID = texture,
-                stackCount = count,
-                isLocked = locked,
-                quality = quality,
-                isReadable = readable,
-                hasLoot = lootable,
-                hyperlink = link,
-                itemID = link and GetItemInfoInstant and GetItemInfoInstant(link),
-            }
-        end
-    end
-
-    return nil
+    return C_Container.GetContainerItemInfo(containerID, slotIndex)
 end
 
 local function GetContainerNumSlots(containerID)
-    if C_Container and C_Container.GetContainerNumSlots then
-        return C_Container.GetContainerNumSlots(containerID) or 0
-    elseif _G.GetContainerNumSlots then
-        return _G.GetContainerNumSlots(containerID) or 0
-    end
-
-    return 0
+    return C_Container.GetContainerNumSlots(containerID) or 0
 end
 
 local function GetContainerFamily(containerID)
@@ -75,22 +47,17 @@ local function GetContainerFamily(containerID)
         return 0
     end
 
-    if C_Container and C_Container.GetContainerNumFreeSlots then
-        local _, family = C_Container.GetContainerNumFreeSlots(containerID)
-        if type(family) == "number" then
-            return family
-        end
-    elseif _G.GetContainerNumFreeSlots then
-        local _, family = _G.GetContainerNumFreeSlots(containerID)
-        if type(family) == "number" then
-            return family
-        end
+    local _, family = C_Container.GetContainerNumFreeSlots(containerID)
+
+    if type(family) == "number" then
+        return family
     end
 
     local inventoryID = Containers.GetContainerInventoryID(containerID)
-    local link = inventoryID and GetInventoryItemLink and GetInventoryItemLink("player", inventoryID)
-    if link and GetItemFamily then
-        return GetItemFamily(link) or 0
+    local link = inventoryID and GetInventoryItemLink("player", inventoryID)
+
+    if link then
+        return C_Item.GetItemFamily(link) or 0
     end
 
     return 0
@@ -117,8 +84,9 @@ end
 
 local function GetCursorItemFamily(itemLink, itemID)
     local itemInfo = itemLink or itemID
-    if itemInfo and GetItemFamily then
-        return GetItemFamily(itemInfo) or 0
+
+    if itemInfo then
+        return C_Item.GetItemFamily(itemInfo) or 0
     end
 
     return 0
@@ -126,21 +94,15 @@ end
 
 local function GetItemMaxStackSize(itemID, itemLink)
     local itemInfo = itemLink or itemID
+
     if not itemInfo then
         return nil
     end
 
-    local stackSize
-    if C_Item and C_Item.GetItemMaxStackSizeByID then
-        stackSize = C_Item.GetItemMaxStackSizeByID(itemInfo)
-    end
+    local stackSize = C_Item.GetItemMaxStackSizeByID(itemInfo)
 
-    if (type(stackSize) ~= "number" or stackSize <= 0) and C_Item and C_Item.GetItemInfo then
+    if type(stackSize) ~= "number" or stackSize <= 0 then
         stackSize = select(8, C_Item.GetItemInfo(itemInfo))
-    end
-
-    if (type(stackSize) ~= "number" or stackSize <= 0) and GetItemInfo then
-        stackSize = select(8, GetItemInfo(itemInfo))
     end
 
     if type(stackSize) == "number" and stackSize > 1 then
