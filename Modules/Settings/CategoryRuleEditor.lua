@@ -24,7 +24,6 @@ local VALUE_ROW_HEIGHT =
         + (RULE_VERTICAL_PADDING * 2)
 local ALTERNATIVE_ROW_STEP = CONTROL_HEIGHT + RULE_LINE_GAP
 local CONTROL_GAP = 8
-local DROPDOWN_EDGE_INSET = 2
 local SCROLLBAR_GAP = 6
 local SCROLLBAR_WIDTH = 17
 local HANDLE_WIDTH = 26
@@ -395,7 +394,7 @@ local function InitializeRuleRow(row)
 
     row.fieldDropdown = ModernSettings:CreateDropdown(row, {
         height = CONTROL_HEIGHT,
-        leftInset = DROPDOWN_EDGE_INSET,
+        leftInset = 0,
         rightInset = 0,
         choices = Rules.GetFieldChoices(),
         onChanged = function(fieldID)
@@ -412,7 +411,7 @@ local function InitializeRuleRow(row)
     row.operatorDropdown = ModernSettings:CreateDropdown(row, {
         height = CONTROL_HEIGHT,
         leftInset = 0,
-        rightInset = DROPDOWN_EDGE_INSET,
+        rightInset = 0,
         choices = {},
         onChanged = function(operatorID)
             if row.owner and row.categoryID and row.ruleID then
@@ -427,8 +426,8 @@ local function InitializeRuleRow(row)
 
     row.valueDropdown = ModernSettings:CreateDropdown(row, {
         height = CONTROL_HEIGHT,
-        leftInset = DROPDOWN_EDGE_INSET,
-        rightInset = DROPDOWN_EDGE_INSET,
+        leftInset = 0,
+        rightInset = 0,
         choices = {},
         onChanged = function(value)
             if row.owner and row.categoryID and row.ruleID then
@@ -1096,8 +1095,8 @@ local function CreateHeader(editor)
 
     local modeDropdown = ModernSettings:CreateDropdown(header, {
         height = HEADER_HEIGHT,
-        leftInset = DROPDOWN_EDGE_INSET,
-        rightInset = DROPDOWN_EDGE_INSET,
+        leftInset = 0,
+        rightInset = 0,
         width = MODE_DROPDOWN_WIDTH,
         choices = Rules.GetModeChoices(),
         tooltipTitle = "Match",

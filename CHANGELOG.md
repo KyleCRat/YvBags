@@ -1,6 +1,15 @@
 # Changelog
 
-## Unreleased
+## [Unreleased]
+
+### Changed
+
+- Align category rule selectors with adjacent tertiary buttons and value inputs
+  when using LMS's new dropdown artwork.
+
+## [12.1.5-1] - 2026-10-06
+
+- Updated for WoW 12.1.5.
 
 ### Added
 - Added background dragging for both skins; item, column, scrollbar, and button
