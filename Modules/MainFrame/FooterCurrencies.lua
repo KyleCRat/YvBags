@@ -62,6 +62,14 @@ local function FormatAmountWithMax(currency)
     local maxQuantity = currency.maxQuantity or 0
 
     if maxQuantity > 0 then
+        if currency.useTotalEarnedForMaxQty then
+            return ("%s (%s/%s)"):format(
+                FormatExactAmount(quantity),
+                FormatExactAmount(currency.totalEarned),
+                FormatExactAmount(maxQuantity)
+            )
+        end
+
         return ("%s / %s"):format(FormatExactAmount(quantity), FormatExactAmount(maxQuantity))
     end
 
@@ -95,6 +103,8 @@ local function BuildCurrencyData(backpackInfo)
         quantity = backpackInfo.quantity or 0,
         iconFileID = backpackInfo.iconFileID,
         maxQuantity = 0,
+        totalEarned = 0,
+        useTotalEarnedForMaxQty = false,
         quality = nil,
     }
 
@@ -103,6 +113,8 @@ local function BuildCurrencyData(backpackInfo)
         currency.quantity = details.quantity or currency.quantity
         currency.iconFileID = details.iconFileID or currency.iconFileID
         currency.maxQuantity = details.maxQuantity or 0
+        currency.totalEarned = details.totalEarned or 0
+        currency.useTotalEarnedForMaxQty = details.useTotalEarnedForMaxQty
         currency.quality = details.quality
     end
 

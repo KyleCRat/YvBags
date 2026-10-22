@@ -7,6 +7,11 @@
 - Align category rule selectors with adjacent tertiary buttons and value inputs
   when using LMS's new dropdown artwork.
 
+### Fixed
+
+- Show season-capped currencies in bag tooltips as current balance (earned/maximum),
+  so spending currency does not imply more can be earned before reaching the cap.
+
 ## [12.1.5-1] - 2026-10-06
 
 - Updated for WoW 12.1.5.
