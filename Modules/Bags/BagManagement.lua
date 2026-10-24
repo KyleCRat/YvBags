@@ -15,7 +15,8 @@ local EMPTY_BAG_LOCKED_RETRY_DELAY = 0.15
 local EMPTY_BAG_MOVE_WAIT_POLL_DELAY = 0.1
 local EMPTY_BAG_MOVE_WAIT_TIMEOUT = 2
 local ERROR_CURSOR_BUSY = "Clear your cursor before emptying a bag."
-local ERROR_EMPTY_FAILED = "Could not empty the bag. There is not enough compatible space."
+local ERROR_EMPTY_FAILED =
+    "Could not empty the bag. There is not enough compatible space."
 local ERROR_NO_CURSOR_ITEM = "No item is on the cursor."
 local ERROR_NO_COMPATIBLE_SLOT = "No compatible bag slot is available."
 local ERROR_EMPTY_IN_PROGRESS = ADDON_NAME .. " is already emptying a bag."
@@ -43,22 +44,16 @@ local function GetContainerNumSlots(containerID)
 end
 
 local function GetContainerFamily(containerID)
-    if containerID == BACKPACK_ID then
-        return 0
-    end
+    if containerID == BACKPACK_ID then return 0 end
 
     local _, family = C_Container.GetContainerNumFreeSlots(containerID)
 
-    if type(family) == "number" then
-        return family
-    end
+    if type(family) == "number" then return family end
 
     local inventoryID = Containers.GetContainerInventoryID(containerID)
     local link = inventoryID and GetInventoryItemLink("player", inventoryID)
 
-    if link then
-        return C_Item.GetItemFamily(link) or 0
-    end
+    if link then return C_Item.GetItemFamily(link) or 0 end
 
     return 0
 end
@@ -67,13 +62,9 @@ local function IsFamilyCompatible(itemFamily, containerFamily)
     itemFamily = itemFamily or 0
     containerFamily = containerFamily or 0
 
-    if containerFamily == 0 then
-        return true
-    end
+    if containerFamily == 0 then return true end
 
-    if itemFamily == 0 then
-        return false
-    end
+    if itemFamily == 0 then return false end
 
     if bit and bit.band then
         return bit.band(itemFamily, containerFamily) ~= 0
@@ -85,9 +76,7 @@ end
 local function GetCursorItemFamily(itemLink, itemID)
     local itemInfo = itemLink or itemID
 
-    if itemInfo then
-        return C_Item.GetItemFamily(itemInfo) or 0
-    end
+    if itemInfo then return C_Item.GetItemFamily(itemInfo) or 0 end
 
     return 0
 end
@@ -95,9 +84,7 @@ end
 local function GetItemMaxStackSize(itemID, itemLink)
     local itemInfo = itemLink or itemID
 
-    if not itemInfo then
-        return nil
-    end
+    if not itemInfo then return nil end
 
     local stackSize = C_Item.GetItemMaxStackSizeByID(itemInfo)
 
@@ -105,9 +92,7 @@ local function GetItemMaxStackSize(itemID, itemLink)
         stackSize = select(8, C_Item.GetItemInfo(itemInfo))
     end
 
-    if type(stackSize) == "number" and stackSize > 1 then
-        return stackSize
-    end
+    if type(stackSize) == "number" and stackSize > 1 then return stackSize end
 
     return nil
 end
@@ -132,20 +117,31 @@ local function GetPlayerContainerIDs()
     return containerIDs
 end
 
-local function IsDestinationAllowed(containerID, excludedContainerID, itemFamily)
-    if containerID == excludedContainerID then
-        return false
-    end
+local function IsDestinationAllowed(
+    containerID,
+    excludedContainerID,
+    itemFamily
+)
+    if containerID == excludedContainerID then return false end
 
     return IsFamilyCompatible(itemFamily, GetContainerFamily(containerID))
 end
 
-local function CanMergeCursorIntoStack(info, cursorItemID, cursorItemLink, maxStackSize)
+local function CanMergeCursorIntoStack(
+    info,
+    cursorItemID,
+    cursorItemLink,
+    maxStackSize
+)
     if not info or info.isLocked or info.itemID ~= cursorItemID then
         return false
     end
 
-    if cursorItemLink and info.hyperlink and info.hyperlink ~= cursorItemLink then
+    if
+        cursorItemLink
+        and info.hyperlink
+        and info.hyperlink ~= cursorItemLink
+    then
         return false
     end
 
@@ -153,21 +149,32 @@ local function CanMergeCursorIntoStack(info, cursorItemID, cursorItemLink, maxSt
     return maxStackSize and stackCount > 0 and stackCount < maxStackSize
 end
 
-local function TryCursorIntoMatchingStacks(containerIDs, cursorItemID, cursorItemLink, itemFamily, excludedContainerID)
+local function TryCursorIntoMatchingStacks(
+    containerIDs,
+    cursorItemID,
+    cursorItemLink,
+    itemFamily,
+    excludedContainerID
+)
     local maxStackSize = GetItemMaxStackSize(cursorItemID, cursorItemLink)
-    if not maxStackSize then
-        return false
-    end
+    if not maxStackSize then return false end
 
     for _, containerID in ipairs(containerIDs) do
-        if IsDestinationAllowed(containerID, excludedContainerID, itemFamily) then
+        if
+            IsDestinationAllowed(containerID, excludedContainerID, itemFamily)
+        then
             for slotIndex = 1, GetContainerNumSlots(containerID) do
                 local info = GetContainerItemInfo(containerID, slotIndex)
-                if CanMergeCursorIntoStack(info, cursorItemID, cursorItemLink, maxStackSize) then
+                if
+                    CanMergeCursorIntoStack(
+                        info,
+                        cursorItemID,
+                        cursorItemLink,
+                        maxStackSize
+                    )
+                then
                     PickupContainerItem(containerID, slotIndex)
-                    if not CursorHasItem() then
-                        return true
-                    end
+                    if not CursorHasItem() then return true end
                 end
             end
         end
@@ -176,15 +183,19 @@ local function TryCursorIntoMatchingStacks(containerIDs, cursorItemID, cursorIte
     return not CursorHasItem()
 end
 
-local function TryCursorIntoEmptySlots(containerIDs, itemFamily, excludedContainerID)
+local function TryCursorIntoEmptySlots(
+    containerIDs,
+    itemFamily,
+    excludedContainerID
+)
     for _, containerID in ipairs(containerIDs) do
-        if IsDestinationAllowed(containerID, excludedContainerID, itemFamily) then
+        if
+            IsDestinationAllowed(containerID, excludedContainerID, itemFamily)
+        then
             for slotIndex = 1, GetContainerNumSlots(containerID) do
                 if not GetContainerItemInfo(containerID, slotIndex) then
                     PickupContainerItem(containerID, slotIndex)
-                    if not CursorHasItem() then
-                        return true
-                    end
+                    if not CursorHasItem() then return true end
                 end
             end
         end
@@ -193,15 +204,24 @@ local function TryCursorIntoEmptySlots(containerIDs, itemFamily, excludedContain
     return not CursorHasItem()
 end
 
-local function FindCompatibleEmptySlot(itemFamily, sourceContainerID, sourceSlotIndex)
+local function FindCompatibleEmptySlot(
+    itemFamily,
+    sourceContainerID,
+    sourceSlotIndex
+)
     local excludedContainerID = BagManagement.cursorSourceContainerID
 
     for _, containerID in ipairs(GetPlayerContainerIDs()) do
-        if IsDestinationAllowed(containerID, excludedContainerID, itemFamily) then
+        if
+            IsDestinationAllowed(containerID, excludedContainerID, itemFamily)
+        then
             for slotIndex = 1, GetContainerNumSlots(containerID) do
                 local isSourceSlot = containerID == sourceContainerID
                     and slotIndex == sourceSlotIndex
-                if not isSourceSlot and not GetContainerItemInfo(containerID, slotIndex) then
+                if
+                    not isSourceSlot
+                    and not GetContainerItemInfo(containerID, slotIndex)
+                then
                     return containerID, slotIndex
                 end
             end
@@ -212,14 +232,12 @@ local function FindCompatibleEmptySlot(itemFamily, sourceContainerID, sourceSlot
 end
 
 local function GetBagSlotIcon(containerID, inventoryID)
-    if containerID == BACKPACK_ID then
-        return BACKPACK_ICON
-    end
+    if containerID == BACKPACK_ID then return BACKPACK_ICON end
 
-    local icon = inventoryID and GetInventoryItemTexture and GetInventoryItemTexture("player", inventoryID)
-    if icon then
-        return icon
-    end
+    local icon = inventoryID
+        and GetInventoryItemTexture
+        and GetInventoryItemTexture("player", inventoryID)
+    if icon then return icon end
 
     return Containers.GetContainerIcon(containerID) or UNKNOWN_ITEM_ICON
 end
@@ -249,13 +267,9 @@ end
 
 local function HasSlotChanged(snapshot)
     local info = GetContainerItemInfo(snapshot.containerID, snapshot.slotIndex)
-    if not info then
-        return true
-    end
+    if not info then return true end
 
-    if snapshot.itemID and info.itemID ~= snapshot.itemID then
-        return true
-    end
+    if snapshot.itemID and info.itemID ~= snapshot.itemID then return true end
 
     if snapshot.hyperlink and info.hyperlink ~= snapshot.hyperlink then
         return true
@@ -294,25 +308,21 @@ end
 local function FinishEmptyBagOperation(success, message)
     emptyBagOperation = nil
 
-    NS.Inventory:ScheduleScan(success and "empty-bag-complete" or "empty-bag-failed")
+    NS.Inventory:ScheduleScan(
+        success and "empty-bag-complete" or "empty-bag-failed"
+    )
 
-    if not success and message then
-        AddError(message)
-    end
+    if not success and message then AddError(message) end
 end
 
 local function ScheduleEmptyBagStep(delay)
-    if not emptyBagOperation or emptyBagOperation.scheduled then
-        return
-    end
+    if not emptyBagOperation or emptyBagOperation.scheduled then return end
 
     emptyBagOperation.scheduled = true
 
     if C_Timer and C_Timer.After then
         C_Timer.After(delay or EMPTY_BAG_STEP_DELAY, function()
-            if not emptyBagOperation then
-                return
-            end
+            if not emptyBagOperation then return end
 
             emptyBagOperation.scheduled = false
             BagManagement.ContinueEmptyBag()
@@ -329,15 +339,16 @@ local function ScheduleMoveConfirmationCheck(delay)
     end
 
     local token = emptyBagOperation.waitingForMove.token
-    if emptyBagOperation.confirmScheduledToken == token then
-        return
-    end
+    if emptyBagOperation.confirmScheduledToken == token then return end
 
     emptyBagOperation.confirmScheduledToken = token
 
     if C_Timer and C_Timer.After then
         C_Timer.After(delay or EMPTY_BAG_MOVE_WAIT_POLL_DELAY, function()
-            if not emptyBagOperation or emptyBagOperation.confirmScheduledToken ~= token then
+            if
+                not emptyBagOperation
+                or emptyBagOperation.confirmScheduledToken ~= token
+            then
                 return
             end
 
@@ -360,25 +371,27 @@ end
 local function TrackPickupFailure(containerID, slotIndex)
     local failures = emptyBagOperation.pickupFailures
     failures[containerID] = failures[containerID] or {}
-    failures[containerID][slotIndex] = (failures[containerID][slotIndex] or 0) + 1
+    failures[containerID][slotIndex] = (failures[containerID][slotIndex] or 0)
+        + 1
     return failures[containerID][slotIndex]
 end
 
 local function OnBagStateChanged(_, bagID)
-    if not emptyBagOperation then
-        return
-    end
+    if not emptyBagOperation then return end
 
     local waiting = emptyBagOperation.waitingForMove
-    if not waiting or not bagID or bagID == waiting.containerID or bagID == emptyBagOperation.containerID then
+    if
+        not waiting
+        or not bagID
+        or bagID == waiting.containerID
+        or bagID == emptyBagOperation.containerID
+    then
         BagManagement.CheckEmptyBagMove()
     end
 end
 
 local function OnCursorChanged()
-    if not CursorHasItem() then
-        BagManagement.cursorSourceContainerID = nil
-    end
+    if not CursorHasItem() then BagManagement.cursorSourceContainerID = nil end
 end
 
 -- Public bag interaction contract
@@ -404,7 +417,9 @@ function BagManagement.GetBagSlots()
             inventoryID = inventoryID,
             isBackpack = false,
             isReagentBag = false,
-            isEquipped = inventoryID and GetInventoryItemTexture and GetInventoryItemTexture("player", inventoryID) ~= nil,
+            isEquipped = inventoryID
+                and GetInventoryItemTexture
+                and GetInventoryItemTexture("player", inventoryID) ~= nil,
             icon = GetBagSlotIcon(containerID, inventoryID),
             numSlots = GetContainerNumSlots(containerID),
             name = Containers.GetContainerName(containerID),
@@ -419,7 +434,9 @@ function BagManagement.GetBagSlots()
             inventoryID = inventoryID,
             isBackpack = false,
             isReagentBag = true,
-            isEquipped = inventoryID and GetInventoryItemTexture and GetInventoryItemTexture("player", inventoryID) ~= nil,
+            isEquipped = inventoryID
+                and GetInventoryItemTexture
+                and GetInventoryItemTexture("player", inventoryID) ~= nil,
             icon = GetBagSlotIcon(containerID, inventoryID),
             numSlots = GetContainerNumSlots(containerID),
             name = Containers.GetContainerName(containerID),
@@ -431,11 +448,12 @@ end
 
 function BagManagement.PickupBag(containerID)
     local inventoryID = Containers.GetContainerInventoryID(containerID)
-    if not inventoryID then
-        return false
-    end
+    if not inventoryID then return false end
 
-    if GetInventoryItemTexture and not GetInventoryItemTexture("player", inventoryID) then
+    if
+        GetInventoryItemTexture
+        and not GetInventoryItemTexture("player", inventoryID)
+    then
         return false
     end
 
@@ -454,14 +472,10 @@ end
 
 function BagManagement.PutCursorInBagSlot(containerID)
     local inventoryID = Containers.GetContainerInventoryID(containerID)
-    if not inventoryID or not PutItemInBag then
-        return false
-    end
+    if not inventoryID or not PutItemInBag then return false end
 
     local placed = PutItemInBag(inventoryID)
-    if placed then
-        BagManagement.cursorSourceContainerID = nil
-    end
+    if placed then BagManagement.cursorSourceContainerID = nil end
 
     return placed
 end
@@ -474,49 +488,70 @@ function BagManagement.HandleBagButtonClick(containerID)
     return BagManagement.PickupBag(containerID)
 end
 
-function BagManagement.FindCursorItemEmptySlot(itemID, itemLink, sourceContainerID, sourceSlotIndex)
+function BagManagement.FindCursorItemEmptySlot(
+    itemID,
+    itemLink,
+    sourceContainerID,
+    sourceSlotIndex
+)
     local itemFamily = GetCursorItemFamily(itemLink, itemID)
-    return FindCompatibleEmptySlot(itemFamily, sourceContainerID, sourceSlotIndex)
+    return FindCompatibleEmptySlot(
+        itemFamily,
+        sourceContainerID,
+        sourceSlotIndex
+    )
 end
 
 function BagManagement.IsPlayerContainerSlotEmpty(containerID, slotIndex)
-    if not Containers.IsPlayerContainerID(containerID)
+    if
+        not Containers.IsPlayerContainerID(containerID)
         or type(slotIndex) ~= "number"
         or slotIndex < 1
-        or slotIndex > GetContainerNumSlots(containerID) then
+        or slotIndex > GetContainerNumSlots(containerID)
+    then
         return false
     end
 
     return GetContainerItemInfo(containerID, slotIndex) == nil
 end
 
-function BagManagement.PlaceCursorItemInInventory(excludedContainerID, suppressError)
+function BagManagement.PlaceCursorItemInInventory(
+    excludedContainerID,
+    suppressError
+)
     local cursorType, cursorItemID, cursorItemLink = GetCursorInfo()
     if cursorType ~= "item" or not CursorHasItem or not CursorHasItem() then
-        if not suppressError then
-            AddError(ERROR_NO_CURSOR_ITEM)
-        end
+        if not suppressError then AddError(ERROR_NO_CURSOR_ITEM) end
         return false
     end
 
-    excludedContainerID = excludedContainerID or BagManagement.cursorSourceContainerID
+    excludedContainerID = excludedContainerID
+        or BagManagement.cursorSourceContainerID
 
     local itemFamily = GetCursorItemFamily(cursorItemLink, cursorItemID)
     local containerIDs = GetPlayerContainerIDs()
 
-    if TryCursorIntoMatchingStacks(containerIDs, cursorItemID, cursorItemLink, itemFamily, excludedContainerID) then
+    if
+        TryCursorIntoMatchingStacks(
+            containerIDs,
+            cursorItemID,
+            cursorItemLink,
+            itemFamily,
+            excludedContainerID
+        )
+    then
         BagManagement.cursorSourceContainerID = nil
         return true
     end
 
-    if TryCursorIntoEmptySlots(containerIDs, itemFamily, excludedContainerID) then
+    if
+        TryCursorIntoEmptySlots(containerIDs, itemFamily, excludedContainerID)
+    then
         BagManagement.cursorSourceContainerID = nil
         return true
     end
 
-    if not suppressError then
-        AddError(ERROR_NO_COMPATIBLE_SLOT)
-    end
+    if not suppressError then AddError(ERROR_NO_COMPATIBLE_SLOT) end
     return false
 end
 
@@ -532,9 +567,7 @@ function BagManagement.EmptyBag(containerID)
     end
 
     local numSlots = GetContainerNumSlots(containerID)
-    if numSlots <= 0 then
-        return true
-    end
+    if numSlots <= 0 then return true end
 
     emptyBagOperation = {
         containerID = containerID,
@@ -564,13 +597,14 @@ function BagManagement.CheckEmptyBagMove()
         return
     end
 
-    ScheduleMoveConfirmationCheck(IsSlotLocked(waiting) and EMPTY_BAG_LOCKED_RETRY_DELAY or EMPTY_BAG_MOVE_WAIT_POLL_DELAY)
+    ScheduleMoveConfirmationCheck(
+        IsSlotLocked(waiting) and EMPTY_BAG_LOCKED_RETRY_DELAY
+            or EMPTY_BAG_MOVE_WAIT_POLL_DELAY
+    )
 end
 
 function BagManagement.ContinueEmptyBag()
-    if not emptyBagOperation then
-        return
-    end
+    if not emptyBagOperation then return end
 
     if emptyBagOperation.waitingForMove then
         BagManagement.CheckEmptyBagMove()
@@ -599,7 +633,8 @@ function BagManagement.ContinueEmptyBag()
     end
 
     local sourceInfo = GetContainerItemInfo(containerID, slotIndex)
-    local sourceSnapshot = CreateSlotSnapshot(containerID, slotIndex, sourceInfo)
+    local sourceSnapshot =
+        CreateSlotSnapshot(containerID, slotIndex, sourceInfo)
 
     PickupContainerItem(containerID, slotIndex)
     if CursorHasItem and CursorHasItem() then
@@ -610,9 +645,10 @@ function BagManagement.ContinueEmptyBag()
             FinishEmptyBagOperation(false, ERROR_EMPTY_FAILED)
         end
     else
-        if IsSlotLocked(sourceSnapshot) then
-            ScheduleEmptyBagStep(EMPTY_BAG_LOCKED_RETRY_DELAY)
-        elseif TrackPickupFailure(containerID, slotIndex) >= 3 then
+        if
+            not IsSlotLocked(sourceSnapshot)
+            and TrackPickupFailure(containerID, slotIndex) >= 3
+        then
             FinishEmptyBagOperation(false, ERROR_EMPTY_FAILED)
         else
             ScheduleEmptyBagStep(EMPTY_BAG_LOCKED_RETRY_DELAY)

@@ -56,40 +56,53 @@ end
 
 local function GetHeaderTooltipTitle(column)
     local title = column.tooltipTitle or GetHeaderText(column)
-    if title and title ~= "" then
-        return title
-    end
+    if title and title ~= "" then return title end
 
     return column.sortLabel or column.sortKey or ""
 end
 
 local function ShowHeaderTooltip(button)
     local column = button.column
-    if not column or not GameTooltip then
-        return
-    end
+    if not column or not GameTooltip then return end
 
     local title = GetHeaderTooltipTitle(column)
     local sortLabel = column.sortLabel or title or column.sortKey
-    local tooltipText = column.tooltipText or (column.sortKey and ("Sort by " .. sortLabel))
+    local tooltipText = column.tooltipText
+        or (column.sortKey and ("Sort by " .. sortLabel))
 
     GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
     GameTooltip:SetText(title, 1, 1, 1)
     if tooltipText then
-        GameTooltip:AddLine(tooltipText, HEADER_TOOLTIP_TEXT_COLOR_R, HEADER_TOOLTIP_TEXT_COLOR_G, HEADER_TOOLTIP_TEXT_COLOR_B, true)
+        GameTooltip:AddLine(
+            tooltipText,
+            HEADER_TOOLTIP_TEXT_COLOR_R,
+            HEADER_TOOLTIP_TEXT_COLOR_G,
+            HEADER_TOOLTIP_TEXT_COLOR_B,
+            true
+        )
     end
     if ListSettings.CanEditColumns() then
-        GameTooltip:AddLine("Drag to reorder. Drag a divider to resize. Right-click for column options.", HEADER_TOOLTIP_TEXT_COLOR_R, HEADER_TOOLTIP_TEXT_COLOR_G, HEADER_TOOLTIP_TEXT_COLOR_B, true)
+        GameTooltip:AddLine(
+            "Drag to reorder. Drag a divider to resize. Right-click for column options.",
+            HEADER_TOOLTIP_TEXT_COLOR_R,
+            HEADER_TOOLTIP_TEXT_COLOR_G,
+            HEADER_TOOLTIP_TEXT_COLOR_B,
+            true
+        )
     else
-        GameTooltip:AddLine("Column editing is unavailable during combat.", HEADER_TOOLTIP_TEXT_COLOR_R, HEADER_TOOLTIP_TEXT_COLOR_G, HEADER_TOOLTIP_TEXT_COLOR_B, true)
+        GameTooltip:AddLine(
+            "Column editing is unavailable during combat.",
+            HEADER_TOOLTIP_TEXT_COLOR_R,
+            HEADER_TOOLTIP_TEXT_COLOR_G,
+            HEADER_TOOLTIP_TEXT_COLOR_B,
+            true
+        )
     end
     GameTooltip:Show()
 end
 
 local function HideTooltip()
-    if GameTooltip then
-        GameTooltip:Hide()
-    end
+    if GameTooltip then GameTooltip:Hide() end
 end
 
 -- Context menu construction
@@ -98,9 +111,7 @@ local function GetMenuSelectionLabel(title, value)
 end
 
 local function SetMenuText(fontString, text)
-    if not fontString then
-        return
-    end
+    if not fontString then return end
 
     if fontString.SetTextToFit then
         fontString:SetTextToFit(text)
@@ -126,9 +137,17 @@ local function GetPrimarySortLabel(sortKey)
 end
 
 local function AddPrimarySortMenu(rootDescription, list)
-    local menu = rootDescription:CreateButton(GetMenuSelectionLabel(PRIMARY_SORT_MENU_TITLE, GetPrimarySortLabel(list.sortKey)))
+    local menu = rootDescription:CreateButton(
+        GetMenuSelectionLabel(
+            PRIMARY_SORT_MENU_TITLE,
+            GetPrimarySortLabel(list.sortKey)
+        )
+    )
     AddDynamicMenuText(menu, function()
-        return GetMenuSelectionLabel(PRIMARY_SORT_MENU_TITLE, GetPrimarySortLabel(list.sortKey))
+        return GetMenuSelectionLabel(
+            PRIMARY_SORT_MENU_TITLE,
+            GetPrimarySortLabel(list.sortKey)
+        )
     end)
 
     local function IsSelected(sortKey)
@@ -147,7 +166,12 @@ local function AddPrimarySortMenu(rootDescription, list)
     end
 
     for _, sortKey in ipairs(ListModel.GetSortKeyList()) do
-        menu:CreateRadio(GetPrimarySortLabel(sortKey), IsSelected, SetSort, sortKey)
+        menu:CreateRadio(
+            GetPrimarySortLabel(sortKey),
+            IsSelected,
+            SetSort,
+            sortKey
+        )
     end
 
     local function IsDirectionEnabled()
@@ -180,21 +204,31 @@ local function GetSecondarySortLabel(sortKey)
 end
 
 local function AddSecondarySortMenu(rootDescription, list)
-    local menu = rootDescription:CreateButton(GetMenuSelectionLabel(SECONDARY_SORT_MENU_TITLE, GetSecondarySortLabel(list.secondarySortKey)))
+    local menu = rootDescription:CreateButton(
+        GetMenuSelectionLabel(
+            SECONDARY_SORT_MENU_TITLE,
+            GetSecondarySortLabel(list.secondarySortKey)
+        )
+    )
     menu:SetEnabled(function()
         return not ListModel.IsManualSortKey(list.sortKey)
     end)
     AddDynamicMenuText(menu, function()
-        return GetMenuSelectionLabel(SECONDARY_SORT_MENU_TITLE, GetSecondarySortLabel(list.secondarySortKey))
+        return GetMenuSelectionLabel(
+            SECONDARY_SORT_MENU_TITLE,
+            GetSecondarySortLabel(list.secondarySortKey)
+        )
     end)
 
     local function IsOptionEnabled(sortKey)
         sortKey = ListModel.NormalizeSecondarySortKey(sortKey)
-        return sortKey == ListModel.GetNoSecondarySortKey() or ListModel.IsSecondarySortEnabled(sortKey, list.sortKey)
+        return sortKey == ListModel.GetNoSecondarySortKey()
+            or ListModel.IsSecondarySortEnabled(sortKey, list.sortKey)
     end
 
     local function IsSelected(sortKey)
-        return list.secondarySortKey == ListModel.NormalizeSecondarySortKey(sortKey)
+        return list.secondarySortKey
+            == ListModel.NormalizeSecondarySortKey(sortKey)
     end
 
     local function SetSort(sortKey)
@@ -204,13 +238,19 @@ local function AddSecondarySortMenu(rootDescription, list)
 
     for _, sortKey in ipairs(ListModel.GetSecondarySortKeyList()) do
         local optionSortKey = ListModel.NormalizeSecondarySortKey(sortKey)
-        menu:CreateRadio(GetSecondarySortLabel(optionSortKey), IsSelected, SetSort, optionSortKey):SetEnabled(function()
+        menu:CreateRadio(
+            GetSecondarySortLabel(optionSortKey),
+            IsSelected,
+            SetSort,
+            optionSortKey
+        ):SetEnabled(function()
             return IsOptionEnabled(optionSortKey)
         end)
     end
 
     local function IsDirectionEnabled()
-        return not ListModel.IsManualSortKey(list.sortKey) and list.secondarySortKey ~= ListModel.GetNoSecondarySortKey()
+        return not ListModel.IsManualSortKey(list.sortKey)
+            and list.secondarySortKey ~= ListModel.GetNoSecondarySortKey()
     end
 
     menu:CreateDivider()
@@ -230,7 +270,12 @@ local function AddSecondarySortMenu(rootDescription, list)
 end
 
 local function AddGroupMenu(rootDescription, list)
-    local menu = rootDescription:CreateButton(GetMenuSelectionLabel(GROUP_MENU_TITLE, ListModel.GetGroupLabel(list.groupKey)))
+    local menu = rootDescription:CreateButton(
+        GetMenuSelectionLabel(
+            GROUP_MENU_TITLE,
+            ListModel.GetGroupLabel(list.groupKey)
+        )
+    )
 
     local function IsSelected(groupKey)
         return list.groupKey == ListModel.NormalizeGroupKey(groupKey)
@@ -242,35 +287,47 @@ local function AddGroupMenu(rootDescription, list)
     end
 
     for _, groupKey in ipairs(ListModel.GetGroupKeyList()) do
-        menu:CreateRadio(ListModel.GetGroupLabel(groupKey), IsSelected, SetSelected, groupKey)
+        menu:CreateRadio(
+            ListModel.GetGroupLabel(groupKey),
+            IsSelected,
+            SetSelected,
+            groupKey
+        )
     end
 end
 
 local function ShowContextMenu(list, columnKey)
-    if not MenuUtil or not MenuUtil.CreateContextMenu then
-        return
-    end
+    if not MenuUtil or not MenuUtil.CreateContextMenu then return end
 
     HideTooltip()
     -- Keep the owner visible even when this menu hides its originating column.
     MenuUtil.CreateContextMenu(list.header, function(_, rootDescription)
         if columnKey then
-            ColumnMenu.PopulateColumnActions(rootDescription, list.settingsScope, columnKey)
+            ColumnMenu.PopulateColumnActions(
+                rootDescription,
+                list.settingsScope,
+                columnKey
+            )
             rootDescription:CreateDivider()
         end
         AddGroupMenu(rootDescription, list)
         AddPrimarySortMenu(rootDescription, list)
         AddSecondarySortMenu(rootDescription, list)
         rootDescription:CreateDivider()
-        ColumnMenu.Populate(rootDescription:CreateButton("Columns"), list.settingsScope)
+        ColumnMenu.Populate(
+            rootDescription:CreateButton("Columns"),
+            list.settingsScope
+        )
     end)
 end
 
 -- Header visual state
 local function LayoutHeaderContent(button, sorted)
     local hasText = GetHeaderText(button.column) ~= ""
-    local arrowSpace = sorted and (button.headerIcon or hasText)
-        and (HEADER_SORT_ICON_SIZE + HEADER_SORT_ICON_GAP) or 0
+    local arrowSpace = sorted
+            and (button.headerIcon or hasText)
+            and (HEADER_SORT_ICON_SIZE + HEADER_SORT_ICON_GAP)
+        or 0
 
     -- Center the label/icon and arrow as one block, reserving the arrow's
     -- width in the text bounds so narrow columns still truncate their label.
@@ -279,16 +336,26 @@ local function LayoutHeaderContent(button, sorted)
     button.text:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -arrowSpace, 0)
     if button.headerIcon then
         button.headerIcon:ClearAllPoints()
-        button.headerIcon:SetPoint("CENTER", button, "CENTER", -arrowSpace / 2, 0)
+        button.headerIcon:SetPoint(
+            "CENTER",
+            button,
+            "CENTER",
+            -arrowSpace / 2,
+            0
+        )
     end
 
     button.sortIcon:ClearAllPoints()
-    if not sorted then
-        return
-    end
+    if not sorted then return end
 
     if button.headerIcon then
-        button.sortIcon:SetPoint("LEFT", button.headerIcon, "RIGHT", HEADER_SORT_ICON_GAP, 0)
+        button.sortIcon:SetPoint(
+            "LEFT",
+            button.headerIcon,
+            "RIGHT",
+            HEADER_SORT_ICON_GAP,
+            0
+        )
         return
     end
 
@@ -297,29 +364,43 @@ local function LayoutHeaderContent(button, sorted)
         return
     end
 
-    local textWidth = math.min(button.text:GetStringWidth(), math.max(0, button:GetWidth() - arrowSpace))
-    button.sortIcon:SetPoint("LEFT", button, "CENTER", (textWidth - arrowSpace) / 2 + HEADER_SORT_ICON_GAP, 0)
+    local textWidth = math.min(
+        button.text:GetStringWidth(),
+        math.max(0, button:GetWidth() - arrowSpace)
+    )
+    button.sortIcon:SetPoint(
+        "LEFT",
+        button,
+        "CENTER",
+        (textWidth - arrowSpace) / 2 + HEADER_SORT_ICON_GAP,
+        0
+    )
 end
 
 local function RefreshButtonSortState(button, list, layoutChanged)
-    local sorted = button.column.sortKey ~= nil and button.column.sortKey == list.sortKey
+    local sorted = button.column.sortKey ~= nil
+        and button.column.sortKey == list.sortKey
     local sortChanged = button.isSorted ~= sorted
     if sortChanged then
         button.sortIcon:SetShown(sorted)
         button.isSorted = sorted
     end
-    if sorted and (sortChanged or button.sortAscending ~= list.sortAscending) then
-        button.sortIcon:SetTexture(Media.GetSortArrowTexture(list.sortAscending))
+    if
+        sorted and (sortChanged or button.sortAscending ~= list.sortAscending)
+    then
+        button.sortIcon:SetTexture(
+            Media.GetSortArrowTexture(list.sortAscending)
+        )
         button.sortAscending = list.sortAscending
     end
-    if layoutChanged or sortChanged then
-        LayoutHeaderContent(button, sorted)
-    end
+    if layoutChanged or sortChanged then LayoutHeaderContent(button, sorted) end
 end
 
 local function UpdateButtonVisualState(button)
     button.pressedTexture:SetShown(button.isPressed == true)
-    button.hoverTexture:SetShown(button.isHovered == true and button.isPressed ~= true)
+    button.hoverTexture:SetShown(
+        button.isHovered == true and button.isPressed ~= true
+    )
 end
 
 local function OnButtonEnter(button)
@@ -356,7 +437,9 @@ end
 
 local function UpdateSeparatorVisualState(separator)
     separator.pressedTexture:SetShown(separator.isPressed == true)
-    separator.hoverTexture:SetShown(separator.isHovered == true and separator.isPressed ~= true)
+    separator.hoverTexture:SetShown(
+        separator.isHovered == true and separator.isPressed ~= true
+    )
 
     if separator.isPressed then
         SetSeparatorLineAlpha(separator, HEADER_SEPARATOR_LINE_PRESSED_ALPHA)
@@ -369,22 +452,36 @@ end
 
 local function CreateSeparator(parent, xOffset, list)
     local separator = CreateFrame("Button", nil, parent)
-    separator:SetPoint("LEFT", parent, "LEFT", xOffset - (HEADER_SEPARATOR_HANDLE_WIDTH / 2), 0)
+    separator:SetPoint(
+        "LEFT",
+        parent,
+        "LEFT",
+        xOffset - (HEADER_SEPARATOR_HANDLE_WIDTH / 2),
+        0
+    )
     separator:SetSize(HEADER_SEPARATOR_HANDLE_WIDTH, Layout.HeaderHeight)
     separator:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-    separator:SetFrameLevel(parent:GetFrameLevel() + HEADER_SEPARATOR_FRAME_LEVEL_OFFSET)
+    separator:SetFrameLevel(
+        parent:GetFrameLevel() + HEADER_SEPARATOR_FRAME_LEVEL_OFFSET
+    )
     separator.list = list
     separator.UpdateVisualState = UpdateSeparatorVisualState
 
     local hoverTexture = NS.Skins:CreateTexture(separator, {
-        geometryRoot = list.window, layer = "BACKGROUND", colorToken = "accent", alpha = HEADER_SEPARATOR_HOVER_ALPHA,
+        geometryRoot = list.window,
+        layer = "BACKGROUND",
+        colorToken = "accent",
+        alpha = HEADER_SEPARATOR_HOVER_ALPHA,
     })
     hoverTexture:SetAllPoints(separator)
     hoverTexture:Hide()
     separator.hoverTexture = hoverTexture
 
     local pressedTexture = NS.Skins:CreateTexture(separator, {
-        geometryRoot = list.window, layer = "BACKGROUND", colorToken = "accent", alpha = HEADER_SEPARATOR_PRESSED_ALPHA,
+        geometryRoot = list.window,
+        layer = "BACKGROUND",
+        colorToken = "accent",
+        alpha = HEADER_SEPARATOR_PRESSED_ALPHA,
     })
     pressedTexture:SetAllPoints(separator)
     pressedTexture:Hide()
@@ -401,12 +498,18 @@ local function CreateSeparator(parent, xOffset, list)
         geometryRoot = list.window,
         bounds = lineBounds,
         orientation = "vertical",
-        pixelInsets = { top = HEADER_DIVIDER_THICKNESS, bottom = HEADER_DIVIDER_THICKNESS },
+        pixelInsets = {
+            top = HEADER_DIVIDER_THICKNESS,
+            bottom = HEADER_DIVIDER_THICKNESS,
+        },
         clip = header,
         alpha = HEADER_DIVIDER_ALPHA,
         modernLayout = {
-            bounds = separator, orientation = "vertical", top = MODERN_SEPARATOR_TOP_INSET,
-            pixelInsets = { bottom = HEADER_DIVIDER_THICKNESS }, clip = parent,
+            bounds = separator,
+            orientation = "vertical",
+            top = MODERN_SEPARATOR_TOP_INSET,
+            pixelInsets = { bottom = HEADER_DIVIDER_THICKNESS },
+            clip = parent,
         },
     })
 
@@ -416,9 +519,15 @@ local function CreateSeparator(parent, xOffset, list)
         if not self.header.interaction then
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
             GameTooltip:SetText("Resize " .. Columns.GetLabel(self.column))
-            GameTooltip:AddLine(ListSettings.CanEditColumns()
-                and "Drag to resize. Right-click for column options."
-                or "Column editing is unavailable during combat.", 0.86, 0.86, 0.86, true)
+            GameTooltip:AddLine(
+                ListSettings.CanEditColumns()
+                        and "Drag to resize. Right-click for column options."
+                    or "Column editing is unavailable during combat.",
+                0.86,
+                0.86,
+                0.86,
+                true
+            )
             GameTooltip:Show()
         end
     end)
@@ -458,9 +567,7 @@ function Header.RefreshPixelGeometry(header)
     header.lineHeight = height
     header.bottomDivider:RefreshGeometry()
     for _, separator in ipairs(header.separators) do
-        if heightChanged then
-            separator.lineBounds:SetHeight(height)
-        end
+        if heightChanged then separator.lineBounds:SetHeight(height) end
         separator.line:RefreshGeometry()
     end
 end
@@ -491,30 +598,36 @@ function Header.ApplyColumnLayout(header, list)
                 button:SetWidth(entry.width)
                 button.columnWidth = entry.width
             end
-            local separatorX = entry.x + entry.width + Columns.GetColumnGap() / 2
+            local separatorX = entry.x
+                + entry.width
+                + Columns.GetColumnGap() / 2
             if entry == lastEntry then
                 -- The trailing handle must remain inside the clipped content.
-                separatorX = entry.x + entry.width - HEADER_SEPARATOR_HANDLE_WIDTH / 2
+                separatorX = entry.x
+                    + entry.width
+                    - HEADER_SEPARATOR_HANDLE_WIDTH / 2
             end
             if separator.columnX ~= separatorX then
                 separator:ClearAllPoints()
-                separator:SetPoint("LEFT", header.content, "LEFT", separatorX - HEADER_SEPARATOR_HANDLE_WIDTH / 2, 0)
+                separator:SetPoint(
+                    "LEFT",
+                    header.content,
+                    "LEFT",
+                    separatorX - HEADER_SEPARATOR_HANDLE_WIDTH / 2,
+                    0
+                )
                 separator.columnX = separatorX
                 separatorChanged = true
             end
         end
-        if separatorChanged then
-            separator.line:RefreshGeometry()
-        end
+        if separatorChanged then separator.line:RefreshGeometry() end
         RefreshButtonSortState(button, list, visibilityChanged or widthChanged)
     end
     header.bottomDivider:RefreshGeometry()
 end
 
 function Header.Refresh(header, list)
-    if not header or not header.buttons then
-        return
-    end
+    if not header or not header.buttons then return end
 
     for _, button in ipairs(header.buttons) do
         RefreshButtonSortState(button, list, true)
@@ -530,29 +643,46 @@ function Header.Create(parent, list)
     header:SetClipsChildren(true)
     header:EnableMouse(true)
     header:SetScript("OnMouseUp", function(_, mouseButton)
-        if mouseButton == "RightButton" then
-            ShowContextMenu(list)
-        end
+        if mouseButton == "RightButton" then ShowContextMenu(list) end
     end)
 
     local content = CreateFrame("Frame", nil, header)
     -- The header owns the space above the scrollbar; only rows reserve its gutter.
-    content:SetPoint("TOPLEFT", list.frame, "TOPLEFT", Layout.HeaderLeftOffset, Layout.HeaderTopOffset)
-    content:SetPoint("BOTTOMRIGHT", list.frame, "TOPRIGHT", Layout.HeaderRightOffset, -Layout.HeaderHeight)
+    content:SetPoint(
+        "TOPLEFT",
+        list.frame,
+        "TOPLEFT",
+        Layout.HeaderLeftOffset,
+        Layout.HeaderTopOffset
+    )
+    content:SetPoint(
+        "BOTTOMRIGHT",
+        list.frame,
+        "TOPRIGHT",
+        Layout.HeaderRightOffset,
+        -Layout.HeaderHeight
+    )
     content:SetClipsChildren(true)
     header.content = content
 
-    header.bottomDividerTexture, header.bottomDivider = NS.Skins:CreateSeparator(header, {
-        geometryRoot = list.window,
-        align = "end",
-        thickness = HEADER_DIVIDER_THICKNESS,
-        pixelInsets = { left = HEADER_DIVIDER_THICKNESS, right = HEADER_DIVIDER_THICKNESS },
-        alpha = HEADER_DIVIDER_ALPHA,
-        modernLayout = {
-            bounds = content, align = "end", thickness = HEADER_DIVIDER_THICKNESS,
-            left = MODERN_HEADER_SIDE_INSET, right = MODERN_HEADER_SIDE_INSET,
-        },
-    })
+    header.bottomDividerTexture, header.bottomDivider =
+        NS.Skins:CreateSeparator(header, {
+            geometryRoot = list.window,
+            align = "end",
+            thickness = HEADER_DIVIDER_THICKNESS,
+            pixelInsets = {
+                left = HEADER_DIVIDER_THICKNESS,
+                right = HEADER_DIVIDER_THICKNESS,
+            },
+            alpha = HEADER_DIVIDER_ALPHA,
+            modernLayout = {
+                bounds = content,
+                align = "end",
+                thickness = HEADER_DIVIDER_THICKNESS,
+                left = MODERN_HEADER_SIDE_INSET,
+                right = MODERN_HEADER_SIDE_INSET,
+            },
+        })
 
     header.buttons = {}
     header.separators = {}
@@ -567,23 +697,31 @@ function Header.Create(parent, list)
         button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 
         local hoverTexture = NS.Skins:CreateTexture(button, {
-            geometryRoot = list.window, layer = "BACKGROUND", sublevel = -7,
-            colorToken = "accent", alpha = HEADER_HOVER_ALPHA,
+            geometryRoot = list.window,
+            layer = "BACKGROUND",
+            sublevel = -7,
+            colorToken = "accent",
+            alpha = HEADER_HOVER_ALPHA,
         })
         hoverTexture:SetAllPoints(button)
         hoverTexture:Hide()
         button.hoverTexture = hoverTexture
 
         local pressedTexture = NS.Skins:CreateTexture(button, {
-            geometryRoot = list.window, layer = "BACKGROUND", sublevel = -6,
-            colorToken = "accent", alpha = HEADER_PRESSED_ALPHA,
+            geometryRoot = list.window,
+            layer = "BACKGROUND",
+            sublevel = -6,
+            colorToken = "accent",
+            alpha = HEADER_PRESSED_ALPHA,
         })
         pressedTexture:SetAllPoints(button)
         pressedTexture:Hide()
         button.pressedTexture = pressedTexture
 
         local text = NS.Skins:CreateText(button, {
-            geometryRoot = list.window, fontSize = HEADER_TEXT_SIZE, colorToken = "accent",
+            geometryRoot = list.window,
+            fontSize = HEADER_TEXT_SIZE,
+            colorToken = "accent",
         })
         text:SetAllPoints(button)
         text:SetJustifyH("CENTER")
@@ -595,19 +733,31 @@ function Header.Create(parent, list)
 
         if HasHeaderIcon(column) then
             button.headerIcon = NS.Skins:CreateTexture(button, {
-                geometryRoot = list.window, layer = "OVERLAY",
-                width = GetHeaderIconSize(column), height = GetHeaderIconSize(column),
-                atlas = column.headerAtlas, texture = column.headerTexture, colorToken = column.headerIconColorToken,
+                geometryRoot = list.window,
+                layer = "OVERLAY",
+                width = GetHeaderIconSize(column),
+                height = GetHeaderIconSize(column),
+                atlas = column.headerAtlas,
+                texture = column.headerTexture,
+                colorToken = column.headerIconColorToken,
             })
             button.headerIcon:SetPoint("CENTER", button, "CENTER", 0, 0)
             local color = column.headerIconColor
             if color then
-                button.headerIcon:SetVertexColor(color.r, color.g, color.b, color.a or 1)
+                button.headerIcon:SetVertexColor(
+                    color.r,
+                    color.g,
+                    color.b,
+                    color.a or 1
+                )
             end
         end
 
         local sortIcon = NS.Skins:CreateTexture(button, {
-            geometryRoot = list.window, layer = "OVERLAY", texture = Media.GetSortArrowTexture(), colorToken = "accent",
+            geometryRoot = list.window,
+            layer = "OVERLAY",
+            texture = Media.GetSortArrowTexture(),
+            colorToken = "accent",
         })
         sortIcon:SetSize(HEADER_SORT_ICON_SIZE, HEADER_SORT_ICON_SIZE)
         sortIcon:Hide()
@@ -620,7 +770,11 @@ function Header.Create(parent, list)
         button:SetScript("OnClick", function(self, mouseButton)
             if mouseButton == "RightButton" then
                 ShowContextMenu(list, self.column.key)
-            elseif not self.suppressClick and not header.interaction and self.column.sortKey then
+            elseif
+                not self.suppressClick
+                and not header.interaction
+                and self.column.sortKey
+            then
                 list:SetSort(self.column.sortKey)
             end
         end)

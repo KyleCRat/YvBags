@@ -56,10 +56,14 @@ NS.Skins:SetSkinCallbacks({
     end,
     onApplied = function()
         if NS.frame then NS.MainFrameGeometry.RefreshResizeBounds(NS.frame) end
-        if NS.bankFrame then NS.BankFrameGeometry.RefreshResizeBounds(NS.bankFrame) end
+        if NS.bankFrame then
+            NS.BankFrameGeometry.RefreshResizeBounds(NS.bankFrame)
+        end
     end,
     onStatusChanged = function()
-        for _, callback in ipairs(Appearance.callbacks) do callback() end
+        for _, callback in ipairs(Appearance.callbacks) do
+            callback()
+        end
     end,
 })
 

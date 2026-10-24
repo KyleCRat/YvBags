@@ -23,8 +23,10 @@ local LIST_LABEL_WIDTH = 160
 local LIST_FIELD_GAP = 8
 
 -- Replacement-dependent settings remain visible and retain their saved values.
-local BAGS_DISABLED_TOOLTIP = "Enable Replace Blizzard Bags to edit these settings."
-local BANK_DISABLED_TOOLTIP = "Enable Replace Blizzard Bank to edit these settings."
+local BAGS_DISABLED_TOOLTIP =
+    "Enable Replace Blizzard Bags to edit these settings."
+local BANK_DISABLED_TOOLTIP =
+    "Enable Replace Blizzard Bank to edit these settings."
 
 local PERMANENT_PROFILE_LABELS = {
     character = "Character",
@@ -87,33 +89,19 @@ local function SetFrameScalePercent(value)
 end
 
 local function SetReplaceBlizzardBags(value)
-    SetBooleanSetting(
-        NS.globalDB,
-        "features",
-        "replaceBlizzardBags",
-        value
-    )
+    SetBooleanSetting(NS.globalDB, "features", "replaceBlizzardBags", value)
 
-    if value ~= false then
-        NS.BlizzardBags.HideBlizzardBags()
-    end
+    if value ~= false then NS.BlizzardBags.HideBlizzardBags() end
 end
 
 local function SetReplaceBlizzardBank(value)
-    SetBooleanSetting(
-        NS.globalDB,
-        "features",
-        "replaceBlizzardBank",
-        value
-    )
+    SetBooleanSetting(NS.globalDB, "features", "replaceBlizzardBank", value)
 end
 
 local function SetAutosellGrayJunk(value)
     SetBooleanSetting(NS.globalDB, "features", "autosellGrayJunk", value)
 
-    if value == true then
-        NS.JunkAutosell.ScheduleSell()
-    end
+    if value == true then NS.JunkAutosell.ScheduleSell() end
 end
 
 local function SetShowCooldownsInName(value)
@@ -128,17 +116,11 @@ end
 
 local function SetPrimarySort(sortKey)
     sortKey = NS.ItemListModel.NormalizeSortKey(sortKey)
-    GetItemList():SetSort(
-        sortKey,
-        GetListValue("sortAscending") ~= false
-    )
+    GetItemList():SetSort(sortKey, GetListValue("sortAscending") ~= false)
 end
 
 local function SetPrimarySortDirection(sortAscending)
-    GetItemList():SetSort(
-        GetListValue("sortKey"),
-        sortAscending == true
-    )
+    GetItemList():SetSort(GetListValue("sortKey"), sortAscending == true)
 end
 
 local function SetSecondarySort(sortKey)
@@ -244,7 +226,7 @@ local function CreateSecondarySortChoices()
         choices[#choices + 1] = {
             value = sortKey,
             label = sortKey == NS.ItemListModel.GetNoSecondarySortKey()
-                and NO_SECONDARY_SORT_LABEL
+                    and NO_SECONDARY_SORT_LABEL
                 or NS.ItemListColumns.GetSortLabel(sortKey),
         }
     end
@@ -301,9 +283,7 @@ local function GetProfileLabel(descriptor)
         local label = PERMANENT_PROFILE_LABELS[profileType]
             or descriptor.displayName
 
-        if profileType == "global" then
-            return label
-        end
+        if profileType == "global" then return label end
 
         return ("%s: %s"):format(label, descriptor.displayName)
     end
@@ -347,10 +327,12 @@ local function ReportProfileError(action, errorCode)
         ACTIVE_PROFILE = "The active profile cannot be deleted.",
     }
 
-    NS:Print(("%s failed: %s"):format(
-        action,
-        messages[errorCode] or tostring(errorCode)
-    ))
+    NS:Print(
+        ("%s failed: %s"):format(
+            action,
+            messages[errorCode] or tostring(errorCode)
+        )
+    )
 end
 
 local function GetActiveProfileToken()
@@ -454,8 +436,7 @@ local function CreateProfile()
         nil,
         "Create",
         function(name)
-            local profileRef, errorCode =
-                NS.profileManager:CreateProfile(name)
+            local profileRef, errorCode = NS.profileManager:CreateProfile(name)
 
             if not profileRef then
                 ReportProfileError("Creating profile", errorCode)
@@ -516,9 +497,7 @@ end
 local function ResetActiveProfile()
     local activeProfile = NS.profileManager:GetActiveProfile()
 
-    if not activeProfile.canReset then
-        return
-    end
+    if not activeProfile.canReset then return end
 
     StaticPopup_ShowCustomGenericConfirmation({
         text = "Reset %s to its default settings?",
@@ -552,10 +531,7 @@ local function RenameProfile(profileRef)
         "Rename",
         function(name)
             local renamedDescriptor, errorCode =
-                NS.profileManager:RenameProfile(
-                    descriptor.profileRef,
-                    name
-                )
+                NS.profileManager:RenameProfile(descriptor.profileRef, name)
 
             if not renamedDescriptor then
                 ReportProfileError("Renaming profile", errorCode)
@@ -571,9 +547,7 @@ local function ResetProfileActionDropdown(controlKey)
 end
 
 local function SelectRenameProfileToken(token)
-    if token == PROFILE_ACTION_NONE_TOKEN then
-        return
-    end
+    if token == PROFILE_ACTION_NONE_TOKEN then return end
 
     ResetProfileActionDropdown("renameProfile")
 
@@ -616,7 +590,8 @@ local function ConfirmDeleteProfile(profileRef)
     local confirmationText = "Delete %s?"
 
     if usage.selectionCount > 0 then
-        confirmationText = "Delete %s? %d character(s) will no longer have this profile selected."
+        confirmationText =
+            "Delete %s? %d character(s) will no longer have this profile selected."
     end
 
     StaticPopup_ShowCustomGenericConfirmation({
@@ -637,9 +612,7 @@ local function ConfirmDeleteProfile(profileRef)
 end
 
 local function SelectDeleteProfileToken(token)
-    if token == PROFILE_ACTION_NONE_TOKEN then
-        return
-    end
+    if token == PROFILE_ACTION_NONE_TOKEN then return end
 
     ResetProfileActionDropdown("deleteProfile")
 
@@ -670,13 +643,9 @@ local function RefreshProfileControls()
     for index = 1, #profileDescriptors do
         local descriptor = profileDescriptors[index]
 
-        if descriptor.canRename then
-            canRename = true
-        end
+        if descriptor.canRename then canRename = true end
 
-        if descriptor.canDelete then
-            canDelete = true
-        end
+        if descriptor.canDelete then canDelete = true end
     end
 
     controls.activeProfile:SetChoices(CreateProfileChoices())
@@ -714,11 +683,9 @@ end
 local function RefreshProfileSettingControls()
     local ListModel = NS.ItemListModel
     local enabled = NS.globalDB:Get("features", "replaceBlizzardBags") ~= false
-    local primarySortKey =
-        ListModel.NormalizeSortKey(GetListValue("sortKey"))
-    local secondarySortKey = ListModel.NormalizeSecondarySortKey(
-        GetListValue("secondarySortKey")
-    )
+    local primarySortKey = ListModel.NormalizeSortKey(GetListValue("sortKey"))
+    local secondarySortKey =
+        ListModel.NormalizeSecondarySortKey(GetListValue("secondarySortKey"))
     local manual = ListModel.IsManualSortKey(primarySortKey)
     local secondaryEnabled = not manual
         and secondarySortKey ~= ListModel.GetNoSecondarySortKey()
@@ -726,20 +693,23 @@ local function RefreshProfileSettingControls()
     controls.showCooldownsInName:SetValue(
         NS.db:Get("display", "showCooldownsInName") ~= false
     )
-    controls.groupKey:GetControl():SetValue(
-        ListModel.NormalizeGroupKey(GetListValue("groupKey"))
-    )
+    controls.groupKey
+        :GetControl()
+        :SetValue(ListModel.NormalizeGroupKey(GetListValue("groupKey")))
     controls.pinDisplayMode:GetControl():SetValue(NS.ItemPins.GetDisplayMode())
     controls.primarySortKey:GetControl():SetValue(primarySortKey)
-    controls.primarySortDirection:GetControl():SetValue(
-        GetListValue("sortAscending") ~= false
-    )
+    controls.primarySortDirection
+        :GetControl()
+        :SetValue(GetListValue("sortAscending") ~= false)
     controls.secondarySortKey:GetControl():SetValue(secondarySortKey)
-    controls.secondarySortDirection:GetControl():SetValue(
-        GetListValue("secondarySortAscending") ~= false
-    )
+    controls.secondarySortDirection
+        :GetControl()
+        :SetValue(GetListValue("secondarySortAscending") ~= false)
 
-    controls.showCooldownsInName:SetControlEnabled(enabled, BAGS_DISABLED_TOOLTIP)
+    controls.showCooldownsInName:SetControlEnabled(
+        enabled,
+        BAGS_DISABLED_TOOLTIP
+    )
     controls.groupKey:SetControlEnabled(enabled, BAGS_DISABLED_TOOLTIP)
     controls.pinDisplayMode:SetControlEnabled(enabled, BAGS_DISABLED_TOOLTIP)
     controls.primarySortKey:SetControlEnabled(enabled, BAGS_DISABLED_TOOLTIP)
@@ -757,8 +727,7 @@ local function RefreshProfileSettingControls()
     controls.secondarySortDirection:SetControlEnabled(
         enabled and secondaryEnabled,
         not enabled and BAGS_DISABLED_TOOLTIP
-            or manual
-            and "Manual primary sorting disables secondary sorting."
+            or manual and "Manual primary sorting disables secondary sorting."
             or "Choose a secondary sort before setting its direction."
     )
 end
@@ -766,9 +735,8 @@ end
 local function RefreshBankControls()
     local ListModel = NS.ItemListModel
     local enabled = NS.globalDB:Get("features", "replaceBlizzardBank") ~= false
-    local primarySortKey = ListModel.NormalizeSortKey(
-        GetBankListValue("sortKey")
-    )
+    local primarySortKey =
+        ListModel.NormalizeSortKey(GetBankListValue("sortKey"))
     local secondarySortKey = ListModel.NormalizeSecondarySortKey(
         GetBankListValue("secondarySortKey")
     )
@@ -781,28 +749,37 @@ local function RefreshBankControls()
         NS.ItemListSettings.IsBankMirroring()
     )
     bankControls.frameScale:SetValue(GetBankFrameScalePercent())
-    bankControls.groupKey:GetControl():SetValue(ListModel.NormalizeGroupKey(
-        GetBankListValue("groupKey")
-    ))
+    bankControls.groupKey
+        :GetControl()
+        :SetValue(ListModel.NormalizeGroupKey(GetBankListValue("groupKey")))
     bankControls.pinDisplayMode:GetControl():SetValue(
         NS.ItemPins.NormalizeDisplayMode(
             NS.ItemListSettings.GetPinDisplayMode(BANK_SCOPE)
         )
     )
     bankControls.primarySortKey:GetControl():SetValue(primarySortKey)
-    bankControls.primarySortDirection:GetControl():SetValue(
-        GetBankListValue("sortAscending") ~= false
-    )
+    bankControls.primarySortDirection
+        :GetControl()
+        :SetValue(GetBankListValue("sortAscending") ~= false)
     bankControls.secondarySortKey:GetControl():SetValue(secondarySortKey)
-    bankControls.secondarySortDirection:GetControl():SetValue(
-        GetBankListValue("secondarySortAscending") ~= false
-    )
+    bankControls.secondarySortDirection
+        :GetControl()
+        :SetValue(GetBankListValue("secondarySortAscending") ~= false)
 
-    bankControls.useBagListSettings:SetControlEnabled(enabled, BANK_DISABLED_TOOLTIP)
+    bankControls.useBagListSettings:SetControlEnabled(
+        enabled,
+        BANK_DISABLED_TOOLTIP
+    )
     bankControls.frameScale:SetControlEnabled(enabled, BANK_DISABLED_TOOLTIP)
     bankControls.groupKey:SetControlEnabled(enabled, BANK_DISABLED_TOOLTIP)
-    bankControls.pinDisplayMode:SetControlEnabled(enabled, BANK_DISABLED_TOOLTIP)
-    bankControls.primarySortKey:SetControlEnabled(enabled, BANK_DISABLED_TOOLTIP)
+    bankControls.pinDisplayMode:SetControlEnabled(
+        enabled,
+        BANK_DISABLED_TOOLTIP
+    )
+    bankControls.primarySortKey:SetControlEnabled(
+        enabled,
+        BANK_DISABLED_TOOLTIP
+    )
     bankControls.columns:SetControlEnabled(enabled, BANK_DISABLED_TOOLTIP)
     bankControls.primarySortDirection:SetControlEnabled(
         enabled and not manual,
@@ -817,8 +794,7 @@ local function RefreshBankControls()
     bankControls.secondarySortDirection:SetControlEnabled(
         enabled and secondaryEnabled,
         not enabled and BANK_DISABLED_TOOLTIP
-            or manual
-            and "Manual primary sorting disables secondary sorting."
+            or manual and "Manual primary sorting disables secondary sorting."
             or "Choose a secondary sort before setting its direction."
     )
 end
@@ -830,22 +806,22 @@ local function RefreshInventorySettingsFrame()
 end
 
 local function ScheduleControlRefresh(frame, key, callback)
-    if not frame:IsShown() or controlRefreshScheduled[key] then
-        return
-    end
+    if not frame:IsShown() or controlRefreshScheduled[key] then return end
 
     controlRefreshScheduled[key] = true
     C_Timer.After(0, function()
         controlRefreshScheduled[key] = nil
 
-        if frame:IsShown() then
-            callback()
-        end
+        if frame:IsShown() then callback() end
     end)
 end
 
 local function RefreshProfileControlsIfShown()
-    ScheduleControlRefresh(AddonSettings.frame, "profiles", RefreshProfileControls)
+    ScheduleControlRefresh(
+        AddonSettings.frame,
+        "profiles",
+        RefreshProfileControls
+    )
 end
 
 local function RefreshGlobalAndCharacterControlsIfShown()
@@ -879,9 +855,7 @@ local function ResetBagSettings()
 
     SetReplaceBlizzardBags(globalDefaults.replaceBlizzardBags)
     SetAutosellGrayJunk(globalDefaults.autosellGrayJunk)
-    SetShowCooldownsInName(
-        profileDefaults.display.showCooldownsInName
-    )
+    SetShowCooldownsInName(profileDefaults.display.showCooldownsInName)
     SetFrameScalePercent(NS.defaults.character.frame.scale * 100)
     SetGroup(listDefaults.groupKey)
     SetPinDisplayMode(profileDefaults.pins.displayMode)
@@ -899,9 +873,7 @@ local function ResetBankSettings()
         NS.defaults.global.features.replaceBlizzardBank
     )
     NS.db:Delete("bank")
-    SetBankFrameScalePercent(
-        NS.defaults.character.bankFrame.scale * 100
-    )
+    SetBankFrameScalePercent(NS.defaults.character.bankFrame.scale * 100)
 end
 
 local function ResetInventorySettings()
@@ -1022,26 +994,20 @@ local function BuildMainSettingsFrame(frame, measurementFrame)
 
     local profileSelectors = root:BeginColumns()
 
-    controls.renameProfile = profileSelectors.left:AddControl(
-        "dropdown",
-        {
-            label = "Rename Profile",
-            choices = CreateRenameProfileChoices(),
-            value = PROFILE_ACTION_NONE_TOKEN,
-            tooltip = "Choose a user-created profile to rename.",
-            onChanged = SelectRenameProfileToken,
-        }
-    )
-    controls.deleteProfile = profileSelectors.right:AddControl(
-        "dropdown",
-        {
-            label = "Delete Profile",
-            choices = CreateDeleteProfileChoices(),
-            value = PROFILE_ACTION_NONE_TOKEN,
-            tooltip = "Choose an inactive user-created profile to delete.",
-            onChanged = SelectDeleteProfileToken,
-        }
-    )
+    controls.renameProfile = profileSelectors.left:AddControl("dropdown", {
+        label = "Rename Profile",
+        choices = CreateRenameProfileChoices(),
+        value = PROFILE_ACTION_NONE_TOKEN,
+        tooltip = "Choose a user-created profile to rename.",
+        onChanged = SelectRenameProfileToken,
+    })
+    controls.deleteProfile = profileSelectors.right:AddControl("dropdown", {
+        label = "Delete Profile",
+        choices = CreateDeleteProfileChoices(),
+        value = PROFILE_ACTION_NONE_TOKEN,
+        tooltip = "Choose an inactive user-created profile to delete.",
+        onChanged = SelectDeleteProfileToken,
+    })
     profileSelectors:Finish({ marginBottom = 12 })
 
     local appearanceColumns = root:BeginColumns()
@@ -1134,22 +1100,16 @@ end
 local function AddBankGeneralSettings(flow)
     flow:AddSection("Bank", { fontObject = GameFontNormalHuge, marginTop = 0 })
     flow:AddSection("General", { marginTop = 0 })
-    bankControls.replaceBlizzardBank = flow:AddControl(
-        "checkbox",
-        {
-            label = "Replace Blizzard Bank",
-            tooltip = "Use YvBags for Character and Warband bank access.",
-            onChanged = SetReplaceBlizzardBank,
-        }
-    )
-    bankControls.useBagListSettings = flow:AddControl(
-        "checkbox",
-        {
-            label = "Use Bag List Settings",
-            tooltip = "Keep bank grouping, sorting, directions, columns, and pinned-item presentation synchronized with the bag list. Changes made from either window update both while enabled.",
-            onChanged = SetBankMirroring,
-        }
-    )
+    bankControls.replaceBlizzardBank = flow:AddControl("checkbox", {
+        label = "Replace Blizzard Bank",
+        tooltip = "Use YvBags for Character and Warband bank access.",
+        onChanged = SetReplaceBlizzardBank,
+    })
+    bankControls.useBagListSettings = flow:AddControl("checkbox", {
+        label = "Use Bag List Settings",
+        tooltip = "Keep bank grouping, sorting, directions, columns, and pinned-item presentation synchronized with the bag list. Changes made from either window update both while enabled.",
+        onChanged = SetBankMirroring,
+    })
     bankControls.frameScale = flow:AddControl("slider", {
         label = "Scale",
         minValue = SCALE_MIN_PERCENT,
@@ -1169,51 +1129,36 @@ local function AddBankListSettings(flow)
         tooltip = "Choose how both bank views group items.",
         onChanged = SetBankGroup,
     })
-    bankControls.pinDisplayMode = AddListDropdown(
-        flow,
-        {
-            label = "Pinned Items",
-            choices = CreatePinDisplayChoices(),
-            tooltip = "Choose how account-wide pins appear in both bank views.",
-            onChanged = SetBankPinDisplayMode,
-        }
-    )
-    bankControls.primarySortKey = AddListDropdown(
-        flow,
-        {
-            label = "Primary Sort",
-            choices = CreateSortChoices(),
-            tooltip = "Choose the primary bank-item sort order.",
-            onChanged = SetBankPrimarySort,
-        }
-    )
-    bankControls.primarySortDirection = AddListDropdown(
-        flow,
-        {
-            label = "Primary Sort Direction",
-            choices = CreateDirectionChoices(),
-            tooltip = "Choose the primary bank sort direction.",
-            onChanged = SetBankPrimarySortDirection,
-        }
-    )
-    bankControls.secondarySortKey = AddListDropdown(
-        flow,
-        {
-            label = "Secondary Sort",
-            choices = CreateSecondarySortChoices(),
-            tooltip = "Choose the secondary bank-item sort order.",
-            onChanged = SetBankSecondarySort,
-        }
-    )
-    bankControls.secondarySortDirection = AddListDropdown(
-        flow,
-        {
-            label = "Secondary Sort Direction",
-            choices = CreateDirectionChoices(),
-            tooltip = "Choose the secondary bank sort direction.",
-            onChanged = SetBankSecondarySortDirection,
-        }
-    )
+    bankControls.pinDisplayMode = AddListDropdown(flow, {
+        label = "Pinned Items",
+        choices = CreatePinDisplayChoices(),
+        tooltip = "Choose how account-wide pins appear in both bank views.",
+        onChanged = SetBankPinDisplayMode,
+    })
+    bankControls.primarySortKey = AddListDropdown(flow, {
+        label = "Primary Sort",
+        choices = CreateSortChoices(),
+        tooltip = "Choose the primary bank-item sort order.",
+        onChanged = SetBankPrimarySort,
+    })
+    bankControls.primarySortDirection = AddListDropdown(flow, {
+        label = "Primary Sort Direction",
+        choices = CreateDirectionChoices(),
+        tooltip = "Choose the primary bank sort direction.",
+        onChanged = SetBankPrimarySortDirection,
+    })
+    bankControls.secondarySortKey = AddListDropdown(flow, {
+        label = "Secondary Sort",
+        choices = CreateSecondarySortChoices(),
+        tooltip = "Choose the secondary bank-item sort order.",
+        onChanged = SetBankSecondarySort,
+    })
+    bankControls.secondarySortDirection = AddListDropdown(flow, {
+        label = "Secondary Sort Direction",
+        choices = CreateDirectionChoices(),
+        tooltip = "Choose the secondary bank sort direction.",
+        onChanged = SetBankSecondarySortDirection,
+    })
     bankControls.columns = flow:AddControl("button", {
         text = "Columns",
         tooltip = "Show, hide, or reset columns for both bank views. Drag list headers to reorder and their dividers to resize. Column editing is unavailable during combat.",
@@ -1251,17 +1196,12 @@ local function OpenSettingsCategory(categoryID)
 end
 
 local function OnPlayerRegenEnabled()
-    if InCombatLockdown() or not pendingSettingsCategoryID then
-        return
-    end
+    if InCombatLockdown() or not pendingSettingsCategoryID then return end
 
     local categoryID = pendingSettingsCategoryID
 
     C_Timer.After(0, function()
-        NS:UnregisterEventHandler(
-            "PLAYER_REGEN_ENABLED",
-            OnPlayerRegenEnabled
-        )
+        NS:UnregisterEventHandler("PLAYER_REGEN_ENABLED", OnPlayerRegenEnabled)
     end)
     OpenSettingsCategory(categoryID)
 end
@@ -1270,9 +1210,7 @@ function AddonSettings.Open(categoryID)
     categoryID = categoryID
         or (AddonSettings.category and AddonSettings.category:GetID())
 
-    if not categoryID then
-        return false
-    end
+    if not categoryID then return false end
 
     if InCombatLockdown() then
         if not pendingSettingsCategoryID then
@@ -1283,7 +1221,9 @@ function AddonSettings.Open(categoryID)
         end
 
         pendingSettingsCategoryID = categoryID
-        NS:Print("Can't open settings in combat. They will open when combat ends.")
+        NS:Print(
+            "Can't open settings in combat. They will open when combat ends."
+        )
         return false
     end
 
@@ -1306,16 +1246,16 @@ end
 function AddonSettings.NotifyBankFrameScaleChanged()
     local value = GetBankFrameScalePercent()
 
-    if bankControls.frameScale
-        and bankControls.frameScale:GetValue() ~= value then
+    if
+        bankControls.frameScale
+        and bankControls.frameScale:GetValue() ~= value
+    then
         bankControls.frameScale:SetValue(value)
     end
 end
 
 function AddonSettings.Register()
-    if AddonSettings.registered then
-        return
-    end
+    if AddonSettings.registered then return end
 
     local measurementFrame = SettingsPanel:GetSettingsCanvas()
     local mainFrame = CreateFrame("Frame")
@@ -1325,10 +1265,8 @@ function AddonSettings.Register()
     mainFrame.OnRefresh = RefreshProfileControls
     mainFrame.OnDefault = NS.Appearance.Reset
 
-    local category = Settings.RegisterCanvasLayoutCategory(
-        mainFrame,
-        ADDON_NAME
-    )
+    local category =
+        Settings.RegisterCanvasLayoutCategory(mainFrame, ADDON_NAME)
     local inventoryFrame = CreateFrame("Frame")
     BuildInventorySettingsFrame(inventoryFrame, measurementFrame)
     inventoryFrame.OnRefresh = RefreshInventorySettingsFrame
@@ -1367,24 +1305,13 @@ function AddonSettings.Register()
     )
     NS.globalDB:RegisterTreeCallback(
         RefreshProfileSettingControlsIfShown,
-        "features", "replaceBlizzardBags"
+        "features",
+        "replaceBlizzardBags"
     )
-    NS.globalDB:RegisterTreeCallback(
-        RefreshBankSettingsIfShown,
-        "features"
-    )
-    NS.db:RegisterTreeCallback(
-        RefreshProfileSettingControlsIfShown,
-        "display"
-    )
-    NS.db:RegisterTreeCallback(
-        RefreshProfileSettingControlsIfShown,
-        "list"
-    )
-    NS.db:RegisterTreeCallback(
-        RefreshProfileSettingControlsIfShown,
-        "pins"
-    )
+    NS.globalDB:RegisterTreeCallback(RefreshBankSettingsIfShown, "features")
+    NS.db:RegisterTreeCallback(RefreshProfileSettingControlsIfShown, "display")
+    NS.db:RegisterTreeCallback(RefreshProfileSettingControlsIfShown, "list")
+    NS.db:RegisterTreeCallback(RefreshProfileSettingControlsIfShown, "pins")
     NS.db:RegisterTreeCallback(RefreshBankSettingsIfShown, "list")
     NS.db:RegisterTreeCallback(RefreshBankSettingsIfShown, "pins")
     NS.db:RegisterTreeCallback(RefreshBankSettingsIfShown, "bank")
@@ -1396,14 +1323,8 @@ function AddonSettings.Register()
         "OnReset",
         RefreshProfileSettingControlsIfShown
     )
-    NS.db:RegisterLifecycleCallback(
-        "OnDataChanged",
-        RefreshBankSettingsIfShown
-    )
-    NS.db:RegisterLifecycleCallback(
-        "OnReset",
-        RefreshBankSettingsIfShown
-    )
+    NS.db:RegisterLifecycleCallback("OnDataChanged", RefreshBankSettingsIfShown)
+    NS.db:RegisterLifecycleCallback("OnReset", RefreshBankSettingsIfShown)
 
     AddonSettings.registered = true
     RefreshProfileControls()

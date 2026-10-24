@@ -37,9 +37,7 @@ function DividerRow.GetRowHeight()
 end
 
 function DividerRow.Render(row, owner)
-    if not row.sectionDividerInitialized then
-        InitializeRow(row, owner)
-    end
+    if not row.sectionDividerInitialized then InitializeRow(row, owner) end
 
     row.divider:SetShown(true)
 end

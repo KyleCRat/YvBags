@@ -16,9 +16,7 @@ local FRAME_PORTRAIT =
 local function ApplyInventoryRefresh(frame, refreshFooter)
     frame.itemList:SetItems(NS.Inventory:GetItems())
 
-    if refreshFooter ~= false then
-        NS.Footer.Refresh(frame)
-    end
+    if refreshFooter ~= false then NS.Footer.Refresh(frame) end
 end
 
 local function CancelScheduledInventoryRefresh(frame)
@@ -51,9 +49,7 @@ local function QueueInventoryRefreshAttempt(frame)
 
     local timer
     timer = C_Timer.NewTimer(0, function()
-        if frame.inventoryRefreshTimer ~= timer then
-            return
-        end
+        if frame.inventoryRefreshTimer ~= timer then return end
 
         frame.inventoryRefreshTimer = nil
         if NS.frame ~= frame then
@@ -62,9 +58,11 @@ local function QueueInventoryRefreshAttempt(frame)
             return
         end
 
-        if not frame.inventoryRefreshPending
+        if
+            not frame.inventoryRefreshPending
             or not frame:IsShown()
-            or NS.Inventory:HasLockedItems() then
+            or NS.Inventory:HasLockedItems()
+        then
             return
         end
 
@@ -78,8 +76,7 @@ end
 
 local function RequestInventoryRefresh(frame, reason)
     frame.inventoryRefreshPending = true
-    frame.inventoryRefreshNeedsFooter =
-        frame.inventoryRefreshNeedsFooter
+    frame.inventoryRefreshNeedsFooter = frame.inventoryRefreshNeedsFooter
         or not IsPresentationOnlyUpdate(reason)
 
     QueueInventoryRefreshAttempt(frame)
@@ -111,7 +108,8 @@ local function CreateContent(frame)
             textFormat = "Place %s into your bags",
             mergeTextFormat = "Merge %s into a bag stack",
             getMergeItems = function()
-                return NS.Inventory:GetItems(), NS.BagManagement.cursorSourceContainerID
+                return NS.Inventory:GetItems(),
+                    NS.BagManagement.cursorSourceContainerID
             end,
             isSlotEmpty = function(bagID, slotIndex)
                 return NS.BagManagement.IsPlayerContainerSlotEmpty(
@@ -140,30 +138,26 @@ local function CreateContent(frame)
 end
 
 local function RegisterCallbacks(frame)
-    NS.Inventory:RegisterUpdateCallback(function(_, reason, bagID, slotIndex, isLocked)
-        if NS.frame ~= frame then
-            return
-        end
+    NS.Inventory:RegisterUpdateCallback(
+        function(_, reason, bagID, slotIndex, isLocked)
+            if NS.frame ~= frame then return end
 
-        if reason == NS.Inventory.UpdateReasons.Locks then
-            RefreshItemLock(frame, bagID, slotIndex, isLocked)
-        elseif reason == NS.Inventory.UpdateReasons.NewItemVisuals then
-            frame.itemList:RefreshVisibleNewItemStates()
-        else
-            RequestInventoryRefresh(frame, reason)
+            if reason == NS.Inventory.UpdateReasons.Locks then
+                RefreshItemLock(frame, bagID, slotIndex, isLocked)
+            elseif reason == NS.Inventory.UpdateReasons.NewItemVisuals then
+                frame.itemList:RefreshVisibleNewItemStates()
+            else
+                RequestInventoryRefresh(frame, reason)
+            end
         end
-    end)
+    )
 
     NS:RegisterEventHandler("PLAYER_MONEY", function()
-        if NS.frame then
-            NS.Footer.UpdateMoney(NS.frame)
-        end
+        if NS.frame then NS.Footer.UpdateMoney(NS.frame) end
     end)
 
     NS:RegisterEventHandler("BAG_UPDATE_COOLDOWN", function()
-        if NS.frame then
-            NS.frame.itemList:RefreshVisibleCooldowns()
-        end
+        if NS.frame then NS.frame.itemList:RefreshVisibleCooldowns() end
     end)
 
     NS:RegisterEventHandler("PLAYER_EQUIPMENT_CHANGED", function()
@@ -175,9 +169,7 @@ local function RegisterCallbacks(frame)
 end
 
 function MainFrame.Create()
-    if NS.frame then
-        return NS.frame
-    end
+    if NS.frame then return NS.frame end
 
     local frame = NS.Skins:CreateWindow(UIParent, {
         name = FRAME_NAME,
@@ -244,9 +236,7 @@ function MainFrame.Show()
 end
 
 function MainFrame.Hide()
-    if NS.frame then
-        NS.frame:Hide()
-    end
+    if NS.frame then NS.frame:Hide() end
 end
 
 function MainFrame.Toggle()

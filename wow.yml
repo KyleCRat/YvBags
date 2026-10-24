@@ -1,0 +1,322 @@
+# Reviewed globals used by this repository; member/API contracts remain manual.
+base: lua51
+globals:
+    # Embedded LibStub API.
+    LibStub:
+        any: true
+    # Blizzard APIs, frames, constants, and localized strings used by the addon.
+    AbbreviateLargeNumbers:
+        any: true
+    AbbreviateNumbers:
+        any: true
+    BACKPACK_CONTAINER:
+        any: true
+    BACKPACK_TOOLTIP:
+        any: true
+    BackpackTokenFrame:
+        any: true
+    BANK_LOCKED_REASON_BANK_CONVERSION_FAILED:
+        any: true
+    BANK_LOCKED_REASON_BANK_DISABLED:
+        any: true
+    BANK_LOCKED_REASON_NO_ACCOUNT_INVENTORY_LOCK:
+        any: true
+    BANK_TAB_DEPOSIT_ASSIGNMENTS:
+        any: true
+    BANK_TAB_EXPANSION_ASSIGNMENT:
+        any: true
+    BANK_TAB_EXPANSION_FILTER_CURRENT:
+        any: true
+    BANK_TAB_EXPANSION_FILTER_LEGACY:
+        any: true
+    BankAutoSortButtonMixin:
+        any: true
+    BankFrame:
+        any: true
+    BankPanel:
+        any: true
+    BankPanelAutoDepositFrameMixin:
+        any: true
+    BankPanelDepositMoneyButtonMixin:
+        any: true
+    BankPanelIncludeReagentsCheckboxMixin:
+        any: true
+    BankPanelItemButtonMixin:
+        any: true
+    BankPanelItemDepositButtonMixin:
+        any: true
+    BankPanelMoneyFrameMixin:
+        any: true
+    BankPanelMoneyFrameMoneyDisplayMixin:
+        any: true
+    BankPanelWithdrawMoneyButtonMixin:
+        any: true
+    BaseScrollBoxEvents:
+        any: true
+    BattlePetToolTip_UnpackBattlePetLink:
+        any: true
+    bit:
+        any: true
+    BreakUpLargeNumbers:
+        any: true
+    C_Bank:
+        any: true
+    C_ChallengeMode:
+        any: true
+    C_Container:
+        any: true
+    C_CurrencyInfo:
+        any: true
+    C_Cursor:
+        any: true
+    C_Item:
+        any: true
+    C_MerchantFrame:
+        any: true
+    C_MountJournal:
+        any: true
+    C_MythicPlus:
+        any: true
+    C_NewItems:
+        any: true
+    C_PetJournal:
+        any: true
+    C_StringUtil:
+        any: true
+    C_Timer:
+        any: true
+    C_TooltipInfo:
+        any: true
+    C_ToyBox:
+        any: true
+    C_TradeSkillUI:
+        any: true
+    CharacterFrame:
+        any: true
+    ClearCursorHoveredItem:
+        any: true
+    CloseAllBags:
+        any: true
+    ColorManager:
+        any: true
+    ContainerFrame_AllowedToOpenBags:
+        any: true
+    ContainerFrameItemButton_CalculateItemTooltipAnchors:
+        any: true
+    ContainerFrameItemButton_OnEnter:
+        any: true
+    ContainerFrameUtil_ConvertFilterFlagsToList:
+        any: true
+    ContainerIDToInventoryID:
+        any: true
+    COPPER_PER_GOLD:
+        any: true
+    COPPER_PER_SILVER:
+        any: true
+    CopyTable:
+        any: true
+    CreateAtlasMarkup:
+        any: true
+    CreateDataProvider:
+        any: true
+    CreateFrame:
+        any: true
+    CreateScrollBoxListLinearView:
+        any: true
+    CreateTextureMarkup:
+        any: true
+    CursorHasItem:
+        any: true
+    Enum:
+        any: true
+    EQUIP_CONTAINER:
+        any: true
+    EQUIP_CONTAINER_REAGENT:
+        any: true
+    EventRegistry:
+        any: true
+    FlagsUtil:
+        any: true
+    GameFontDisable:
+        any: true
+    GameFontHighlight:
+        any: true
+    GameFontNormal:
+        any: true
+    GameFontNormalHuge:
+        any: true
+    GameFontNormalLarge:
+        any: true
+    GameFontNormalMed2:
+        any: true
+    GameTooltip:
+        any: true
+    GameTooltip_AddBlankLineToTooltip:
+        any: true
+    GameTooltip_AddMoneyLine:
+        any: true
+    GameTooltip_AddNormalLine:
+        any: true
+    GameTooltip_ClearMoney:
+        any: true
+    GameTooltip_Hide:
+        any: true
+    GetContainerNumFreeSlots:
+        # Existing guarded legacy fallback; C_Container is the primary API.
+        any: true
+    GetContainerNumSlots:
+        # Existing guarded legacy fallback; C_Container is the primary API.
+        any: true
+    GetCurrentKeyBoardFocus:
+        any: true
+    GetCursorInfo:
+        any: true
+    GetCursorPosition:
+        any: true
+    geterrorhandler:
+        any: true
+    GetExpansionName:
+        any: true
+    GetInventoryItemLink:
+        any: true
+    GetInventoryItemTexture:
+        any: true
+    GetMoney:
+        any: true
+    GetScreenHeight:
+        any: true
+    GetScreenWidth:
+        any: true
+    GetTime:
+        any: true
+    GRAY_FONT_COLOR:
+        any: true
+    HandleModifiedItemClick:
+        any: true
+    HIGHLIGHT_FONT_COLOR:
+        any: true
+    hooksecurefunc:
+        any: true
+    InCombatLockdown:
+        any: true
+    IsAltKeyDown:
+        any: true
+    IsControlKeyDown:
+        any: true
+    IsModifiedClick:
+        any: true
+    IsMouseButtonDown:
+        any: true
+    issecretvalue:
+        any: true
+    IsShiftKeyDown:
+        any: true
+    ITEM_BIND_ON_EQUIP:
+        any: true
+    ITEM_BIND_ON_PICKUP:
+        any: true
+    ITEM_BIND_ON_USE:
+        any: true
+    ITEM_BIND_QUEST:
+        any: true
+    ITEM_BIND_TO_ACCOUNT:
+        any: true
+    ITEM_BIND_TO_ACCOUNT_UNTIL_EQUIP:
+        any: true
+    ITEM_BIND_TO_BNETACCOUNT:
+        any: true
+    ITEM_QUALITY_COLORS:
+        any: true
+    ItemLocation:
+        any: true
+    LE_EXPANSION_LEVEL_CURRENT:
+        any: true
+    LinkUtil:
+        any: true
+    MenuResponse:
+        any: true
+    MenuUtil:
+        any: true
+    MerchantFrame:
+        any: true
+    Mixin:
+        any: true
+    NAME:
+        any: true
+    NONE:
+        any: true
+    NORMAL_FONT_COLOR:
+        any: true
+    NUM_BAG_SLOTS:
+        any: true
+    NUM_REAGENTBAG_SLOTS:
+        any: true
+    OpenAllBags:
+        any: true
+    PickupBagFromSlot:
+        any: true
+    PickupInventoryItem:
+        any: true
+    PixelUtil:
+        any: true
+    PutItemInBag:
+        any: true
+    ResetCursor:
+        any: true
+    ScrollBoxConstants:
+        any: true
+    ScrollUtil:
+        any: true
+    SetCursorHoveredItem:
+        any: true
+    SetItemButtonCount:
+        any: true
+    Settings:
+        any: true
+    SettingsPanel:
+        any: true
+    ShowInspectCursor:
+        any: true
+    SlashCmdList:
+        any: true
+    SortBags:
+        any: true
+    SpellIsTargeting:
+        any: true
+    StaticPopup_ShowCustomGenericConfirmation:
+        any: true
+    StaticPopup_ShowCustomGenericInputBox:
+        any: true
+    StaticPopup_ShowGenericDropdown:
+        any: true
+    strcmputf8i:
+        any: true
+    strlenutf8:
+        any: true
+    strlower:
+        any: true
+    strtrim:
+        any: true
+    TokenFrame:
+        any: true
+    TooltipDataProcessor:
+        any: true
+    tremove:
+        any: true
+    TYPE:
+        any: true
+    UIErrorsFrame:
+        any: true
+    UIParent:
+        any: true
+    UISpecialFrames:
+        any: true
+    UNKNOWN:
+        any: true
+    wipe:
+        any: true
+    # Public slash-command registrations owned by YvBags.
+    SLASH_YVBAGS1:
+        any: true
+    SLASH_YVBAGS2:
+        any: true

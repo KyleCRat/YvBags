@@ -24,7 +24,8 @@ local SCALE_POPUP_FONT_FLAGS = "OUTLINE"
 -- Settings and search controls
 local SEARCH_MIN_WIDTH = 96
 local SEARCH_FOCUS_KEY = "F"
-local SEARCH_SHORTCUT_LISTENER_TEMPLATE = "InsecureKeyboardInputPropagatorTemplate"
+local SEARCH_SHORTCUT_LISTENER_TEMPLATE =
+    "InsecureKeyboardInputPropagatorTemplate"
 
 local function FormatScalePercent(value)
     return ("%d%%"):format(math.floor((tonumber(value) or 0) + 0.5))
@@ -40,9 +41,7 @@ local function ShowTooltip(button, title, description)
 end
 
 function Controls.RefreshScale(frame, scale)
-    if frame.scalePopup then
-        frame.scalePopup:SetValue(scale * 100, true)
-    end
+    if frame.scalePopup then frame.scalePopup:SetValue(scale * 100, true) end
 end
 
 function Controls.CreateScaleButton(frame, options)
@@ -50,18 +49,25 @@ function Controls.CreateScaleButton(frame, options)
     local geometry = options.geometry or Geometry
     local frameLabel = options.frameLabel or ADDON_NAME
     local button = NS.Skins:CreateButton(frame.toolbar, {
-        geometryRoot = frame, variant = "square",
-        width = SQUARE_BUTTON_SIZE, height = SQUARE_BUTTON_SIZE,
-        icon = NS.Media.GetScaleTexture(), iconWidth = SQUARE_BUTTON_ICON_SIZE,
+        geometryRoot = frame,
+        variant = "square",
+        width = SQUARE_BUTTON_SIZE,
+        height = SQUARE_BUTTON_SIZE,
+        icon = NS.Media.GetScaleTexture(),
+        iconWidth = SQUARE_BUTTON_ICON_SIZE,
     })
     button:SetFrameLevel(frame:GetFrameLevel() + TOOLBAR_FRAME_LEVEL_OFFSET)
-    button:HookScript("OnLeave", function() GameTooltip:Hide() end)
+    button:HookScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
     frame.scaleButton = button
 
     button:HookScript("OnEnter", function(self)
         ShowTooltip(
             self,
-            ("Scale: %s"):format(FormatScalePercent(geometry.GetSavedScale() * 100)),
+            ("Scale: %s"):format(
+                FormatScalePercent(geometry.GetSavedScale() * 100)
+            ),
             ("Click and drag to resize the %s frame."):format(frameLabel)
         )
     end)
@@ -92,20 +98,24 @@ end
 function Controls.CreateSettingsButton(frame, options)
     options = options or {}
     local button = NS.Skins:CreateButton(frame.toolbar, {
-        geometryRoot = frame, variant = "square",
-        width = SQUARE_BUTTON_SIZE, height = SQUARE_BUTTON_SIZE,
-        icon = NS.Media.GetSettingsTexture(), iconWidth = SQUARE_BUTTON_ICON_SIZE,
+        geometryRoot = frame,
+        variant = "square",
+        width = SQUARE_BUTTON_SIZE,
+        height = SQUARE_BUTTON_SIZE,
+        icon = NS.Media.GetSettingsTexture(),
+        iconWidth = SQUARE_BUTTON_ICON_SIZE,
     })
     button:SetFrameLevel(frame:GetFrameLevel() + TOOLBAR_FRAME_LEVEL_OFFSET)
-    button:HookScript("OnLeave", function() GameTooltip:Hide() end)
+    button:HookScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
     button:RegisterForClicks("LeftButtonUp")
 
     button:HookScript("OnEnter", function(self)
         ShowTooltip(
             self,
             "Settings",
-            options.tooltip
-                or ("Open %s settings."):format(ADDON_NAME)
+            options.tooltip or ("Open %s settings."):format(ADDON_NAME)
         )
     end)
     button:SetScript("OnClick", function()
@@ -132,16 +142,16 @@ local function ResetSearchShortcutListener(listener)
 end
 
 function Controls.RegisterSearchShortcut(frame)
-    local listener = CreateFrame("Frame", nil, frame, SEARCH_SHORTCUT_LISTENER_TEMPLATE)
+    local listener =
+        CreateFrame("Frame", nil, frame, SEARCH_SHORTCUT_LISTENER_TEMPLATE)
     listener:SetAllPoints(frame)
     listener:EnableKeyboard(true)
     listener:SetScript("OnKeyDown", function(self, key)
-        if InCombatLockdown() then
-            return
-        end
+        if InCombatLockdown() then return end
 
         local keyboardFocus = GetCurrentKeyBoardFocus()
-        local canFocusSearch = not keyboardFocus or keyboardFocus == frame.searchBox
+        local canFocusSearch = not keyboardFocus
+            or keyboardFocus == frame.searchBox
         local isSearchShortcut = key == SEARCH_FOCUS_KEY
             and IsControlKeyDown()
             and not IsAltKeyDown()
@@ -177,7 +187,8 @@ function Controls.CreateSearch(frame)
         toolbar[#toolbar + 1] = frame.characterBankButton
         toolbar[#toolbar + 1] = frame.accountBankButton
     end
-    toolbar[#toolbar + 1] = { control = searchBox, stretch = true, minWidth = SEARCH_MIN_WIDTH }
+    toolbar[#toolbar + 1] =
+        { control = searchBox, stretch = true, minWidth = SEARCH_MIN_WIDTH }
     frame.toolbarItems = toolbar
     NS.WindowLayout.OnLayout(frame)
 end

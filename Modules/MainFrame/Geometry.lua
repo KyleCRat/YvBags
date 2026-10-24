@@ -25,25 +25,22 @@ local function GetNearestPixelSize(frame, size)
 end
 
 local function SetPixelPerfectSize(frame, width, height)
-    frame:SetSize(GetNearestPixelSize(frame, width), GetNearestPixelSize(frame, height))
+    frame:SetSize(
+        GetNearestPixelSize(frame, width),
+        GetNearestPixelSize(frame, height)
+    )
 end
 
 local function FormatDebugNumber(value)
-    if type(value) == "number" then
-        return ("%.3f"):format(value)
-    end
+    if type(value) == "number" then return ("%.3f"):format(value) end
 
     return tostring(value)
 end
 
 local function GetRegionName(region)
-    if not region then
-        return "nil"
-    end
+    if not region then return "nil" end
 
-    if region.GetName then
-        return region:GetName() or tostring(region)
-    end
+    if region.GetName then return region:GetName() or tostring(region) end
 
     return tostring(region)
 end
@@ -53,15 +50,11 @@ local function IsDebugEnabled()
 end
 
 function Geometry.PreventClientSaving(frame)
-    if frame.SetDontSavePosition then
-        frame:SetDontSavePosition(true)
-    end
+    if frame.SetDontSavePosition then frame:SetDontSavePosition(true) end
 end
 
 function Geometry.ClearClientPosition(frame)
-    if frame.SetUserPlaced then
-        frame:SetUserPlaced(false)
-    end
+    if frame.SetUserPlaced then frame:SetUserPlaced(false) end
 end
 
 function Geometry.GetSavedScale()
@@ -110,15 +103,23 @@ end
 function Geometry.RestoreSize(frame)
     local maxWidth = Geometry.GetMaxWidth()
     local savedWidth = NS.charDB:Get("frame", "width")
-    local width = math.min(math.max(savedWidth or maxWidth, Layout.MinWidth), maxWidth)
-    local height = math.max(NS.charDB:Get("frame", "height") or Layout.MinHeight, Layout.MinHeight)
+    local width =
+        math.min(math.max(savedWidth or maxWidth, Layout.MinWidth), maxWidth)
+    local height = math.max(
+        NS.charDB:Get("frame", "height") or Layout.MinHeight,
+        Layout.MinHeight
+    )
     SetPixelPerfectSize(frame, width, height)
 end
 
 function Geometry.Save(frame)
     local point, _, relativePoint, x, y = frame:GetPoint(1)
     NS.charDB:Set("frame", "point", point or DEFAULT_POINT)
-    NS.charDB:Set("frame", "relativePoint", relativePoint or DEFAULT_RELATIVE_POINT)
+    NS.charDB:Set(
+        "frame",
+        "relativePoint",
+        relativePoint or DEFAULT_RELATIVE_POINT
+    )
     NS.charDB:Set("frame", "x", x or 0)
     NS.charDB:Set("frame", "y", y or 0)
     NS.charDB:Set("frame", "width", frame:GetWidth())
@@ -141,35 +142,37 @@ function Geometry.RestorePosition(frame)
 end
 
 function Geometry.PrintDebug(frame, reason)
-    if not IsDebugEnabled() then
-        return
-    end
+    if not IsDebugEnabled() then return end
 
     local point, relativeTo, relativePoint, x, y = frame:GetPoint(1)
-    NS:Print(("Frame position [%s] frame point=%s relativeTo=%s relativePoint=%s x=%s y=%s width=%s height=%s left=%s top=%s right=%s bottom=%s scale=%s effectiveScale=%s"):format(
-        tostring(reason),
-        tostring(point),
-        GetRegionName(relativeTo),
-        tostring(relativePoint),
-        FormatDebugNumber(x),
-        FormatDebugNumber(y),
-        FormatDebugNumber(frame:GetWidth()),
-        FormatDebugNumber(frame:GetHeight()),
-        FormatDebugNumber(frame:GetLeft()),
-        FormatDebugNumber(frame:GetTop()),
-        FormatDebugNumber(frame:GetRight()),
-        FormatDebugNumber(frame:GetBottom()),
-        FormatDebugNumber(frame:GetScale()),
-        FormatDebugNumber(frame:GetEffectiveScale())
-    ))
-    NS:Print(("Frame DB [%s] point=%s relativePoint=%s x=%s y=%s width=%s height=%s scale=%s"):format(
-        tostring(reason),
-        tostring(NS.charDB:Get("frame", "point")),
-        tostring(NS.charDB:Get("frame", "relativePoint")),
-        FormatDebugNumber(NS.charDB:Get("frame", "x")),
-        FormatDebugNumber(NS.charDB:Get("frame", "y")),
-        FormatDebugNumber(NS.charDB:Get("frame", "width")),
-        FormatDebugNumber(NS.charDB:Get("frame", "height")),
-        FormatDebugNumber(NS.charDB:Get("frame", "scale"))
-    ))
+    NS:Print(
+        ("Frame position [%s] frame point=%s relativeTo=%s relativePoint=%s x=%s y=%s width=%s height=%s left=%s top=%s right=%s bottom=%s scale=%s effectiveScale=%s"):format(
+            tostring(reason),
+            tostring(point),
+            GetRegionName(relativeTo),
+            tostring(relativePoint),
+            FormatDebugNumber(x),
+            FormatDebugNumber(y),
+            FormatDebugNumber(frame:GetWidth()),
+            FormatDebugNumber(frame:GetHeight()),
+            FormatDebugNumber(frame:GetLeft()),
+            FormatDebugNumber(frame:GetTop()),
+            FormatDebugNumber(frame:GetRight()),
+            FormatDebugNumber(frame:GetBottom()),
+            FormatDebugNumber(frame:GetScale()),
+            FormatDebugNumber(frame:GetEffectiveScale())
+        )
+    )
+    NS:Print(
+        ("Frame DB [%s] point=%s relativePoint=%s x=%s y=%s width=%s height=%s scale=%s"):format(
+            tostring(reason),
+            tostring(NS.charDB:Get("frame", "point")),
+            tostring(NS.charDB:Get("frame", "relativePoint")),
+            FormatDebugNumber(NS.charDB:Get("frame", "x")),
+            FormatDebugNumber(NS.charDB:Get("frame", "y")),
+            FormatDebugNumber(NS.charDB:Get("frame", "width")),
+            FormatDebugNumber(NS.charDB:Get("frame", "height")),
+            FormatDebugNumber(NS.charDB:Get("frame", "scale"))
+        )
+    )
 end

@@ -13,6 +13,7 @@ local BindingKeys = Binding.Keys
 
 local UNKNOWN_ITEM_ICON = 134400
 local CAGED_BATTLE_PET_ITEM_ID = 82800
+local BATTLE_PET_ITEM_TYPE = C_Item.GetItemClassInfo(Enum.ItemClass.Battlepet)
 local tooltipSearchCache = {}
 local tooltipDataUpdateCallbacks = {}
 local pendingTooltipDataIDs = {}
@@ -70,48 +71,54 @@ local function IsBindType(bindType, key)
     return info and info.key == key
 end
 
-local function GetBindingInfo(bindType, isBound, isAccountBound, isAccountUntilEquipped)
-    if isAccountUntilEquipped or IsBindType(bindType, BindingKeys.AccountUntilEquipped) then
-        return BindingKeys.AccountUntilEquipped, ITEM_BIND_TO_ACCOUNT_UNTIL_EQUIP
+local function GetBindingInfo(
+    bindType,
+    isBound,
+    isAccountBound,
+    isAccountUntilEquipped
+)
+    if
+        isAccountUntilEquipped
+        or IsBindType(bindType, BindingKeys.AccountUntilEquipped)
+    then
+        return BindingKeys.AccountUntilEquipped,
+            ITEM_BIND_TO_ACCOUNT_UNTIL_EQUIP
     end
 
     if isAccountBound or IsBindType(bindType, BindingKeys.Account) then
-        local info = IsBindType(bindType, BindingKeys.Account) and BIND_TYPE_INFO[bindType]
+        local info = IsBindType(bindType, BindingKeys.Account)
+            and BIND_TYPE_INFO[bindType]
         return BindingKeys.Account, info and info.label or ITEM_BIND_TO_ACCOUNT
     end
 
-    if isBound then
-        return BindingKeys.Bound, "Bound"
-    end
+    if isBound then return BindingKeys.Bound, "Bound" end
 
     local info = BIND_TYPE_INFO[bindType]
-    if info then
-        return info.key, info.label
-    end
+    if info then return info.key, info.label end
 
     return BindingKeys.Unknown, UNKNOWN
 end
 
 local function IsBagItemAccountUntilEquipped(bagID, slotIndex, itemInfo)
-    if not C_Item then
-        return false
-    end
+    if not C_Item then return false end
 
-    if C_Item.IsBoundToAccountUntilEquip and ItemLocation and ItemLocation.CreateFromBagAndSlot then
+    if
+        C_Item.IsBoundToAccountUntilEquip
+        and ItemLocation
+        and ItemLocation.CreateFromBagAndSlot
+    then
         local itemLocation = ItemLocation:CreateFromBagAndSlot(bagID, slotIndex)
         if itemLocation and itemLocation.IsValid and itemLocation:IsValid() then
-            local success, isAccountUntilEquipped = pcall(C_Item.IsBoundToAccountUntilEquip, itemLocation)
-            if success and isAccountUntilEquipped then
-                return true
-            end
+            local success, isAccountUntilEquipped =
+                pcall(C_Item.IsBoundToAccountUntilEquip, itemLocation)
+            if success and isAccountUntilEquipped then return true end
         end
     end
 
     if C_Item.IsItemBindToAccountUntilEquip and itemInfo then
-        local success, isAccountUntilEquipped = pcall(C_Item.IsItemBindToAccountUntilEquip, itemInfo)
-        if success and isAccountUntilEquipped then
-            return true
-        end
+        local success, isAccountUntilEquipped =
+            pcall(C_Item.IsItemBindToAccountUntilEquip, itemInfo)
+        if success and isAccountUntilEquipped then return true end
     end
 
     return false
@@ -128,17 +135,13 @@ end
 
 -- Link parsing helpers
 local function StripLinkDisplayBrackets(displayText)
-    if not displayText then
-        return nil
-    end
+    if not displayText then return nil end
 
     return displayText:gsub("^%[", ""):gsub("%]$", "")
 end
 
 local function GetHyperlinkInfo(hyperlink)
-    if not hyperlink then
-        return nil, nil, nil
-    end
+    if not hyperlink then return nil, nil, nil end
 
     local linkType
     local linkOptions
@@ -147,7 +150,8 @@ local function GetHyperlinkInfo(hyperlink)
     if LinkUtil and LinkUtil.ExtractLink then
         linkType, linkOptions, displayText = LinkUtil.ExtractLink(hyperlink)
     else
-        linkType, linkOptions, displayText = hyperlink:match("|H([^:]*):([^|]*)|h(.*)|h")
+        linkType, linkOptions, displayText =
+            hyperlink:match("|H([^:]*):([^|]*)|h(.*)|h")
     end
 
     return linkType, linkOptions, StripLinkDisplayBrackets(displayText)
@@ -171,18 +175,12 @@ local function IsCosmeticItem(itemInfo)
 end
 
 local function GetCollectionKind(itemID, classID, subclassID, isBattlePet)
-    if isBattlePet then
-        return COLLECTION_KINDS.BattlePet
-    end
+    if isBattlePet then return COLLECTION_KINDS.BattlePet end
 
-    if not itemID then
-        return nil
-    end
+    if not itemID then return nil end
 
     local cachedKind = collectionKindCache[itemID]
-    if cachedKind ~= nil then
-        return cachedKind or nil
-    end
+    if cachedKind ~= nil then return cachedKind or nil end
 
     local getToyInfo = C_ToyBox and C_ToyBox.GetToyInfo
     local getMountFromItem = C_MountJournal and C_MountJournal.GetMountFromItem
@@ -190,16 +188,18 @@ local function GetCollectionKind(itemID, classID, subclassID, isBattlePet)
     local collectionKind
     if getToyInfo then
         local toyItemID = getToyInfo(itemID)
-        if toyItemID then
-            collectionKind = COLLECTION_KINDS.Toy
-        end
+        if toyItemID then collectionKind = COLLECTION_KINDS.Toy end
     end
 
     if not collectionKind and getMountFromItem and getMountFromItem(itemID) then
         collectionKind = COLLECTION_KINDS.Mount
     end
 
-    if not collectionKind and getPetInfoByItemID and getPetInfoByItemID(itemID) then
+    if
+        not collectionKind
+        and getPetInfoByItemID
+        and getPetInfoByItemID(itemID)
+    then
         collectionKind = COLLECTION_KINDS.Pet
     end
 
@@ -215,7 +215,15 @@ local function GetCollectionKind(itemID, classID, subclassID, isBattlePet)
         end
     end
 
-    if collectionKind or (getToyInfo and getMountFromItem and getPetInfoByItemID and classID ~= nil) then
+    if
+        collectionKind
+        or (
+            getToyInfo
+            and getMountFromItem
+            and getPetInfoByItemID
+            and classID ~= nil
+        )
+    then
         collectionKindCache[itemID] = collectionKind or false
     end
 
@@ -223,22 +231,18 @@ local function GetCollectionKind(itemID, classID, subclassID, isBattlePet)
 end
 
 local function GetProfessionQuality(itemInfo)
-    if not itemInfo or not C_TradeSkillUI then
-        return nil, nil
-    end
+    if not itemInfo or not C_TradeSkillUI then return nil, nil end
 
     if C_TradeSkillUI.GetItemCraftedQualityByItemInfo then
-        local craftedQuality = C_TradeSkillUI.GetItemCraftedQualityByItemInfo(itemInfo)
-        if craftedQuality ~= nil then
-            return craftedQuality, "crafted"
-        end
+        local craftedQuality =
+            C_TradeSkillUI.GetItemCraftedQualityByItemInfo(itemInfo)
+        if craftedQuality ~= nil then return craftedQuality, "crafted" end
     end
 
     if C_TradeSkillUI.GetItemReagentQualityByItemInfo then
-        local reagentQuality = C_TradeSkillUI.GetItemReagentQualityByItemInfo(itemInfo)
-        if reagentQuality ~= nil then
-            return reagentQuality, "reagent"
-        end
+        local reagentQuality =
+            C_TradeSkillUI.GetItemReagentQualityByItemInfo(itemInfo)
+        if reagentQuality ~= nil then return reagentQuality, "reagent" end
     end
 
     return nil, nil
@@ -250,58 +254,44 @@ local function IsSecretValue(value)
 end
 
 local function GetTooltipText(value)
-    if IsSecretValue(value) then
-        return nil
-    end
+    if IsSecretValue(value) then return nil end
 
-    if type(value) ~= "string" or value == "" then
-        return nil
-    end
+    if type(value) ~= "string" or value == "" then return nil end
 
     local text = C_StringUtil.StripHyperlinks(value)
-    if IsSecretValue(text) then
-        return nil
-    end
+    if IsSecretValue(text) then return nil end
 
-    if type(text) == "string" and text ~= "" then
-        return text
-    end
+    if type(text) == "string" and text ~= "" then return text end
 
     return nil
 end
 
 local function GetTooltipSearchText(item, forceRefresh)
     local itemReference = item.link
-    if IsSecretValue(itemReference) then
-        return ""
-    end
+    if IsSecretValue(itemReference) then return "" end
 
     if not itemReference then
         itemReference = item.staticLink
-        if IsSecretValue(itemReference) then
-            return ""
-        end
+        if IsSecretValue(itemReference) then return "" end
     end
 
     if not itemReference then
         itemReference = item.itemID
-        if IsSecretValue(itemReference) then
-            return ""
-        end
+        if IsSecretValue(itemReference) then return "" end
     end
 
-    if not itemReference then
-        return ""
-    end
+    if not itemReference then return "" end
 
     local cached = tooltipSearchCache[item.locationKey]
-    if not forceRefresh
+    if
+        not forceRefresh
         and cached
         and cached.itemReference == itemReference
         and cached.count == item.count
         and cached.bindingKey == item.bindingKey
         and cached.isBound == item.isBound
-        and cached.isPendingItemInfo == item.isPendingItemInfo then
+        and cached.isPendingItemInfo == item.isPendingItemInfo
+    then
         return cached.text, cached.dataInstanceID
     end
 
@@ -311,9 +301,7 @@ local function GetTooltipSearchText(item, forceRefresh)
     end
 
     local dataInstanceID = tooltipData.dataInstanceID
-    if IsSecretValue(dataInstanceID) then
-        dataInstanceID = nil
-    end
+    if IsSecretValue(dataInstanceID) then dataInstanceID = nil end
 
     local lines = tooltipData.lines
     if IsSecretValue(lines) or type(lines) ~= "table" then
@@ -347,7 +335,12 @@ local function GetTooltipSearchText(item, forceRefresh)
 end
 
 local function GetCurrentBagItemLevel(bagID, slotIndex)
-    if not ItemLocation or not ItemLocation.CreateFromBagAndSlot or not C_Item or not C_Item.GetCurrentItemLevel then
+    if
+        not ItemLocation
+        or not ItemLocation.CreateFromBagAndSlot
+        or not C_Item
+        or not C_Item.GetCurrentItemLevel
+    then
         return nil
     end
 
@@ -377,7 +370,10 @@ local function RefreshCategory(item)
     item.categoryKey = Categories.GetCategoryKey(item)
     item.categoryName = Categories.GetCategoryName(item.categoryKey)
 
-    if item.categoryKey ~= previousCategoryKey or item.categoryName ~= previousCategoryName then
+    if
+        item.categoryKey ~= previousCategoryKey
+        or item.categoryName ~= previousCategoryName
+    then
         item.searchDocument = nil
         return true
     end
@@ -400,9 +396,7 @@ local function IsKeystoneItem(itemInfo)
 end
 
 local function GetOwnedKeystoneInfo()
-    if not C_MythicPlus then
-        return nil, nil, nil
-    end
+    if not C_MythicPlus then return nil, nil, nil end
 
     local keystoneLevel
     if C_MythicPlus.GetOwnedKeystoneLevel then
@@ -439,13 +433,24 @@ local function GetBattlePetLinkInfo(hyperlink)
     local power
     local speed
     local name
-    speciesID, level, quality, maxHealth, power, speed, name = BattlePetToolTip_UnpackBattlePetLink(hyperlink)
+    speciesID, level, quality, maxHealth, power, speed, name =
+        BattlePetToolTip_UnpackBattlePetLink(hyperlink)
 
-    return speciesID, level, quality, maxHealth, power, speed, StripLinkDisplayBrackets(name)
+    return speciesID,
+        level,
+        quality,
+        maxHealth,
+        power,
+        speed,
+        StripLinkDisplayBrackets(name)
 end
 
 local function GetBattlePetSpeciesIcon(speciesID)
-    if not speciesID or not C_PetJournal or not C_PetJournal.GetPetInfoBySpeciesID then
+    if
+        not speciesID
+        or not C_PetJournal
+        or not C_PetJournal.GetPetInfoBySpeciesID
+    then
         return nil
     end
 
@@ -461,7 +466,8 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
     local linkType
     local linkOptions
     local hyperlinkDisplayText
-    linkType, linkOptions, hyperlinkDisplayText = GetHyperlinkInfo(containerItemInfo.hyperlink)
+    linkType, linkOptions, hyperlinkDisplayText =
+        GetHyperlinkInfo(containerItemInfo.hyperlink)
     if linkType == "battlepet" and staticItemInfo then
         itemInfo = staticItemInfo
     end
@@ -476,11 +482,19 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
 
     -- Fetch synchronous fields first so icons/classes are available on cache misses.
     if C_Item and C_Item.GetItemInfoInstant and itemInfo then
-        instantItemID, instantItemType, instantItemSubType, instantEquipLoc, instantIcon, instantClassID, instantSubClassID = C_Item.GetItemInfoInstant(itemInfo)
+        instantItemID, instantItemType, instantItemSubType, instantEquipLoc, instantIcon, instantClassID, instantSubClassID =
+            C_Item.GetItemInfoInstant(itemInfo)
     end
 
-    if not instantItemID and C_Item and C_Item.GetItemInfoInstant and staticItemInfo and staticItemInfo ~= itemInfo then
-        instantItemID, instantItemType, instantItemSubType, instantEquipLoc, instantIcon, instantClassID, instantSubClassID = C_Item.GetItemInfoInstant(staticItemInfo)
+    if
+        not instantItemID
+        and C_Item
+        and C_Item.GetItemInfoInstant
+        and staticItemInfo
+        and staticItemInfo ~= itemInfo
+    then
+        instantItemID, instantItemType, instantItemSubType, instantEquipLoc, instantIcon, instantClassID, instantSubClassID =
+            C_Item.GetItemInfoInstant(staticItemInfo)
     end
 
     local fullName
@@ -503,11 +517,13 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
     local itemDescription
 
     -- Fetch async item fields, with static item ID fallback for dynamic links.
-    fullName, fullLink, itemQuality, staticItemLevel, requiredLevel, fullItemType, fullItemSubType, maxStack, fullEquipLoc, fullIcon, sellValue, classID, subClassID, bindType, expansionID, setID, isCraftingReagent, itemDescription = GetItemInfoFields(itemInfo)
+    fullName, fullLink, itemQuality, staticItemLevel, requiredLevel, fullItemType, fullItemSubType, maxStack, fullEquipLoc, fullIcon, sellValue, classID, subClassID, bindType, expansionID, setID, isCraftingReagent, itemDescription =
+        GetItemInfoFields(itemInfo)
 
     local usedStaticFallback = false
     if not fullName and staticItemInfo and staticItemInfo ~= itemInfo then
-        fullName, fullLink, itemQuality, staticItemLevel, requiredLevel, fullItemType, fullItemSubType, maxStack, fullEquipLoc, fullIcon, sellValue, classID, subClassID, bindType, expansionID, setID, isCraftingReagent, itemDescription = GetItemInfoFields(staticItemInfo)
+        fullName, fullLink, itemQuality, staticItemLevel, requiredLevel, fullItemType, fullItemSubType, maxStack, fullEquipLoc, fullIcon, sellValue, classID, subClassID, bindType, expansionID, setID, isCraftingReagent, itemDescription =
+            GetItemInfoFields(staticItemInfo)
         usedStaticFallback = fullName ~= nil
     end
 
@@ -527,12 +543,15 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
     end
 
     if isKeystone and not fullName then
-        fullName = containerItemInfo.itemName or hyperlinkDisplayText or "Mythic Keystone"
+        fullName = containerItemInfo.itemName
+            or hyperlinkDisplayText
+            or "Mythic Keystone"
         itemQuality = itemQuality or containerItemInfo.quality
         staticItemLevel = staticItemLevel or 1
     end
 
-    local isBattlePet = linkType == "battlepet" or containerItemInfo.itemID == CAGED_BATTLE_PET_ITEM_ID
+    local isBattlePet = linkType == "battlepet"
+        or containerItemInfo.itemID == CAGED_BATTLE_PET_ITEM_ID
     local battlePetSpeciesID
     local battlePetLevel
     local battlePetQuality
@@ -542,11 +561,14 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
     local battlePetName
     local battlePetIcon
     if isBattlePet then
-        battlePetSpeciesID, battlePetLevel, battlePetQuality, battlePetMaxHealth, battlePetPower, battlePetSpeed, battlePetName = GetBattlePetLinkInfo(containerItemInfo.hyperlink)
+        battlePetSpeciesID, battlePetLevel, battlePetQuality, battlePetMaxHealth, battlePetPower, battlePetSpeed, battlePetName =
+            GetBattlePetLinkInfo(containerItemInfo.hyperlink)
         battlePetIcon = GetBattlePetSpeciesIcon(battlePetSpeciesID)
-        itemQuality = battlePetQuality or itemQuality or containerItemInfo.quality
+        itemQuality = battlePetQuality
+            or itemQuality
+            or containerItemInfo.quality
         staticItemLevel = battlePetLevel or staticItemLevel
-        fullItemType = BATTLE_PET
+        fullItemType = BATTLE_PET_ITEM_TYPE
         fullItemSubType = "Caged Pet"
     end
 
@@ -564,7 +586,8 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
     local previewLevel
     local sparseItemLevel
     if C_Item and C_Item.GetDetailedItemLevelInfo and itemInfo then
-        actualItemLevel, previewLevel, sparseItemLevel = C_Item.GetDetailedItemLevelInfo(itemInfo)
+        actualItemLevel, previewLevel, sparseItemLevel =
+            C_Item.GetDetailedItemLevelInfo(itemInfo)
     end
 
     local professionQuality
@@ -572,9 +595,18 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
     professionQuality, professionQualityType = GetProfessionQuality(itemInfo)
 
     local currentItemLevel = GetCurrentBagItemLevel(container.id, slotIndex)
-    local isAccountUntilEquipped = IsBagItemAccountUntilEquipped(container.id, slotIndex, itemInfo)
-    if not isAccountUntilEquipped and staticItemInfo and staticItemInfo ~= itemInfo then
-        isAccountUntilEquipped = IsBagItemAccountUntilEquipped(container.id, slotIndex, staticItemInfo)
+    local isAccountUntilEquipped =
+        IsBagItemAccountUntilEquipped(container.id, slotIndex, itemInfo)
+    if
+        not isAccountUntilEquipped
+        and staticItemInfo
+        and staticItemInfo ~= itemInfo
+    then
+        isAccountUntilEquipped = IsBagItemAccountUntilEquipped(
+            container.id,
+            slotIndex,
+            staticItemInfo
+        )
     end
 
     local isAccountBound = IsItemInfoAccountBound(itemInfo)
@@ -584,8 +616,15 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
 
     local bindingKey
     local bindingText
-    bindingKey, bindingText = GetBindingInfo(bindType, containerItemInfo.isBound, isAccountBound, isAccountUntilEquipped)
-    local displayItemLevel = currentItemLevel or actualItemLevel or staticItemLevel
+    bindingKey, bindingText = GetBindingInfo(
+        bindType,
+        containerItemInfo.isBound,
+        isAccountBound,
+        isAccountUntilEquipped
+    )
+    local displayItemLevel = currentItemLevel
+        or actualItemLevel
+        or staticItemLevel
 
     if isKeystone and keystoneLevel then
         displayItemLevel = keystoneLevel
@@ -593,9 +632,17 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
         displayItemLevel = battlePetLevel
     end
 
-    local displayName = hyperlinkDisplayText or fullName or containerItemInfo.itemName or (containerItemInfo.itemID and ("Item " .. tostring(containerItemInfo.itemID))) or "Unknown Item"
+    local displayName = hyperlinkDisplayText
+        or fullName
+        or containerItemInfo.itemName
+        or (containerItemInfo.itemID and ("Item " .. tostring(
+            containerItemInfo.itemID
+        )))
+        or "Unknown Item"
     if isBattlePet and battlePetName then
-        displayName = (containerItemInfo.itemName or fullName or "Pet Cage") .. ": " .. battlePetName
+        displayName = (containerItemInfo.itemName or fullName or "Pet Cage")
+            .. ": "
+            .. battlePetName
     end
 
     -- Build the normalized row model consumed by UI and sorting.
@@ -613,7 +660,11 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
         staticLink = fullLink,
         linkType = linkType,
         linkOptions = linkOptions,
-        icon = battlePetIcon or fullIcon or containerItemInfo.iconFileID or instantIcon or UNKNOWN_ITEM_ICON,
+        icon = battlePetIcon
+            or fullIcon
+            or containerItemInfo.iconFileID
+            or instantIcon
+            or UNKNOWN_ITEM_ICON,
         count = containerItemInfo.stackCount or 1,
         quality = itemQuality or containerItemInfo.quality,
         itemLevel = displayItemLevel,
@@ -673,13 +724,10 @@ function ItemModel.Normalize(container, slotIndex, containerItemInfo)
     item.ruleName = CategoryRules.NormalizeRuleText(
         hyperlinkDisplayText or fullName or containerItemInfo.itemName
     )
-    item.ruleTooltipText = CategoryRules.NormalizeRuleText(
-        item.tooltipSearchText
-    )
-    item.classSubclassKey = CategoryRules.MakeClassSubclassKey(
-        item.classID,
-        item.subclassID
-    )
+    item.ruleTooltipText =
+        CategoryRules.NormalizeRuleText(item.tooltipSearchText)
+    item.classSubclassKey =
+        CategoryRules.MakeClassSubclassKey(item.classID, item.subclassID)
     item.defaultCategoryID = CategoryRules.GetDefaultCategoryID(item)
     RefreshClassification(item)
 
@@ -697,12 +745,13 @@ function ItemModel.RefreshTooltipData(item)
     tooltipSearchCache[item.locationKey] = nil
     item.tooltipSearchText, item.tooltipDataInstanceID =
         GetTooltipSearchText(item, true)
-    item.ruleTooltipText = CategoryRules.NormalizeRuleText(
-        item.tooltipSearchText
-    )
+    item.ruleTooltipText =
+        CategoryRules.NormalizeRuleText(item.tooltipSearchText)
 
-    if item.tooltipSearchText == previousText
-        and item.ruleTooltipText == previousRuleText then
+    if
+        item.tooltipSearchText == previousText
+        and item.ruleTooltipText == previousRuleText
+    then
         return false
     end
 
@@ -745,15 +794,11 @@ local function OnTooltipDataUpdate(_, dataInstanceID)
         pendingTooltipDataIDs[dataInstanceID] = true
     end
 
-    if tooltipDataRefreshTimer then
-        return
-    end
+    if tooltipDataRefreshTimer then return end
 
     local timer
     timer = C_Timer.NewTimer(0, function()
-        if tooltipDataRefreshTimer ~= timer then
-            return
-        end
+        if tooltipDataRefreshTimer ~= timer then return end
 
         tooltipDataRefreshTimer = nil
         DispatchTooltipDataUpdates()

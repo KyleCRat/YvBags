@@ -28,9 +28,7 @@ CategoryRules.ValueKinds = {
 }
 
 local function IsPublicValue(value)
-    if issecretvalue(value) then
-        return false
-    end
+    if issecretvalue(value) then return false end
 
     return value ~= nil
 end
@@ -75,21 +73,15 @@ local function IsOpenableConsumable(item)
 end
 
 function CategoryRules.GetDefaultCategoryID(item)
-    if IsPublicTrue(item.isKeystone) then
-        return "keystone"
-    end
+    if IsPublicTrue(item.isKeystone) then return "keystone" end
 
     if IsPublicTrue(item.hasLoot) or IsOpenableConsumable(item) then
         return "openable"
     end
 
-    if IsPublicValue(item.collectionKind) then
-        return "collectables"
-    end
+    if IsPublicValue(item.collectionKind) then return "collectables" end
 
-    if IsPublicTrue(item.isCosmetic) then
-        return "cosmetic"
-    end
+    if IsPublicTrue(item.isCosmetic) then return "cosmetic" end
 
     local classID = item.classID
     local classCategory
@@ -97,23 +89,21 @@ function CategoryRules.GetDefaultCategoryID(item)
         classCategory = ITEM_CLASS_CATEGORIES[classID]
     end
 
-    if classCategory == "quest" then
-        return "quest"
-    end
+    if classCategory == "quest" then return "quest" end
 
     local quality = item.quality
     local sellValue = item.sellValue
-    if IsPublicValue(quality)
+    if
+        IsPublicValue(quality)
         and quality == Enum.ItemQuality.Poor
         and IsPublicValue(sellValue)
         and type(sellValue) == "number"
-        and sellValue > 0 then
+        and sellValue > 0
+    then
         return "junk"
     end
 
-    if IsPublicTrue(item.isCraftingReagent) then
-        return "reagent"
-    end
+    if IsPublicTrue(item.isCraftingReagent) then return "reagent" end
 
     return classCategory or OTHER_CATEGORY_ID
 end
@@ -131,9 +121,7 @@ function CategoryRules.MakeClassSubclassKey(classID, subclassID)
 end
 
 function CategoryRules.NormalizeRuleText(value)
-    if not IsPublicValue(value)
-        or type(value) ~= "string"
-        or value == "" then
+    if not IsPublicValue(value) or type(value) ~= "string" or value == "" then
         return nil
     end
 
@@ -142,15 +130,11 @@ end
 
 -- Rule storage normalization
 local function IsValidRuleID(ruleID)
-    if type(ruleID) ~= "string" then
-        return false
-    end
+    if type(ruleID) ~= "string" then return false end
 
     local digits = ruleID:match("^rule:(%d+)$")
     local numericID = tonumber(digits)
-    return numericID ~= nil
-        and numericID >= 1
-        and tostring(numericID) == digits
+    return numericID ~= nil and numericID >= 1 and tostring(numericID) == digits
 end
 
 local function FindUnusedRuleID(usedIDs, nextRuleID)
@@ -183,41 +167,36 @@ function CategoryRules.NormalizeRuleSet(ruleSet)
     end
 
     local nextRuleID = ruleSet.nextRuleID
-    if type(nextRuleID) ~= "number"
+    if
+        type(nextRuleID) ~= "number"
         or nextRuleID < 1
-        or nextRuleID % 1 ~= 0 then
+        or nextRuleID % 1 ~= 0
+    then
         nextRuleID = 1
     end
 
     local entries = {}
     local usedIDs = {}
-    local sourceEntries = type(ruleSet.entries) == "table"
-        and ruleSet.entries
+    local sourceEntries = type(ruleSet.entries) == "table" and ruleSet.entries
         or {}
 
     for _, sourceRule in ipairs(sourceEntries) do
         if type(sourceRule) == "table" then
             local rule = CopyTable(sourceRule)
             local numericID = IsValidRuleID(rule.id)
-                and tonumber(rule.id:match("^rule:(%d+)$"))
+                    and tonumber(rule.id:match("^rule:(%d+)$"))
                 or nil
 
             if not numericID or usedIDs[rule.id] then
                 rule.id = nil
             else
                 usedIDs[rule.id] = true
-                if numericID >= nextRuleID then
-                    nextRuleID = numericID + 1
-                end
+                if numericID >= nextRuleID then nextRuleID = numericID + 1 end
             end
 
-            if type(rule.field) ~= "string" then
-                rule.field = nil
-            end
+            if type(rule.field) ~= "string" then rule.field = nil end
 
-            if type(rule.operator) ~= "string" then
-                rule.operator = nil
-            end
+            if type(rule.operator) ~= "string" then rule.operator = nil end
 
             entries[#entries + 1] = rule
         end
@@ -243,9 +222,7 @@ function CategoryRules.FindRule(ruleSet, ruleID)
     end
 
     for index, rule in ipairs(ruleSet.entries) do
-        if rule.id == ruleID then
-            return rule, index
-        end
+        if rule.id == ruleID then return rule, index end
     end
 
     return nil, nil
@@ -258,10 +235,7 @@ function CategoryRules.AllocateRule(ruleSet)
     end
 
     local ruleID
-    ruleID, ruleSet.nextRuleID = FindUnusedRuleID(
-        usedIDs,
-        ruleSet.nextRuleID
-    )
+    ruleID, ruleSet.nextRuleID = FindUnusedRuleID(usedIDs, ruleSet.nextRuleID)
     ruleSet.entries[#ruleSet.entries + 1] = {
         id = ruleID,
     }
@@ -284,9 +258,7 @@ end
 local function SortChoices(choices)
     table.sort(choices, function(left, right)
         local comparison = strcmputf8i(left.label, right.label)
-        if comparison ~= 0 then
-            return comparison < 0
-        end
+        if comparison ~= 0 then return comparison < 0 end
 
         return tostring(left.value) < tostring(right.value)
     end)
@@ -313,9 +285,11 @@ local function BuildRarityChoices()
     local qualityValues = {}
     local seenQualities = {}
     for _, quality in pairs(Enum.ItemQuality) do
-        if type(quality) == "number"
+        if
+            type(quality) == "number"
             and quality >= 0
-            and not seenQualities[quality] then
+            and not seenQualities[quality]
+        then
             qualityValues[#qualityValues + 1] = quality
             seenQualities[quality] = true
         end
@@ -332,9 +306,11 @@ local function BuildRarityChoices()
             color:GetRGBAsBytes()
         )
         choices[#choices + 1] = {
-            label = icon .. " " .. color:WrapTextInColorCode(
-                _G["ITEM_QUALITY" .. quality .. "_DESC"]
-            ),
+            label = icon
+                .. " "
+                .. color:WrapTextInColorCode(
+                    _G["ITEM_QUALITY" .. quality .. "_DESC"]
+                ),
             value = quality,
         }
     end
@@ -343,9 +319,7 @@ end
 
 local itemClassChoices
 local function BuildItemClassChoices()
-    if itemClassChoices then
-        return itemClassChoices
-    end
+    if itemClassChoices then return itemClassChoices end
 
     local classIDs = {}
     local seenClassIDs = {}
@@ -374,20 +348,22 @@ end
 
 local itemSubclassChoices
 local function BuildItemSubclassChoices()
-    if itemSubclassChoices then
-        return itemSubclassChoices
-    end
+    if itemSubclassChoices then return itemSubclassChoices end
 
     local subclassIDs = {}
     local seenSubclassIDs = {}
     for enumName, enumTable in pairs(Enum) do
-        if type(enumName) == "string"
+        if
+            type(enumName) == "string"
             and enumName:match("^Item.*Subclass$")
-            and type(enumTable) == "table" then
+            and type(enumTable) == "table"
+        then
             for _, subclassID in pairs(enumTable) do
-                if type(subclassID) == "number"
+                if
+                    type(subclassID) == "number"
                     and subclassID >= 0
-                    and not seenSubclassIDs[subclassID] then
+                    and not seenSubclassIDs[subclassID]
+                then
                     subclassIDs[#subclassIDs + 1] = subclassID
                     seenSubclassIDs[subclassID] = true
                 end
@@ -400,10 +376,7 @@ local function BuildItemSubclassChoices()
     for _, classChoice in ipairs(BuildItemClassChoices()) do
         local classID = classChoice.value
         for _, subclassID in ipairs(subclassIDs) do
-            local subclassName = C_Item.GetItemSubClassInfo(
-                classID,
-                subclassID
-            )
+            local subclassName = C_Item.GetItemSubClassInfo(classID, subclassID)
             if subclassName and subclassName ~= "" then
                 itemSubclassChoices[#itemSubclassChoices + 1] = {
                     label = classChoice.label .. ": " .. subclassName,
@@ -428,9 +401,11 @@ local function BuildEquipmentSlotChoices()
     local labelCounts = {}
 
     for _, inventoryType in pairs(Enum.InventoryType) do
-        if type(inventoryType) == "number"
+        if
+            type(inventoryType) == "number"
             and inventoryType >= 0
-            and not seenInventoryTypes[inventoryType] then
+            and not seenInventoryTypes[inventoryType]
+        then
             inventoryTypes[#inventoryTypes + 1] = inventoryType
             seenInventoryTypes[inventoryType] = true
         end
@@ -497,7 +472,9 @@ local function BuildExpansionChoices()
     for expansionID = 0, LE_EXPANSION_LEVEL_CURRENT do
         local label = GetExpansionName(expansionID)
         local icon = NS.Media.GetExpansionIconMarkup(
-            expansionID, EXPANSION_ICON_WIDTH, EXPANSION_ICON_HEIGHT
+            expansionID,
+            EXPANSION_ICON_WIDTH,
+            EXPANSION_ICON_HEIGHT
         )
         choices[#choices + 1] = {
             label = icon and (icon .. " " .. label) or label,
@@ -510,14 +487,21 @@ end
 local function BuildProfessionQualityChoices()
     local choices = {}
     for quality = 1, 5 do
-        local atlas, twoRankAtlas = NS.Media.GetProfessionQualityAtlases(quality)
+        local atlas, twoRankAtlas =
+            NS.Media.GetProfessionQualityAtlases(quality)
         local label = CreateAtlasMarkup(
-            atlas, PROFESSION_QUALITY_ICON_SIZE, PROFESSION_QUALITY_ICON_SIZE
+            atlas,
+            PROFESSION_QUALITY_ICON_SIZE,
+            PROFESSION_QUALITY_ICON_SIZE
         )
         if twoRankAtlas then
-            label = label .. "  " .. CreateAtlasMarkup(
-                twoRankAtlas, PROFESSION_QUALITY_ICON_SIZE, PROFESSION_QUALITY_ICON_SIZE
-            )
+            label = label
+                .. "  "
+                .. CreateAtlasMarkup(
+                    twoRankAtlas,
+                    PROFESSION_QUALITY_ICON_SIZE,
+                    PROFESSION_QUALITY_ICON_SIZE
+                )
         end
 
         choices[#choices + 1] = {
@@ -553,13 +537,33 @@ local valueChoiceCache = {}
 -- Field and operator registries
 local OPERATORS = {
     equals = { id = "equals", label = "Equals (=)", needsValue = true },
-    notEquals = { id = "notEquals", label = "Does Not Equal (!=)", needsValue = true },
+    notEquals = {
+        id = "notEquals",
+        label = "Does Not Equal (!=)",
+        needsValue = true,
+    },
     contains = { id = "contains", label = "Contains", needsValue = true },
-    notContains = { id = "notContains", label = "Does Not Contain", needsValue = true },
-    greaterThan = { id = "greaterThan", label = "Greater Than (>)", needsValue = true },
+    notContains = {
+        id = "notContains",
+        label = "Does Not Contain",
+        needsValue = true,
+    },
+    greaterThan = {
+        id = "greaterThan",
+        label = "Greater Than (>)",
+        needsValue = true,
+    },
     lessThan = { id = "lessThan", label = "Less Than (<)", needsValue = true },
-    greaterOrEqual = { id = "greaterOrEqual", label = "At Least (>=)", needsValue = true },
-    lessOrEqual = { id = "lessOrEqual", label = "At Most (<=)", needsValue = true },
+    greaterOrEqual = {
+        id = "greaterOrEqual",
+        label = "At Least (>=)",
+        needsValue = true,
+    },
+    lessOrEqual = {
+        id = "lessOrEqual",
+        label = "At Most (<=)",
+        needsValue = true,
+    },
     isTrue = { id = "isTrue", label = "True", needsValue = false },
     isFalse = { id = "isFalse", label = "False", needsValue = false },
 }
@@ -567,7 +571,12 @@ local OPERATORS = {
 local EQUALITY_OPERATORS = { "equals", "notEquals" }
 local TEXT_OPERATORS = { "contains", "notContains", "equals", "notEquals" }
 local ORDERED_OPERATORS = {
-    "equals", "notEquals", "greaterThan", "lessThan", "greaterOrEqual", "lessOrEqual",
+    "equals",
+    "notEquals",
+    "greaterThan",
+    "lessThan",
+    "greaterOrEqual",
+    "lessOrEqual",
 }
 local BOOLEAN_OPERATORS = { "isTrue", "isFalse" }
 local FIELD_ORDER = {
@@ -593,26 +602,132 @@ local FIELD_ORDER = {
     "isBound",
 }
 local FIELDS = {
-    defaultCategory = { label = "YvBags Category", property = "defaultCategoryID", kind = CategoryRules.ValueKinds.Enum, operators = EQUALITY_OPERATORS },
-    name = { label = "Item Name", property = "ruleName", kind = CategoryRules.ValueKinds.Text, operators = TEXT_OPERATORS, multipleValues = true },
-    tooltipText = { label = "Tooltip Text", property = "ruleTooltipText", kind = CategoryRules.ValueKinds.Text, operators = TEXT_OPERATORS, multipleValues = true },
-    itemID = { label = "Item ID", property = "itemID", kind = CategoryRules.ValueKinds.Integer, operators = EQUALITY_OPERATORS, minimum = 1, multipleValues = true },
-    quality = { label = "Rarity", property = "quality", kind = CategoryRules.ValueKinds.OrderedEnum, operators = ORDERED_OPERATORS },
-    itemLevel = { label = "Item Level", property = "itemLevel", kind = CategoryRules.ValueKinds.Integer, operators = ORDERED_OPERATORS, minimum = 0 },
-    requiredLevel = { label = "Required Level", property = "requiredLevel", kind = CategoryRules.ValueKinds.Integer, operators = ORDERED_OPERATORS, minimum = 0 },
-    classID = { label = "Item Type", property = "classID", kind = CategoryRules.ValueKinds.Enum, operators = EQUALITY_OPERATORS },
-    classSubclass = { label = "Item Subtype", property = "classSubclassKey", kind = CategoryRules.ValueKinds.Enum, operators = EQUALITY_OPERATORS },
-    equipLoc = { label = "Equipment Slot", property = "equipLoc", kind = CategoryRules.ValueKinds.Enum, operators = EQUALITY_OPERATORS },
-    binding = { label = "Binding", property = "bindingKey", kind = CategoryRules.ValueKinds.Enum, operators = EQUALITY_OPERATORS },
-    expansion = { label = "Expansion", property = "expansionID", kind = CategoryRules.ValueKinds.OrderedEnum, operators = ORDERED_OPERATORS },
-    professionQuality = { label = "Profession Quality", property = "professionQuality", kind = CategoryRules.ValueKinds.OrderedEnum, operators = ORDERED_OPERATORS },
-    collectionKind = { label = "Collection Type", property = "collectionKind", kind = CategoryRules.ValueKinds.Enum, operators = EQUALITY_OPERATORS },
-    isCraftingReagent = { label = "Crafting Reagent", property = "isCraftingReagent", kind = CategoryRules.ValueKinds.Boolean, operators = BOOLEAN_OPERATORS },
-    isCosmetic = { label = "Cosmetic", property = "isCosmetic", kind = CategoryRules.ValueKinds.Boolean, operators = BOOLEAN_OPERATORS },
-    isKeystone = { label = "Mythic Keystone", property = "isKeystone", kind = CategoryRules.ValueKinds.Boolean, operators = BOOLEAN_OPERATORS },
-    hasLoot = { label = "Contains Loot", property = "hasLoot", kind = CategoryRules.ValueKinds.Boolean, operators = BOOLEAN_OPERATORS },
-    isReadable = { label = "Readable", property = "isReadable", kind = CategoryRules.ValueKinds.Boolean, operators = BOOLEAN_OPERATORS },
-    isBound = { label = "Bound", property = "isBound", kind = CategoryRules.ValueKinds.Boolean, operators = BOOLEAN_OPERATORS },
+    defaultCategory = {
+        label = "YvBags Category",
+        property = "defaultCategoryID",
+        kind = CategoryRules.ValueKinds.Enum,
+        operators = EQUALITY_OPERATORS,
+    },
+    name = {
+        label = "Item Name",
+        property = "ruleName",
+        kind = CategoryRules.ValueKinds.Text,
+        operators = TEXT_OPERATORS,
+        multipleValues = true,
+    },
+    tooltipText = {
+        label = "Tooltip Text",
+        property = "ruleTooltipText",
+        kind = CategoryRules.ValueKinds.Text,
+        operators = TEXT_OPERATORS,
+        multipleValues = true,
+    },
+    itemID = {
+        label = "Item ID",
+        property = "itemID",
+        kind = CategoryRules.ValueKinds.Integer,
+        operators = EQUALITY_OPERATORS,
+        minimum = 1,
+        multipleValues = true,
+    },
+    quality = {
+        label = "Rarity",
+        property = "quality",
+        kind = CategoryRules.ValueKinds.OrderedEnum,
+        operators = ORDERED_OPERATORS,
+    },
+    itemLevel = {
+        label = "Item Level",
+        property = "itemLevel",
+        kind = CategoryRules.ValueKinds.Integer,
+        operators = ORDERED_OPERATORS,
+        minimum = 0,
+    },
+    requiredLevel = {
+        label = "Required Level",
+        property = "requiredLevel",
+        kind = CategoryRules.ValueKinds.Integer,
+        operators = ORDERED_OPERATORS,
+        minimum = 0,
+    },
+    classID = {
+        label = "Item Type",
+        property = "classID",
+        kind = CategoryRules.ValueKinds.Enum,
+        operators = EQUALITY_OPERATORS,
+    },
+    classSubclass = {
+        label = "Item Subtype",
+        property = "classSubclassKey",
+        kind = CategoryRules.ValueKinds.Enum,
+        operators = EQUALITY_OPERATORS,
+    },
+    equipLoc = {
+        label = "Equipment Slot",
+        property = "equipLoc",
+        kind = CategoryRules.ValueKinds.Enum,
+        operators = EQUALITY_OPERATORS,
+    },
+    binding = {
+        label = "Binding",
+        property = "bindingKey",
+        kind = CategoryRules.ValueKinds.Enum,
+        operators = EQUALITY_OPERATORS,
+    },
+    expansion = {
+        label = "Expansion",
+        property = "expansionID",
+        kind = CategoryRules.ValueKinds.OrderedEnum,
+        operators = ORDERED_OPERATORS,
+    },
+    professionQuality = {
+        label = "Profession Quality",
+        property = "professionQuality",
+        kind = CategoryRules.ValueKinds.OrderedEnum,
+        operators = ORDERED_OPERATORS,
+    },
+    collectionKind = {
+        label = "Collection Type",
+        property = "collectionKind",
+        kind = CategoryRules.ValueKinds.Enum,
+        operators = EQUALITY_OPERATORS,
+    },
+    isCraftingReagent = {
+        label = "Crafting Reagent",
+        property = "isCraftingReagent",
+        kind = CategoryRules.ValueKinds.Boolean,
+        operators = BOOLEAN_OPERATORS,
+    },
+    isCosmetic = {
+        label = "Cosmetic",
+        property = "isCosmetic",
+        kind = CategoryRules.ValueKinds.Boolean,
+        operators = BOOLEAN_OPERATORS,
+    },
+    isKeystone = {
+        label = "Mythic Keystone",
+        property = "isKeystone",
+        kind = CategoryRules.ValueKinds.Boolean,
+        operators = BOOLEAN_OPERATORS,
+    },
+    hasLoot = {
+        label = "Contains Loot",
+        property = "hasLoot",
+        kind = CategoryRules.ValueKinds.Boolean,
+        operators = BOOLEAN_OPERATORS,
+    },
+    isReadable = {
+        label = "Readable",
+        property = "isReadable",
+        kind = CategoryRules.ValueKinds.Boolean,
+        operators = BOOLEAN_OPERATORS,
+    },
+    isBound = {
+        label = "Bound",
+        property = "isBound",
+        kind = CategoryRules.ValueKinds.Boolean,
+        operators = BOOLEAN_OPERATORS,
+    },
 }
 
 local MODE_CHOICES = {
@@ -650,14 +765,10 @@ function CategoryRules.SupportsMultipleValues(fieldID)
 end
 
 local function FieldSupportsOperator(field, operatorID)
-    if not field or not OPERATORS[operatorID] then
-        return false
-    end
+    if not field or not OPERATORS[operatorID] then return false end
 
     for _, supportedOperatorID in ipairs(field.operators) do
-        if supportedOperatorID == operatorID then
-            return true
-        end
+        if supportedOperatorID == operatorID then return true end
     end
 
     return false
@@ -679,9 +790,7 @@ end
 function CategoryRules.GetOperatorChoices(fieldID)
     local choices = {}
     local field = FIELDS[fieldID]
-    if not field then
-        return choices
-    end
+    if not field then return choices end
 
     for _, operatorID in ipairs(field.operators) do
         local operator = OPERATORS[operatorID]
@@ -699,9 +808,7 @@ function CategoryRules.OperatorNeedsValue(operatorID)
 end
 
 function CategoryRules.GetValueChoices(fieldID)
-    if not VALUE_CHOICE_BUILDERS[fieldID] then
-        return {}
-    end
+    if not VALUE_CHOICE_BUILDERS[fieldID] then return {} end
 
     if not valueChoiceCache[fieldID] then
         valueChoiceCache[fieldID] = VALUE_CHOICE_BUILDERS[fieldID]()
@@ -713,32 +820,22 @@ end
 local function HasASCIIControl(value)
     for index = 1, #value do
         local byte = string.byte(value, index)
-        if byte <= 31 or byte == 127 then
-            return true
-        end
+        if byte <= 31 or byte == 127 then return true end
     end
 
     return false
 end
 
 local function NormalizeTextValue(value, allowEmpty)
-    if not IsPublicValue(value) or type(value) ~= "string" then
-        return nil
-    end
+    if not IsPublicValue(value) or type(value) ~= "string" then return nil end
 
     value = strtrim(value)
-    if value == "" then
-        return allowEmpty and "" or nil
-    end
+    if value == "" then return allowEmpty and "" or nil end
 
-    if HasASCIIControl(value) then
-        return nil
-    end
+    if HasASCIIControl(value) then return nil end
 
     local success, length = pcall(strlenutf8, value)
-    if not success or type(length) ~= "number" then
-        return nil
-    end
+    if not success or type(length) ~= "number" then return nil end
 
     return value
 end
@@ -751,9 +848,7 @@ local function CopyStoredAlternatives(value)
         return values
     end
 
-    if type(value) ~= "table" then
-        return values
-    end
+    if type(value) ~= "table" then return values end
 
     for _, storedValue in ipairs(value) do
         if type(storedValue) == "string" or type(storedValue) == "number" then
@@ -770,13 +865,9 @@ end
 
 function CategoryRules.GetRuleAlternativeCount(rule)
     local value = rule and rule.value
-    if type(value) == "string" or type(value) == "number" then
-        return 1
-    end
+    if type(value) == "string" or type(value) == "number" then return 1 end
 
-    if type(value) ~= "table" then
-        return 1
-    end
+    if type(value) ~= "table" then return 1 end
 
     local count = 0
     for _, storedValue in ipairs(value) do
@@ -789,14 +880,14 @@ function CategoryRules.GetRuleAlternativeCount(rule)
 end
 
 local function NormalizeIntegerValue(field, value)
-    if type(value) == "string" then
-        value = tonumber(strtrim(value))
-    end
+    if type(value) == "string" then value = tonumber(strtrim(value)) end
 
-    if type(value) ~= "number"
+    if
+        type(value) ~= "number"
         or value ~= value
         or value % 1 ~= 0
-        or (field.minimum and value < field.minimum) then
+        or (field.minimum and value < field.minimum)
+    then
         return nil
     end
 
@@ -805,9 +896,7 @@ end
 
 local function IsChoiceValue(fieldID, value)
     for _, choice in ipairs(CategoryRules.GetValueChoices(fieldID)) do
-        if choice.value == value then
-            return true
-        end
+        if choice.value == value then return true end
     end
 
     return false
@@ -816,36 +905,49 @@ end
 function CategoryRules.NormalizeInputValue(fieldID, value)
     local field = FIELDS[fieldID]
     if not field then
-        return nil, false, "Select a supported rule field before entering a value."
+        return nil,
+            false,
+            "Select a supported rule field before entering a value."
     end
 
     if field.kind == CategoryRules.ValueKinds.Text then
         local normalized = NormalizeTextValue(value, true)
-        if normalized ~= nil then
-            return normalized, true
-        end
+        if normalized ~= nil then return normalized, true end
 
-        return nil, false, ("%s must be valid single-line text without control characters."):format(field.label)
+        return nil,
+            false,
+            ("%s must be valid single-line text without control characters."):format(
+                field.label
+            )
     elseif field.kind == CategoryRules.ValueKinds.Integer then
-        if field.multipleValues and type(value) == "string" and strtrim(value) == "" then
+        if
+            field.multipleValues
+            and type(value) == "string"
+            and strtrim(value) == ""
+        then
             return "", true
         end
 
         local normalized = NormalizeIntegerValue(field, value)
-        if normalized ~= nil then
-            return normalized, true
-        end
+        if normalized ~= nil then return normalized, true end
 
         if fieldID == "itemID" then
-            return nil, false, "Item IDs must be positive whole numbers, such as 246331. Add a separate value for each ID."
+            return nil,
+                false,
+                "Item IDs must be positive whole numbers, such as 246331. Add a separate value for each ID."
         end
 
-        return nil, false, ("%s must be a whole number of %d or higher."):format(field.label, field.minimum)
-    elseif field.kind == CategoryRules.ValueKinds.Enum
-        or field.kind == CategoryRules.ValueKinds.OrderedEnum then
-        if IsChoiceValue(fieldID, value) then
-            return value, true
-        end
+        return nil,
+            false,
+            ("%s must be a whole number of %d or higher."):format(
+                field.label,
+                field.minimum
+            )
+    elseif
+        field.kind == CategoryRules.ValueKinds.Enum
+        or field.kind == CategoryRules.ValueKinds.OrderedEnum
+    then
+        if IsChoiceValue(fieldID, value) then return value, true end
     elseif field.kind == CategoryRules.ValueKinds.Boolean then
         return nil, true
     end
@@ -854,9 +956,7 @@ function CategoryRules.NormalizeInputValue(fieldID, value)
 end
 
 function CategoryRules.GetRuleValueText(rule)
-    if not rule or rule.value == nil then
-        return ""
-    end
+    if not rule or rule.value == nil then return "" end
 
     if type(rule.value) == "table" then
         local values = CopyStoredAlternatives(rule.value)
@@ -877,9 +977,7 @@ local function NormalizeStoredValue(field, value)
             return value
         end
     elseif field.kind == CategoryRules.ValueKinds.OrderedEnum then
-        if type(value) == "number" and value == value then
-            return value
-        end
+        if type(value) == "number" and value == value then return value end
     elseif field.kind == CategoryRules.ValueKinds.Boolean then
         return true
     end
@@ -932,19 +1030,13 @@ local function CompileRule(rule)
     if operator.needsValue then
         if field.kind == CategoryRules.ValueKinds.Text then
             values = CompileStoredTextValues(rule.value)
-            if not values then
-                return nil
-            end
+            if not values then return nil end
         elseif field.multipleValues then
             valueSet = CompileStoredIntegerAlternatives(field, rule.value)
-            if not valueSet then
-                return nil
-            end
+            if not valueSet then return nil end
         else
             value = NormalizeStoredValue(field, rule.value)
-            if value == nil then
-                return nil
-            end
+            if value == nil then return nil end
         end
     end
 
@@ -969,8 +1061,8 @@ function CategoryRules.CompileRuleSet(ruleSet)
     end
 
     local entries = type(ruleSet) == "table"
-        and type(ruleSet.entries) == "table"
-        and ruleSet.entries
+            and type(ruleSet.entries) == "table"
+            and ruleSet.entries
         or {}
 
     for _, rule in ipairs(entries) do
@@ -989,16 +1081,19 @@ local function EvaluateTextRule(rule, itemValue)
         or rule.operator == "notEquals"
 
     for _, value in ipairs(rule.values) do
-        if (usesEquality and itemValue == value)
-            or (not usesEquality
-                and string.find(itemValue, value, 1, true) ~= nil) then
+        if
+            (usesEquality and itemValue == value)
+            or (
+                not usesEquality
+                and string.find(itemValue, value, 1, true) ~= nil
+            )
+        then
             matchesAny = true
             break
         end
     end
 
-    if rule.operator == "notEquals"
-        or rule.operator == "notContains" then
+    if rule.operator == "notEquals" or rule.operator == "notContains" then
         return not matchesAny
     end
 
@@ -1007,25 +1102,23 @@ end
 
 local function EvaluateRule(rule, item)
     local itemValue = item[rule.property]
-    if issecretvalue(itemValue) or itemValue == nil then
-        return false
-    end
+    if issecretvalue(itemValue) or itemValue == nil then return false end
 
-    if rule.kind == CategoryRules.ValueKinds.Integer
-        or rule.kind == CategoryRules.ValueKinds.OrderedEnum then
+    if
+        rule.kind == CategoryRules.ValueKinds.Integer
+        or rule.kind == CategoryRules.ValueKinds.OrderedEnum
+    then
         if type(itemValue) ~= "number" or itemValue ~= itemValue then
             return false
         end
     elseif rule.kind == CategoryRules.ValueKinds.Text then
-        if type(itemValue) ~= "string" then
-            return false
-        end
+        if type(itemValue) ~= "string" then return false end
     elseif rule.kind == CategoryRules.ValueKinds.Enum then
-        if type(itemValue) ~= type(rule.value) then
-            return false
-        end
-    elseif rule.kind == CategoryRules.ValueKinds.Boolean
-        and type(itemValue) ~= "boolean" then
+        if type(itemValue) ~= type(rule.value) then return false end
+    elseif
+        rule.kind == CategoryRules.ValueKinds.Boolean
+        and type(itemValue) ~= "boolean"
+    then
         return false
     end
 
@@ -1035,9 +1128,7 @@ local function EvaluateRule(rule, item)
 
     if rule.valueSet then
         local matchesAny = rule.valueSet[itemValue] == true
-        if rule.operator == "notEquals" then
-            return not matchesAny
-        end
+        if rule.operator == "notEquals" then return not matchesAny end
 
         return matchesAny
     end
@@ -1068,25 +1159,20 @@ local function EvaluateRule(rule, item)
 end
 
 function CategoryRules.Matches(compiledRuleSet, item)
-    if not compiledRuleSet
-        or #compiledRuleSet.entries == 0 then
+    if not compiledRuleSet or #compiledRuleSet.entries == 0 then
         return false
     end
 
     if compiledRuleSet.mode == CategoryRules.Modes.Any then
         for _, rule in ipairs(compiledRuleSet.entries) do
-            if EvaluateRule(rule, item) then
-                return true
-            end
+            if EvaluateRule(rule, item) then return true end
         end
 
         return false
     end
 
     for _, rule in ipairs(compiledRuleSet.entries) do
-        if not EvaluateRule(rule, item) then
-            return false
-        end
+        if not EvaluateRule(rule, item) then return false end
     end
 
     return true

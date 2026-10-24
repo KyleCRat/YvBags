@@ -39,9 +39,7 @@ local function FormatLargeMoneyAmount(amount)
 end
 
 local function FormatExactMoneyAmount(amount)
-    if BreakUpLargeNumbers then
-        return BreakUpLargeNumbers(amount)
-    end
+    if BreakUpLargeNumbers then return BreakUpLargeNumbers(amount) end
 
     return tostring(amount)
 end
@@ -50,15 +48,21 @@ local function GetMoneyParts(copper)
     local copperPerGold = COPPER_PER_GOLD or 10000
     local copperPerSilver = COPPER_PER_SILVER or 100
     local gold = math.floor(copper / copperPerGold)
-    local silver = math.floor((copper - (gold * copperPerGold)) / copperPerSilver)
-    local copperOnly = copper - (gold * copperPerGold) - (silver * copperPerSilver)
+    local silver =
+        math.floor((copper - (gold * copperPerGold)) / copperPerSilver)
+    local copperOnly = copper
+        - (gold * copperPerGold)
+        - (silver * copperPerSilver)
 
     return gold, silver, copperOnly
 end
 
 function Money.GetGoldIconMarkup(size)
     local iconSize = size or 0
-    return ("|T%s:%d|t"):format(MONEY_DENOMINATIONS[MONEY_GOLD_KEY].icon, iconSize)
+    return ("|T%s:%d|t"):format(
+        MONEY_DENOMINATIONS[MONEY_GOLD_KEY].icon,
+        iconSize
+    )
 end
 
 function Money.GetDisplay(copper, includeZero)
@@ -67,9 +71,7 @@ function Money.GetDisplay(copper, includeZero)
     end
 
     local cacheKey = tostring(copper) .. ":" .. tostring(includeZero)
-    if moneyDisplayCache[cacheKey] then
-        return moneyDisplayCache[cacheKey]
-    end
+    if moneyDisplayCache[cacheKey] then return moneyDisplayCache[cacheKey] end
 
     local gold, silver, copperOnly = GetMoneyParts(copper)
     local key
@@ -90,7 +92,10 @@ function Money.GetDisplay(copper, includeZero)
     local display = {
         key = key,
         color = denomination.color,
-        text = MONEY_DISPLAY_FORMAT:format(FormatLargeMoneyAmount(amount), denomination.icon),
+        text = MONEY_DISPLAY_FORMAT:format(
+            FormatLargeMoneyAmount(amount),
+            denomination.icon
+        ),
     }
 
     moneyDisplayCache[cacheKey] = display
@@ -111,14 +116,23 @@ function Money.FormatExact(copper, includeZero)
     local values = {}
 
     if gold > 0 or includeZero then
-        values[#values + 1] = MONEY_DISPLAY_FORMAT:format(FormatExactMoneyAmount(gold), MONEY_DENOMINATIONS[MONEY_GOLD_KEY].icon)
+        values[#values + 1] = MONEY_DISPLAY_FORMAT:format(
+            FormatExactMoneyAmount(gold),
+            MONEY_DENOMINATIONS[MONEY_GOLD_KEY].icon
+        )
     end
 
     if gold > 0 or silver > 0 or includeZero then
-        values[#values + 1] = MONEY_DISPLAY_FORMAT:format(FormatExactMoneyAmount(silver), MONEY_DENOMINATIONS[MONEY_SILVER_KEY].icon)
+        values[#values + 1] = MONEY_DISPLAY_FORMAT:format(
+            FormatExactMoneyAmount(silver),
+            MONEY_DENOMINATIONS[MONEY_SILVER_KEY].icon
+        )
     end
 
-    values[#values + 1] = MONEY_DISPLAY_FORMAT:format(FormatExactMoneyAmount(copperOnly), MONEY_DENOMINATIONS[MONEY_COPPER_KEY].icon)
+    values[#values + 1] = MONEY_DISPLAY_FORMAT:format(
+        FormatExactMoneyAmount(copperOnly),
+        MONEY_DENOMINATIONS[MONEY_COPPER_KEY].icon
+    )
 
     return table.concat(values, MONEY_EXACT_SEPARATOR)
 end
@@ -127,7 +141,5 @@ function Money.ApplyColor(fontString, copper, includeZero, fallbackColor)
     local display = Money.GetDisplay(copper, includeZero)
     local color = display and display.color or fallbackColor
 
-    if color then
-        fontString:SetTextColor(color.r, color.g, color.b)
-    end
+    if color then fontString:SetTextColor(color.r, color.g, color.b) end
 end

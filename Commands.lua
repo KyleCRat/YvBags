@@ -9,31 +9,33 @@ local function PrintInventoryStats()
     end
 
     local stats = NS.Inventory:GetStats()
-    NS:Print(("Inventory: %d items, %d used, %d free, %d total, %d containers, %d pending item info."):format(
-        stats.itemCount or 0,
-        stats.usedSlots or 0,
-        stats.freeSlots or 0,
-        stats.totalSlots or 0,
-        stats.containerCount or 0,
-        stats.pendingItemInfoCount or 0
-    ))
+    NS:Print(
+        ("Inventory: %d items, %d used, %d free, %d total, %d containers, %d pending item info."):format(
+            stats.itemCount or 0,
+            stats.usedSlots or 0,
+            stats.freeSlots or 0,
+            stats.totalSlots or 0,
+            stats.containerCount or 0,
+            stats.pendingItemInfoCount or 0
+        )
+    )
 end
 
 local function PrintInventoryContainers()
     local containers = NS.Inventory:GetContainers()
-    if #containers == 0 then
-        NS.Inventory:ScanNow("slash-containers")
-    end
+    if #containers == 0 then NS.Inventory:ScanNow("slash-containers") end
 
     for _, container in ipairs(NS.Inventory:GetContainers()) do
-        NS:Print(("%s %d: %s, %d/%d used, family %s"):format(
-            container.kind,
-            container.id,
-            container.name,
-            container.usedSlots or 0,
-            container.numSlots or 0,
-            tostring(container.bagFamily or 0)
-        ))
+        NS:Print(
+            ("%s %d: %s, %d/%d used, family %s"):format(
+                container.kind,
+                container.id,
+                container.name,
+                container.usedSlots or 0,
+                container.numSlots or 0,
+                tostring(container.bagFamily or 0)
+            )
+        )
     end
 end
 
@@ -49,44 +51,52 @@ local function PrintPendingItems()
     NS:Print(("Pending item info: %d item(s)."):format(#pendingItems))
 
     for _, item in ipairs(pendingItems) do
-        NS:Print(("itemID=%s name=%s"):format(
-            tostring(item.itemID or "?"),
-            item.link or item.name or item.containerItemName or "Unknown"
-        ))
+        NS:Print(
+            ("itemID=%s name=%s"):format(
+                tostring(item.itemID or "?"),
+                item.link or item.name or item.containerItemName or "Unknown"
+            )
+        )
 
-        NS:Print(("  fallback type=%s/%s class=%s/%s quality=%s category=%s bind=%s expansion=%s sell=%s ilvl=%s req=%s profQ=%s requested=%s"):format(
-            tostring(item.type or "?"),
-            tostring(item.subtype or "?"),
-            tostring(item.classID or "?"),
-            tostring(item.subclassID or "?"),
-            tostring(item.quality or item.containerQuality or "?"),
-            tostring(item.categoryKey or "?"),
-            tostring(item.bindingKey or "?"),
-            tostring(item.expansionID or "?"),
-            tostring(item.sellValue or "?"),
-            tostring(item.itemLevel or "?"),
-            tostring(item.requiredLevel or "?"),
-            tostring(item.professionQuality or "?"),
-            tostring(item.requestedLoad)
-        ))
+        NS:Print(
+            ("  fallback type=%s/%s class=%s/%s quality=%s category=%s bind=%s expansion=%s sell=%s ilvl=%s req=%s profQ=%s requested=%s"):format(
+                tostring(item.type or "?"),
+                tostring(item.subtype or "?"),
+                tostring(item.classID or "?"),
+                tostring(item.subclassID or "?"),
+                tostring(item.quality or item.containerQuality or "?"),
+                tostring(item.categoryKey or "?"),
+                tostring(item.bindingKey or "?"),
+                tostring(item.expansionID or "?"),
+                tostring(item.sellValue or "?"),
+                tostring(item.itemLevel or "?"),
+                tostring(item.requiredLevel or "?"),
+                tostring(item.professionQuality or "?"),
+                tostring(item.requestedLoad)
+            )
+        )
 
-        NS:Print(("  itemInfoSource=%s hasContainerLink=%s containerName=%s"):format(
-            tostring(item.itemInfoType or "?"),
-            tostring(item.hasContainerHyperlink),
-            tostring(item.containerItemName or "?")
-        ))
+        NS:Print(
+            ("  itemInfoSource=%s hasContainerLink=%s containerName=%s"):format(
+                tostring(item.itemInfoType or "?"),
+                tostring(item.hasContainerHyperlink),
+                tostring(item.containerItemName or "?")
+            )
+        )
 
-        NS:Print(("  linkType=%s staticFallback=%s keystone=%s keyLevel=%s keyMap=%s battlePet=%s species=%s petLevel=%s petQuality=%s"):format(
-            tostring(item.linkType or "?"),
-            tostring(item.usedStaticItemInfoFallback),
-            tostring(item.isKeystone),
-            tostring(item.keystoneLevel or "?"),
-            tostring(item.keystoneMapName or item.keystoneMapID or "?"),
-            tostring(item.isBattlePet),
-            tostring(item.battlePetSpeciesID or "?"),
-            tostring(item.battlePetLevel or "?"),
-            tostring(item.battlePetQuality or "?")
-        ))
+        NS:Print(
+            ("  linkType=%s staticFallback=%s keystone=%s keyLevel=%s keyMap=%s battlePet=%s species=%s petLevel=%s petQuality=%s"):format(
+                tostring(item.linkType or "?"),
+                tostring(item.usedStaticItemInfoFallback),
+                tostring(item.isKeystone),
+                tostring(item.keystoneLevel or "?"),
+                tostring(item.keystoneMapName or item.keystoneMapID or "?"),
+                tostring(item.isBattlePet),
+                tostring(item.battlePetSpeciesID or "?"),
+                tostring(item.battlePetLevel or "?"),
+                tostring(item.battlePetQuality or "?")
+            )
+        )
     end
 end
 
@@ -100,12 +110,14 @@ local function GetSortLabel(sortKey)
 end
 
 local function GetItemList()
-    if not NS:IsInitialized() then
-        return nil
-    end
+    if not NS:IsInitialized() then return nil end
 
     if not NS.frame and InCombatLockdown and InCombatLockdown() then
-        NS:Print(("Open %s once before changing list settings in combat."):format(ADDON_NAME))
+        NS:Print(
+            ("Open %s once before changing list settings in combat."):format(
+                ADDON_NAME
+            )
+        )
         return nil
     end
 
@@ -120,17 +132,29 @@ end
 
 local function PrintSortUsage()
     local ListModel = NS.ItemListModel
-    NS:Print(("Usage: /ybags sort <%s> [asc|desc]"):format(JoinKeys(ListModel.GetSortKeyList())))
+    NS:Print(
+        ("Usage: /ybags sort <%s> [asc|desc]"):format(
+            JoinKeys(ListModel.GetSortKeyList())
+        )
+    )
 end
 
 local function PrintSecondarySortUsage()
     local ListModel = NS.ItemListModel
-    NS:Print(("Usage: /ybags sort2 <%s> [asc|desc]"):format(JoinKeys(ListModel.GetSecondarySortKeyList())))
+    NS:Print(
+        ("Usage: /ybags sort2 <%s> [asc|desc]"):format(
+            JoinKeys(ListModel.GetSecondarySortKeyList())
+        )
+    )
 end
 
 local function PrintGroupUsage()
     local ListModel = NS.ItemListModel
-    NS:Print(("Usage: /ybags group <%s>"):format(JoinKeys(ListModel.GetGroupKeyList())))
+    NS:Print(
+        ("Usage: /ybags group <%s>"):format(
+            JoinKeys(ListModel.GetGroupKeyList())
+        )
+    )
 end
 
 local function ParseSortDirection(direction)
@@ -170,15 +194,18 @@ local function SetSortCommand(arguments)
     end
 
     local list = GetItemList()
-    if not list then
-        return
-    end
+    if not list then return end
 
     list:SetSort(sortKey, sortAscending)
     if list.sortKey == ListModel.GetManualSortKey() then
         NS:Print(("Primary sorting: %s."):format(GetSortLabel(list.sortKey)))
     else
-        NS:Print(("Primary sorting by %s (%s)."):format(GetSortLabel(list.sortKey), list.sortAscending and "ascending" or "descending"))
+        NS:Print(
+            ("Primary sorting by %s (%s)."):format(
+                GetSortLabel(list.sortKey),
+                list.sortAscending and "ascending" or "descending"
+            )
+        )
     end
 end
 
@@ -206,15 +233,18 @@ local function SetSecondarySortCommand(arguments)
     end
 
     local list = GetItemList()
-    if not list then
-        return
-    end
+    if not list then return end
 
     list:SetSecondarySort(sortKey, sortAscending)
     if list.secondarySortKey == ListModel.GetNoSecondarySortKey() then
         NS:Print("Secondary sorting disabled.")
     else
-        NS:Print(("Secondary sorting by %s (%s)."):format(GetSortLabel(list.secondarySortKey), list.secondarySortAscending and "ascending" or "descending"))
+        NS:Print(
+            ("Secondary sorting by %s (%s)."):format(
+                GetSortLabel(list.secondarySortKey),
+                list.secondarySortAscending and "ascending" or "descending"
+            )
+        )
     end
 end
 
@@ -234,9 +264,7 @@ local function SetGroupCommand(arguments)
     end
 
     local list = GetItemList()
-    if not list then
-        return
-    end
+    if not list then return end
 
     list:SetGroup(arguments)
     NS:Print(("Grouping by %s."):format(list.groupKey))
@@ -249,9 +277,7 @@ local COMMANDS = {
         name = "Toggle",
         description = ("Toggle the %s frame"):format(ADDON_NAME),
         func = function()
-            if NS:IsInitialized() then
-                NS.MainFrame.Toggle()
-            end
+            if NS:IsInitialized() then NS.MainFrame.Toggle() end
         end,
     },
     {
@@ -259,9 +285,7 @@ local COMMANDS = {
         name = "Open",
         description = ("Open the %s frame"):format(ADDON_NAME),
         func = function()
-            if NS:IsInitialized() then
-                NS.MainFrame.Show()
-            end
+            if NS:IsInitialized() then NS.MainFrame.Show() end
         end,
     },
     {
@@ -269,9 +293,7 @@ local COMMANDS = {
         name = "Close",
         description = ("Close the %s frame"):format(ADDON_NAME),
         func = function()
-            if NS:IsInitialized() then
-                NS.MainFrame.Hide()
-            end
+            if NS:IsInitialized() then NS.MainFrame.Hide() end
         end,
     },
     {
@@ -290,9 +312,7 @@ local COMMANDS = {
         name = "Stats",
         description = "Print current inventory scan stats",
         func = function()
-            if NS:IsInitialized() then
-                PrintInventoryStats()
-            end
+            if NS:IsInitialized() then PrintInventoryStats() end
         end,
     },
     {
@@ -300,9 +320,7 @@ local COMMANDS = {
         name = "Containers",
         description = "Print discovered player bag containers",
         func = function()
-            if NS:IsInitialized() then
-                PrintInventoryContainers()
-            end
+            if NS:IsInitialized() then PrintInventoryContainers() end
         end,
     },
     {
@@ -310,9 +328,7 @@ local COMMANDS = {
         name = "Pending",
         description = "Print items still missing full item info",
         func = function()
-            if NS:IsInitialized() then
-                PrintPendingItems()
-            end
+            if NS:IsInitialized() then PrintPendingItems() end
         end,
     },
     {
@@ -338,9 +354,7 @@ local COMMANDS = {
         name = "Settings",
         description = ("Open %s settings"):format(ADDON_NAME),
         func = function()
-            if NS:IsInitialized() then
-                NS.Settings.Open()
-            end
+            if NS:IsInitialized() then NS.Settings.Open() end
         end,
     },
 }
@@ -348,7 +362,9 @@ local COMMANDS = {
 -- Slash command entry point
 local function PrintHelp()
     for _, command in ipairs(COMMANDS) do
-        NS:Print(("/ybags %s - %s"):format(command.triggers[1], command.description))
+        NS:Print(
+            ("/ybags %s - %s"):format(command.triggers[1], command.description)
+        )
     end
 end
 
@@ -357,15 +373,15 @@ SLASH_YVBAGS2 = "/yvbags"
 
 SlashCmdList.YVBAGS = function(message)
     local msg = strtrim((message or ""):lower())
-    local command, arguments = msg:match("^(%S+)%s*(.-)$")
+    local commandName, arguments = msg:match("^(%S+)%s*(.-)$")
 
-    if command == "sort" then
+    if commandName == "sort" then
         SetSortCommand(arguments)
         return
-    elseif command == "sort2" or command == "secondarysort" then
+    elseif commandName == "sort2" or commandName == "secondarysort" then
         SetSecondarySortCommand(arguments)
         return
-    elseif command == "group" then
+    elseif commandName == "group" then
         SetGroupCommand(arguments)
         return
     end

@@ -82,10 +82,8 @@ function Geometry.RestoreSize(frame)
     local maxWidth = Geometry.GetMaxWidth()
     local savedWidth = NS.charDB:Get(DB_SECTION, "width")
     local savedHeight = NS.charDB:Get(DB_SECTION, "height")
-    local width = math.min(
-        math.max(savedWidth or maxWidth, Layout.MinWidth),
-        maxWidth
-    )
+    local width =
+        math.min(math.max(savedWidth or maxWidth, Layout.MinWidth), maxWidth)
     local height = math.max(savedHeight or Layout.MinHeight, Layout.MinHeight)
     SetPixelPerfectSize(frame, width, height)
 end
@@ -93,11 +91,7 @@ end
 function Geometry.Save(frame)
     local point, _, relativePoint, x, y = frame:GetPoint(1)
     NS.charDB:Set(DB_SECTION, "point", point or "CENTER")
-    NS.charDB:Set(
-        DB_SECTION,
-        "relativePoint",
-        relativePoint or "CENTER"
-    )
+    NS.charDB:Set(DB_SECTION, "relativePoint", relativePoint or "CENTER")
     NS.charDB:Set(DB_SECTION, "x", x or 0)
     NS.charDB:Set(DB_SECTION, "y", y or 0)
     NS.charDB:Set(DB_SECTION, "width", frame:GetWidth())
@@ -117,8 +111,11 @@ local function SetFirstPosition(frame)
     local bagTop = bagFrame and bagFrame:GetTop()
 
     frame:ClearAllPoints()
-    if bagRight and bagTop
-        and bagRight + FIRST_POSITION_GAP + frameWidth <= screenWidth then
+    if
+        bagRight
+        and bagTop
+        and bagRight + FIRST_POSITION_GAP + frameWidth <= screenWidth
+    then
         frame:SetPoint(
             "TOPLEFT",
             UIParent,
@@ -126,8 +123,11 @@ local function SetFirstPosition(frame)
             bagRight + FIRST_POSITION_GAP,
             bagTop
         )
-    elseif bagLeft and bagTop
-        and bagLeft - FIRST_POSITION_GAP - frameWidth >= 0 then
+    elseif
+        bagLeft
+        and bagTop
+        and bagLeft - FIRST_POSITION_GAP - frameWidth >= 0
+    then
         frame:SetPoint(
             "TOPRIGHT",
             UIParent,

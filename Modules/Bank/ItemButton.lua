@@ -13,26 +13,20 @@ local buttonRows = setmetatable({}, { __mode = "k" })
 local buttonLists = setmetatable({}, { __mode = "k" })
 
 local function ClearNativeRegion(region)
-    if not region then
-        return
-    end
+    if not region then return end
 
-    if region.SetTexture then
-        region:SetTexture("")
-    end
-    if region.SetAlpha then
-        region:SetAlpha(0)
-    end
-    if region.Hide then
-        region:Hide()
-    end
+    if region.SetTexture then region:SetTexture("") end
+    if region.SetAlpha then region:SetAlpha(0) end
+    if region.Hide then region:Hide() end
 end
 
 local function SuppressNativeVisuals(button)
     for _, region in pairs(button) do
-        if region ~= button:GetParent()
+        if
+            region ~= button:GetParent()
             and type(region) == "table"
-            and region.Hide then
+            and region.Hide
+        then
             ClearNativeRegion(region)
         end
     end
@@ -114,14 +108,10 @@ function BankItemButton.Create(row, list)
         buttonRows[self].highlight:Hide()
     end)
     button:HookScript("OnMouseUp", function(self, mouseButton, upInside)
-        if mouseButton ~= "MiddleButton" or upInside == false then
-            return
-        end
+        if mouseButton ~= "MiddleButton" or upInside == false then return end
 
         local item = buttonRows[self].item
-        if item then
-            NS.ItemPins.Toggle(item)
-        end
+        if item then NS.ItemPins.Toggle(item) end
     end)
     return button
 end

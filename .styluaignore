@@ -1,0 +1,12 @@
+# Preserve upstream vendor code.
+Libs/LibStub/**
+Libs/CallbackHandler-1.0/**
+Libs/LibSharedMedia-3.0/**
+
+# Library migrations are handled elsewhere. Remove these temporary exclusions
+# when their separately formatted revisions and configurations are updated here.
+Libs/LibModernSettings-1.0/**
+Libs/LibPopupSlider-1.0/**
+Libs/LibSimpleDB-2.0/**
+Libs/LibSimpleDBProfiles-1.0/**
+Libs/LibYvSkins-1.0/**

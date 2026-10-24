@@ -37,7 +37,8 @@ local BORDER_ALPHA = 0.95
 local PURCHASE_DISABLED_ALPHA = 0.4
 local TAB_SETTINGS_LOADING_TOOLTIP = "Bank tab settings are still loading."
 local TAB_SETTINGS_UNAVAILABLE_TOOLTIP = "Bank tab settings are unavailable."
-local INCLUDE_REAGENTS_TOOLTIP = "Include tradeable reagents when depositing all into the Warband bank."
+local INCLUDE_REAGENTS_TOOLTIP =
+    "Include tradeable reagents when depositing all into the Warband bank."
 local MONEY_WITHDRAW_TOOLTIP = "Withdraw money from the Warband bank."
 local MONEY_DEPOSIT_TOOLTIP = "Deposit money into the Warband bank."
 
@@ -51,20 +52,14 @@ local function AddActionLine(tooltip, text)
 end
 
 local function AddDepositFlags(tooltip, depositFlags)
-    if FlagsUtil.IsSet(
-        depositFlags,
-        Enum.BagSlotFlags.ExpansionCurrent
-    ) then
+    if FlagsUtil.IsSet(depositFlags, Enum.BagSlotFlags.ExpansionCurrent) then
         GameTooltip_AddNormalLine(
             tooltip,
             BANK_TAB_EXPANSION_ASSIGNMENT:format(
                 BANK_TAB_EXPANSION_FILTER_CURRENT
             )
         )
-    elseif FlagsUtil.IsSet(
-        depositFlags,
-        Enum.BagSlotFlags.ExpansionLegacy
-    ) then
+    elseif FlagsUtil.IsSet(depositFlags, Enum.BagSlotFlags.ExpansionLegacy) then
         GameTooltip_AddNormalLine(
             tooltip,
             BANK_TAB_EXPANSION_ASSIGNMENT:format(
@@ -73,9 +68,7 @@ local function AddDepositFlags(tooltip, depositFlags)
         )
     end
 
-    local filterList = ContainerFrameUtil_ConvertFilterFlagsToList(
-        depositFlags
-    )
+    local filterList = ContainerFrameUtil_ConvertFilterFlagsToList(depositFlags)
     if filterList then
         GameTooltip_AddNormalLine(
             tooltip,
@@ -105,10 +98,7 @@ local function ShowTabTooltip(button)
 
     GameTooltip:AddDoubleLine(
         "Used / Total",
-        ("%d / %d"):format(
-            container.usedSlots,
-            container.numSlots
-        ),
+        ("%d / %d"):format(container.usedSlots, container.numSlots),
         0.86,
         0.86,
         0.86,
@@ -133,18 +123,19 @@ end
 local function OnTabLeave(button)
     button.highlight:Hide()
     local container = button.container
-    if container
-        and button.owner.itemList.highlightedBagID == container.id then
+    if container and button.owner.itemList.highlightedBagID == container.id then
         button.owner.itemList:SetHighlightedBagID(nil)
     end
     GameTooltip:Hide()
 end
 
 local function GetTabSettingsAvailability(bankType, tabID)
-    if not NS.BankInventory:IsLoaded(bankType)
+    if
+        not NS.BankInventory:IsLoaded(bankType)
         or NS.BankInventory:IsLoading(bankType)
         or BankPanel:GetActiveBankType() ~= bankType
-        or not BankPanel:GetTabData(tabID) then
+        or not BankPanel:GetTabData(tabID)
+    then
         return false, TAB_SETTINGS_LOADING_TOOLTIP
     end
 
@@ -160,7 +151,9 @@ local function SetTabButtonEnabled(button, enabled, disabledTooltip)
     button.disabledTooltip = disabledTooltip
     button.icon:SetDesaturated(not enabled)
     button.icon:SetAlpha(enabled and 1 or PURCHASE_DISABLED_ALPHA)
-    button.iconAppearance:SetBorderAlpha(enabled and 1 or PURCHASE_DISABLED_ALPHA)
+    button.iconAppearance:SetBorderAlpha(
+        enabled and 1 or PURCHASE_DISABLED_ALPHA
+    )
 
     if not enabled then
         button.highlight:Hide()
@@ -177,22 +170,26 @@ local function CreateTabButton(frame, footer, index)
         "LEFT",
         footer,
         "LEFT",
-        TAB_BUTTONS_X_OFFSET
-            + (index - 1) * (TAB_BUTTON_SIZE + TAB_BUTTON_GAP),
+        TAB_BUTTONS_X_OFFSET + (index - 1) * (TAB_BUTTON_SIZE + TAB_BUTTON_GAP),
         0
     )
     button:RegisterForClicks("LeftButtonUp")
     button.owner = frame
 
     local highlight = NS.Skins:CreateTexture(button, {
-        geometryRoot = frame, layer = "BACKGROUND", colorToken = "accent", alpha = HIGHLIGHT_ALPHA,
+        geometryRoot = frame,
+        layer = "BACKGROUND",
+        colorToken = "accent",
+        alpha = HIGHLIGHT_ALPHA,
     })
     highlight:SetAllPoints(button)
     highlight:Hide()
     button.highlight = highlight
 
     local icon, iconAppearance = NS.Skins:CreateIcon(button, {
-        geometryRoot = frame, width = TAB_ICON_SIZE, artworkOutset = 1,
+        geometryRoot = frame,
+        width = TAB_ICON_SIZE,
+        artworkOutset = 1,
     })
     icon:SetPoint("CENTER")
     button.icon = icon
@@ -204,9 +201,7 @@ local function CreateTabButton(frame, footer, index)
             self.container.bankType,
             self.container.id
         )
-        if canConfigure then
-            self.owner:OpenTabSettings(self.container.id)
-        end
+        if canConfigure then self.owner:OpenTabSettings(self.container.id) end
     end)
     button:SetMotionScriptsWhileDisabled(true)
     button:SetScript("OnEnter", OnTabEnter)
@@ -218,9 +213,7 @@ end
 local function ShowPurchaseTooltip(button)
     local bankType = button:GetAttribute("overrideBankType")
     local tabData = C_Bank.FetchNextPurchasableBankTabData(bankType)
-    if not tabData then
-        return
-    end
+    if not tabData then return end
 
     GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
     GameTooltip:ClearLines()
@@ -237,7 +230,9 @@ end
 local function SetPurchaseButtonEnabled(button, enabled)
     button:SetEnabled(enabled)
     button.icon:SetAlpha(enabled and 1 or PURCHASE_DISABLED_ALPHA)
-    button.iconAppearance:SetBorderAlpha(enabled and 1 or PURCHASE_DISABLED_ALPHA)
+    button.iconAppearance:SetBorderAlpha(
+        enabled and 1 or PURCHASE_DISABLED_ALPHA
+    )
 end
 
 local function CreatePurchaseButton(frame, footer, bankType)
@@ -252,7 +247,11 @@ local function CreatePurchaseButton(frame, footer, bankType)
     button.owner = frame
 
     local icon, iconAppearance = NS.Skins:CreateIcon(button, {
-        geometryRoot = frame, width = TAB_ICON_SIZE, crop = false, actionIcon = true, artworkOutset = 1,
+        geometryRoot = frame,
+        width = TAB_ICON_SIZE,
+        crop = false,
+        actionIcon = true,
+        artworkOutset = 1,
     })
     icon:SetPoint("CENTER")
     icon:SetTexture(NS.Media.GetAddTexture())
@@ -261,7 +260,10 @@ local function CreatePurchaseButton(frame, footer, bankType)
     iconAppearance:SetBorderColor(0.86, 0.86, 0.86, BORDER_ALPHA)
 
     local highlight = NS.Skins:CreateTexture(button, {
-        geometryRoot = frame, layer = "HIGHLIGHT", colorToken = "accent", alpha = HIGHLIGHT_ALPHA,
+        geometryRoot = frame,
+        layer = "HIGHLIGHT",
+        colorToken = "accent",
+        alpha = HIGHLIGHT_ALPHA,
     })
     highlight:SetAllPoints(button)
 
@@ -275,9 +277,7 @@ local function CreatePurchaseButton(frame, footer, bankType)
 end
 
 local function GetButtonGroupWidth(visibleButtonCount)
-    if visibleButtonCount == 0 then
-        return 0
-    end
+    if visibleButtonCount == 0 then return 0 end
 
     return TAB_BUTTONS_X_OFFSET
         + visibleButtonCount * TAB_BUTTON_SIZE
@@ -307,29 +307,19 @@ local function RevealTabGroupWhenReady(
     visibleTabCount,
     deadline
 )
-    if bankType ~= NS.BankInventory:GetActiveBankType() then
-        return
-    end
+    if bankType ~= NS.BankInventory:GetActiveBankType() then return end
 
-    if AreTabIconsLoaded(frame, visibleTabCount)
-        or GetTime() >= deadline then
+    if AreTabIconsLoaded(frame, visibleTabCount) or GetTime() >= deadline then
         frame.bankTabGroup:Show()
         return
     end
 
     local timer
     timer = C_Timer.NewTimer(0, function()
-        if frame.bankTabRevealTimer ~= timer then
-            return
-        end
+        if frame.bankTabRevealTimer ~= timer then return end
 
         frame.bankTabRevealTimer = nil
-        RevealTabGroupWhenReady(
-            frame,
-            bankType,
-            visibleTabCount,
-            deadline
-        )
+        RevealTabGroupWhenReady(frame, bankType, visibleTabCount, deadline)
     end)
     frame.bankTabRevealTimer = timer
 end
@@ -343,10 +333,7 @@ local function ShowStatsTooltip(statsButton)
     GameTooltip:ClearLines()
     GameTooltip:AddDoubleLine(
         "Used / Total",
-        ("%d / %d"):format(
-            stats.usedSlots or 0,
-            stats.totalSlots or 0
-        ),
+        ("%d / %d"):format(stats.usedSlots or 0, stats.totalSlots or 0),
         1,
         1,
         1,
@@ -359,10 +346,7 @@ local function ShowStatsTooltip(statsButton)
         local container = containers[index]
         GameTooltip:AddDoubleLine(
             container.name,
-            ("%d / %d"):format(
-                container.usedSlots,
-                container.numSlots
-            ),
+            ("%d / %d"):format(container.usedSlots, container.numSlots),
             0.86,
             0.86,
             0.86,
@@ -376,8 +360,7 @@ local function ShowStatsTooltip(statsButton)
         AddTooltipDivider(GameTooltip)
         AddActionLine(
             GameTooltip,
-            bankType == ACCOUNT_BANK
-                and "Left-click to sort the Warband bank"
+            bankType == ACCOUNT_BANK and "Left-click to sort the Warband bank"
                 or "Left-click to sort the Character bank"
         )
     end
@@ -410,21 +393,30 @@ end
 
 local function ShowMoneyActionTooltip(button)
     local disabledTooltip = button:GetDisabledTooltip()
-    if not button:IsEnabled() and disabledTooltip then
-        return
-    end
+    if not button:IsEnabled() and disabledTooltip then return end
 
     GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
     GameTooltip:SetText(button.moneyActionTooltip, 1, 1, 1)
     GameTooltip:Show()
 end
 
-local function CreateMoneyActionButton(frame, parent, mixin, iconTexture, tooltip)
+local function CreateMoneyActionButton(
+    frame,
+    parent,
+    mixin,
+    iconTexture,
+    tooltip
+)
     local size = frame.footer:GetHeight()
     local button = NS.Skins:CreateButton(parent, {
-        geometryRoot = frame, template = "DisabledTooltipButtonTemplate",
-        variant = "square", width = size, height = size,
-        icon = iconTexture, iconWidth = MONEY_ACTION_ICON_SIZE, pressIcon = true,
+        geometryRoot = frame,
+        template = "DisabledTooltipButtonTemplate",
+        variant = "square",
+        width = size,
+        height = size,
+        icon = iconTexture,
+        iconWidth = MONEY_ACTION_ICON_SIZE,
+        pressIcon = true,
     })
     -- Compose Blizzard's original bank action and disabled-tooltip behavior on
     -- the library-created control; do not reproduce the money-transfer action.
@@ -434,7 +426,9 @@ local function CreateMoneyActionButton(frame, parent, mixin, iconTexture, toolti
     button.moneyActionTooltip = tooltip
     button.Text:Hide()
     button:HookScript("OnEnter", ShowMoneyActionTooltip)
-    button:HookScript("OnLeave", function() GameTooltip:Hide() end)
+    button:HookScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
     return button
 end
 
@@ -474,13 +468,7 @@ local function LayoutMoneyFrame(moneyFrame)
         )
         width = width + CONTROL_GAP
     else
-        moneyFrame.customMoneyDisplay:SetPoint(
-            "LEFT",
-            moneyFrame,
-            "LEFT",
-            0,
-            0
-        )
+        moneyFrame.customMoneyDisplay:SetPoint("LEFT", moneyFrame, "LEFT", 0, 0)
     end
 
     width = width + displayWidth
@@ -499,9 +487,7 @@ local function RefreshMoneyDisplay(frame, bankType)
 end
 
 local function ShowAutoDepositTooltip(button)
-    if not button.usesWarbandDepositIcon then
-        return
-    end
+    if not button.usesWarbandDepositIcon then return end
 
     GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
     GameTooltip:SetText(button:GetBestTextForBankType(), 1, 1, 1)
@@ -522,7 +508,9 @@ local function RefreshAutoDepositLayout(frame, bankType)
     local size = frame.footer:GetHeight()
 
     depositButton.usesWarbandDepositIcon = usesWarbandIcon
-    depositButton.appearance:SetVariant(usesWarbandIcon and "square" or "command")
+    depositButton.appearance:SetVariant(
+        usesWarbandIcon and "square" or "command"
+    )
     depositButton.Text:SetShown(not usesWarbandIcon)
     depositButton.warbandDepositIcon:SetShown(usesWarbandIcon)
     depositButton:ClearAllPoints()
@@ -557,7 +545,9 @@ end
 
 local function RefreshFooterLayout(frame, height)
     local tabGroup = frame.bankTabGroup
-    local xOffset = NS.Skins:GetAppliedSkin() == "flat" and -TAB_BUTTONS_X_OFFSET or 0
+    local xOffset = NS.Skins:GetAppliedSkin() == "flat"
+            and -TAB_BUTTONS_X_OFFSET
+        or 0
     tabGroup:ClearAllPoints()
     tabGroup:SetPoint("TOPLEFT", frame.footer, "TOPLEFT", xOffset, 0)
     tabGroup:SetPoint("BOTTOMRIGHT", frame.footer, "BOTTOMRIGHT", 0, 0)
@@ -582,11 +572,8 @@ local function RefreshTabButtons(frame)
 
     while #frame.bankTabButtons < #containers do
         local index = #frame.bankTabButtons + 1
-        frame.bankTabButtons[index] = CreateTabButton(
-            frame,
-            frame.bankTabGroup,
-            index
-        )
+        frame.bankTabButtons[index] =
+            CreateTabButton(frame, frame.bankTabGroup, index)
     end
 
     for index = 1, #frame.bankTabButtons do
@@ -610,13 +597,15 @@ local function RefreshTabButtons(frame)
     frame.accountPurchaseButton:Hide()
 
     local purchaseButton = bankType == ACCOUNT_BANK
-        and frame.accountPurchaseButton
+            and frame.accountPurchaseButton
         or frame.characterPurchaseButton
     local purchaseData = C_Bank.FetchBankLockedReason(bankType) == nil
         and C_Bank.FetchNextPurchasableBankTabData(bankType)
     local visibleButtonCount = #containers
-    if purchaseData
-        and (not loading or NS.BankInventory:IsLoaded(bankType)) then
+    if
+        purchaseData
+        and (not loading or NS.BankInventory:IsLoaded(bankType))
+    then
         purchaseButton:ClearAllPoints()
         purchaseButton:SetPoint(
             "LEFT",
@@ -660,13 +649,9 @@ end
 
 local function AttachOptionalIconBrowser(settingsMenu)
     local iconBrowserAPI = _G.LRPMediaIconBrowserAPI
-    if not iconBrowserAPI or not iconBrowserAPI.CreateBrowser then
-        return
-    end
+    if not iconBrowserAPI or not iconBrowserAPI.CreateBrowser then return end
 
-    local browser = iconBrowserAPI.CreateBrowser(
-        settingsMenu.BorderBox
-    )
+    local browser = iconBrowserAPI.CreateBrowser(settingsMenu.BorderBox)
     browser:ClearAllPoints()
     browser:SetPoint(
         "TOPLEFT",
@@ -730,21 +715,17 @@ end
 
 function Footer.Refresh(frame)
     local bankType = NS.BankInventory:GetActiveBankType()
-    if not bankType then
-        return
-    end
+    if not bankType then return end
 
     RefreshTabButtons(frame)
 
     local stats = NS.BankInventory:GetStats(bankType)
-    frame.bankStatsText:SetText(("%d/%d"):format(
-        stats.usedSlots or 0,
-        stats.totalSlots or 0
-    ))
-    frame.bankStatsButton:SetWidth(math.max(
-        STATS_MIN_WIDTH,
-        frame.bankStatsText:GetStringWidth() + 8
-    ))
+    frame.bankStatsText:SetText(
+        ("%d/%d"):format(stats.usedSlots or 0, stats.totalSlots or 0)
+    )
+    frame.bankStatsButton:SetWidth(
+        math.max(STATS_MIN_WIDTH, frame.bankStatsText:GetStringWidth() + 8)
+    )
 
     local canUse = C_Bank.CanUseBank(bankType)
     local supportsDeposit = C_Bank.DoesBankTypeSupportAutoDeposit(bankType)
@@ -757,9 +738,7 @@ function Footer.Refresh(frame)
         RefreshAutoDepositLayout(frame, bankType)
     end
     frame.bankMoneyFrame:SetEnabled(canUse)
-    if canUse then
-        RefreshMoneyDisplay(frame, bankType)
-    end
+    if canUse then RefreshMoneyDisplay(frame, bankType) end
 end
 
 function Footer.HideTransientUI(frame)
@@ -785,23 +764,13 @@ function Footer.Create(frame)
 
     frame.bankTabButtons = {}
     for index = 1, PRECREATED_TAB_BUTTONS do
-        frame.bankTabButtons[index] = CreateTabButton(
-            frame,
-            tabGroup,
-            index
-        )
+        frame.bankTabButtons[index] = CreateTabButton(frame, tabGroup, index)
     end
 
-    frame.characterPurchaseButton = CreatePurchaseButton(
-        frame,
-        tabGroup,
-        CHARACTER_BANK
-    )
-    frame.accountPurchaseButton = CreatePurchaseButton(
-        frame,
-        tabGroup,
-        ACCOUNT_BANK
-    )
+    frame.characterPurchaseButton =
+        CreatePurchaseButton(frame, tabGroup, CHARACTER_BANK)
+    frame.accountPurchaseButton =
+        CreatePurchaseButton(frame, tabGroup, ACCOUNT_BANK)
 
     local statsButton = CreateFrame("Button", nil, tabGroup)
     statsButton:SetSize(STATS_MIN_WIDTH, TAB_BUTTON_SIZE)
@@ -813,7 +782,10 @@ function Footer.Create(frame)
     end)
     frame.bankStatsButton = statsButton
 
-    local statsText = NS.Skins:CreateText(statsButton, { geometryRoot = frame, fontSize = TEXT_SIZE })
+    local statsText = NS.Skins:CreateText(
+        statsButton,
+        { geometryRoot = frame, fontSize = TEXT_SIZE }
+    )
     statsText:SetTextColor(1, 1, 1)
     statsText:SetJustifyH("LEFT")
     statsText:SetJustifyV("MIDDLE")
@@ -827,18 +799,12 @@ function Footer.Create(frame)
     )
     frame.bankStatsText = statsText
 
-    local autoSortButton = CreateFrame(
-        "Button",
-        nil,
-        footer,
-        "BankAutoSortButtonTemplate"
-    )
+    local autoSortButton =
+        CreateFrame("Button", nil, footer, "BankAutoSortButtonTemplate")
     autoSortButton:Hide()
     frame.bankAutoSortButton = autoSortButton
     statsButton:SetScript("OnClick", function(self)
-        if self.canSort then
-            BankAutoSortButtonMixin.OnClick(autoSortButton)
-        end
+        if self.canSort then BankAutoSortButtonMixin.OnClick(autoSortButton) end
     end)
 
     local autoDepositFrame = CreateFrame("Frame", nil, footer)
@@ -846,15 +812,26 @@ function Footer.Create(frame)
     autoDepositFrame:SetHeight(footer:GetHeight())
     frame.autoDepositFrame = autoDepositFrame
 
-    local autoDepositButton, depositAppearance = NS.Skins:CreateButton(autoDepositFrame, {
-        geometryRoot = frame, width = AUTO_DEPOSIT_MIN_WIDTH, height = footerHeight,
-        fontObject = GameFontNormal, labelOffsetY = 0,
-        iconAtlas = NS.Media.GetWarbandTransferAtlas(), iconWidth = WARBAND_DEPOSIT_ICON_WIDTH,
-        iconHeight = WARBAND_DEPOSIT_ICON_HEIGHT, iconAlpha = 0.82, disabledIconAlpha = 0.4,
-        pressIcon = true, preserveIconColor = true,
-    })
+    local autoDepositButton, depositAppearance =
+        NS.Skins:CreateButton(autoDepositFrame, {
+            geometryRoot = frame,
+            width = AUTO_DEPOSIT_MIN_WIDTH,
+            height = footerHeight,
+            fontObject = GameFontNormal,
+            labelOffsetY = 0,
+            iconAtlas = NS.Media.GetWarbandTransferAtlas(),
+            iconWidth = WARBAND_DEPOSIT_ICON_WIDTH,
+            iconHeight = WARBAND_DEPOSIT_ICON_HEIGHT,
+            iconAlpha = 0.82,
+            disabledIconAlpha = 0.4,
+            pressIcon = true,
+            preserveIconColor = true,
+        })
     Mixin(autoDepositButton, BankPanelItemDepositButtonMixin)
-    autoDepositButton:SetScript("OnClick", BankPanelItemDepositButtonMixin.OnClick)
+    autoDepositButton:SetScript(
+        "OnClick",
+        BankPanelItemDepositButtonMixin.OnClick
+    )
     autoDepositButton.appearance = depositAppearance
     autoDepositButton.warbandDepositIcon = depositAppearance.parts.icon
     autoDepositButton.warbandDepositIcon:Hide()
@@ -865,15 +842,25 @@ function Footer.Create(frame)
     end)
 
     local includeReagentsCheckbox = NS.Skins:CreateCheckbox(autoDepositFrame, {
-        geometryRoot = frame, width = footerHeight, height = footerHeight,
+        geometryRoot = frame,
+        width = footerHeight,
+        height = footerHeight,
         checkmarkScale = CHECKMARK_SCALE,
     })
     Mixin(includeReagentsCheckbox, BankPanelIncludeReagentsCheckboxMixin)
-    includeReagentsCheckbox:SetScript("OnShow", BankPanelIncludeReagentsCheckboxMixin.OnShow)
-    includeReagentsCheckbox:SetScript("OnClick", BankPanelIncludeReagentsCheckboxMixin.OnClick)
+    includeReagentsCheckbox:SetScript(
+        "OnShow",
+        BankPanelIncludeReagentsCheckboxMixin.OnShow
+    )
+    includeReagentsCheckbox:SetScript(
+        "OnClick",
+        BankPanelIncludeReagentsCheckboxMixin.OnClick
+    )
     includeReagentsCheckbox.Text:Hide()
     includeReagentsCheckbox:SetScript("OnEnter", ShowIncludeReagentsTooltip)
-    includeReagentsCheckbox:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    includeReagentsCheckbox:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
     autoDepositFrame.IncludeReagentsCheckbox = includeReagentsCheckbox
 
     local moneyFrame = CreateFrame("Frame", nil, footer)
@@ -883,18 +870,28 @@ function Footer.Create(frame)
 
     -- The native money frame still refreshes its hidden money display. Retain
     -- that behavior while the visible display uses YvBags' compact formatting.
-    local nativeMoneyDisplay = CreateFrame("Frame", nil, moneyFrame, "SmallMoneyFrameTemplate")
+    local nativeMoneyDisplay =
+        CreateFrame("Frame", nil, moneyFrame, "SmallMoneyFrameTemplate")
     Mixin(nativeMoneyDisplay, BankPanelMoneyFrameMoneyDisplayMixin)
     nativeMoneyDisplay:DisableMoneyPopupFunctionality()
     nativeMoneyDisplay:Hide()
     moneyFrame.MoneyDisplay = nativeMoneyDisplay
     moneyFrame.WithdrawButton = CreateMoneyActionButton(
-        frame, moneyFrame, BankPanelWithdrawMoneyButtonMixin, NS.Media.GetRemoveTexture(), MONEY_WITHDRAW_TOOLTIP
+        frame,
+        moneyFrame,
+        BankPanelWithdrawMoneyButtonMixin,
+        NS.Media.GetRemoveTexture(),
+        MONEY_WITHDRAW_TOOLTIP
     )
     moneyFrame.DepositButton = CreateMoneyActionButton(
-        frame, moneyFrame, BankPanelDepositMoneyButtonMixin, NS.Media.GetAddTexture(), MONEY_DEPOSIT_TOOLTIP
+        frame,
+        moneyFrame,
+        BankPanelDepositMoneyButtonMixin,
+        NS.Media.GetAddTexture(),
+        MONEY_DEPOSIT_TOOLTIP
     )
-    moneyFrame.actionButtons = { moneyFrame.WithdrawButton, moneyFrame.DepositButton }
+    moneyFrame.actionButtons =
+        { moneyFrame.WithdrawButton, moneyFrame.DepositButton }
     frame.bankMoneyFrame = moneyFrame
 
     local moneyDisplay = CreateFrame("Frame", nil, moneyFrame)
@@ -907,7 +904,10 @@ function Footer.Create(frame)
     moneyFrame.customMoneyDisplay = moneyDisplay
     frame.bankMoneyDisplay = moneyDisplay
 
-    local moneyText = NS.Skins:CreateText(moneyDisplay, { geometryRoot = frame, fontSize = TEXT_SIZE })
+    local moneyText = NS.Skins:CreateText(
+        moneyDisplay,
+        { geometryRoot = frame, fontSize = TEXT_SIZE }
+    )
     moneyText:SetPoint("TOPLEFT", moneyDisplay, "TOPLEFT", 0, TEXT_Y_OFFSET)
     moneyText:SetPoint(
         "BOTTOMRIGHT",
@@ -924,12 +924,8 @@ function Footer.Create(frame)
     moneyFrame:SetScript("OnShow", BankPanelMoneyFrameMixin.OnShow)
     LayoutMoneyFrame(moneyFrame)
 
-    local settingsMenu = CreateFrame(
-        "Frame",
-        nil,
-        frame,
-        "BankPanelTabSettingsMenuTemplate"
-    )
+    local settingsMenu =
+        CreateFrame("Frame", nil, frame, "BankPanelTabSettingsMenuTemplate")
     settingsMenu:ClearAllPoints()
     settingsMenu:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     settingsMenu:SetFrameStrata("DIALOG")
@@ -939,13 +935,14 @@ function Footer.Create(frame)
 
     function frame:OpenTabSettings(tabID)
         local bankType = NS.BankInventory:GetActiveBankType()
-        if not bankType
-            or not GetTabSettingsAvailability(bankType, tabID) then
+        if not bankType or not GetTabSettingsAvailability(bankType, tabID) then
             return
         end
 
-        if self.tabSettingsMenu:IsShown()
-            and self.tabSettingsMenu:GetSelectedTabID() ~= tabID then
+        if
+            self.tabSettingsMenu:IsShown()
+            and self.tabSettingsMenu:GetSelectedTabID() ~= tabID
+        then
             self.tabSettingsMenu:SetSelectedTab(tabID)
         else
             self.tabSettingsMenu:OnOpenTabSettingsRequested(tabID)

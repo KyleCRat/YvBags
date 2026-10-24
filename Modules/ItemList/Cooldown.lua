@@ -28,9 +28,7 @@ local function ShouldShowInName()
 end
 
 local function FormatRemaining(remaining)
-    if not IsSafeNumber(remaining) then
-        return ""
-    end
+    if not IsSafeNumber(remaining) then return "" end
 
     local seconds = math.max(0, math.ceil(remaining))
     if seconds >= 3600 then
@@ -44,9 +42,7 @@ end
 
 function Cooldown.SetName(row, cooldownText)
     local nameText = row.text and row.text.name
-    if not nameText then
-        return
-    end
+    if not nameText then return end
 
     if not row.item then
         nameText:SetText("")
@@ -82,7 +78,13 @@ local function Refresh(row, updateText)
     local duration = row.cooldownDuration
     local modRate = row.cooldownModRate or 1
 
-    if not IsSafeNumber(startTime) or not IsSafeNumber(duration) or not IsSafeNumber(modRate) or duration <= 0 or modRate <= 0 then
+    if
+        not IsSafeNumber(startTime)
+        or not IsSafeNumber(duration)
+        or not IsSafeNumber(modRate)
+        or duration <= 0
+        or modRate <= 0
+    then
         Cooldown.Clear(row)
         return
     end
@@ -114,15 +116,17 @@ end
 local function OnUpdate(row, elapsed)
     row.cooldownTextElapsed = (row.cooldownTextElapsed or 0) + elapsed
     local updateText = row.cooldownTextElapsed >= TEXT_UPDATE_INTERVAL
-    if updateText then
-        row.cooldownTextElapsed = 0
-    end
+    if updateText then row.cooldownTextElapsed = 0 end
 
     Refresh(row, updateText)
 end
 
 local function GetItemCooldown(item)
-    if not item or not C_Container or not C_Container.GetContainerItemCooldown then
+    if
+        not item
+        or not C_Container
+        or not C_Container.GetContainerItemCooldown
+    then
         return nil
     end
 
@@ -133,37 +137,33 @@ local function GetItemCooldown(item)
         return cached.startTime, cached.duration, cached.modRate, cached.isGCD
     end
 
-    local startTime, duration, enable, modRate = C_Container.GetContainerItemCooldown(item.bagID, item.slotIndex)
-    if IsSecretValue(startTime) or IsSecretValue(duration) or IsSecretValue(enable) or IsSecretValue(modRate) then
-        if cacheKey then
-            cooldownCache[cacheKey] = { checkedAt = now }
-        end
+    local startTime, duration, enable, modRate =
+        C_Container.GetContainerItemCooldown(item.bagID, item.slotIndex)
+    if
+        IsSecretValue(startTime)
+        or IsSecretValue(duration)
+        or IsSecretValue(enable)
+        or IsSecretValue(modRate)
+    then
+        if cacheKey then cooldownCache[cacheKey] = { checkedAt = now } end
         return nil
     end
 
     if not IsSafeNumber(startTime) or not IsSafeNumber(duration) then
-        if cacheKey then
-            cooldownCache[cacheKey] = { checkedAt = now }
-        end
+        if cacheKey then cooldownCache[cacheKey] = { checkedAt = now } end
         return nil
     end
 
-    if not IsSafeNumber(modRate) or modRate <= 0 then
-        modRate = 1
-    end
+    if not IsSafeNumber(modRate) or modRate <= 0 then modRate = 1 end
 
     if enable == 0 or startTime <= 0 or duration <= 0 then
-        if cacheKey then
-            cooldownCache[cacheKey] = { checkedAt = now }
-        end
+        if cacheKey then cooldownCache[cacheKey] = { checkedAt = now } end
         return nil
     end
 
     local remaining = duration - ((now - startTime) * modRate)
     if remaining <= 0 then
-        if cacheKey then
-            cooldownCache[cacheKey] = { checkedAt = now }
-        end
+        if cacheKey then cooldownCache[cacheKey] = { checkedAt = now } end
         return nil
     end
 
@@ -198,9 +198,7 @@ function Cooldown.Update(row, item)
 end
 
 function Cooldown.Refresh(row)
-    if row.item then
-        Cooldown.Update(row, row.item)
-    end
+    if row.item then Cooldown.Update(row, row.item) end
 end
 
 function Cooldown.ClearCache()
@@ -209,7 +207,9 @@ end
 
 function Cooldown.CreateShade(row)
     local shade = NS.Skins:CreateTexture(row, {
-        geometryRoot = row.list.window, layer = SHADE_LAYER, sublevel = SHADE_SUBLEVEL,
+        geometryRoot = row.list.window,
+        layer = SHADE_LAYER,
+        sublevel = SHADE_SUBLEVEL,
     })
     shade:SetColorTexture(0, 0, 0, SHADE_ALPHA)
     shade:Hide()

@@ -61,9 +61,7 @@ local function NotifyUpdateCallbacks(reason, bankType, ...)
 end
 
 local function CompareLocation(left, right)
-    if left.bagID ~= right.bagID then
-        return left.bagID < right.bagID
-    end
+    if left.bagID ~= right.bagID then return left.bagID < right.bagID end
 
     return left.slotIndex < right.slotIndex
 end
@@ -120,8 +118,7 @@ local function CreateContainer(bankType, tabData)
     return {
         id = tabID,
         bankType = bankType,
-        kind = bankType == ACCOUNT_BANK
-            and "warbandBankTab"
+        kind = bankType == ACCOUNT_BANK and "warbandBankTab"
             or "characterBankTab",
         name = tabData.name,
         icon = tabData.icon,
@@ -148,17 +145,12 @@ end
 
 local function ScanContainer(target, container)
     for slotIndex = 1, container.numSlots do
-        local containerItemInfo = C_Container.GetContainerItemInfo(
-            container.id,
-            slotIndex
-        )
+        local containerItemInfo =
+            C_Container.GetContainerItemInfo(container.id, slotIndex)
 
         if containerItemInfo then
-            local item = ItemModel.Normalize(
-                container,
-                slotIndex,
-                containerItemInfo
-            )
+            local item =
+                ItemModel.Normalize(container, slotIndex, containerItemInfo)
             target.items[#target.items + 1] = item
             target.itemsByLocation[item.locationKey] = item
             container.usedSlots = container.usedSlots + 1
@@ -228,16 +220,10 @@ local function CommitScan(state, target, reason)
 
     SortEntries(state)
     RebuildStats(state, reason)
-    NotifyUpdateCallbacks(
-        BankInventory.UpdateReasons.Updated,
-        state.bankType
-    )
+    NotifyUpdateCallbacks(BankInventory.UpdateReasons.Updated, state.bankType)
 
     if rescanAfterLoad then
-        BankInventory:ScheduleScan(
-            state.bankType,
-            "bank-update-during-load"
-        )
+        BankInventory:ScheduleScan(state.bankType, "bank-update-during-load")
     end
 end
 
@@ -260,9 +246,7 @@ end
 
 local function StartScan(bankType, reason)
     local state = BankInventory.states[bankType]
-    if not state or not BankInventory.isOpen then
-        return
-    end
+    if not state or not BankInventory.isOpen then return end
 
     if state.scanTimer then
         state.scanTimer:Cancel()
@@ -283,10 +267,7 @@ local function StartScan(bankType, reason)
     local target = CreateScanTarget(bankType)
     state.scanTarget = target
 
-    NotifyUpdateCallbacks(
-        BankInventory.UpdateReasons.Loading,
-        bankType
-    )
+    NotifyUpdateCallbacks(BankInventory.UpdateReasons.Loading, bankType)
     ScanNextContainer(state, target, 1, reason, generation)
 end
 
@@ -310,9 +291,7 @@ local function FindPurchasedTabData(bankType, tabID)
     local tabData = C_Bank.FetchPurchasedBankTabData(bankType)
 
     for index = 1, #tabData do
-        if tabData[index].ID == tabID then
-            return tabData[index]
-        end
+        if tabData[index].ID == tabID then return tabData[index] end
     end
 
     return nil
@@ -334,9 +313,7 @@ end
 function BankInventory:RefreshContainerNow(tabID, reason)
     local bankType = self.tabBankTypes[tabID]
     local state = bankType and self.states[bankType]
-    if not state or not state.isLoaded then
-        return
-    end
+    if not state or not state.isLoaded then return end
 
     local tabData = FindPurchasedTabData(bankType, tabID)
     if not tabData then
@@ -356,20 +333,17 @@ end
 
 function BankInventory:ScheduleScan(bankType, reason)
     local state = self.states[bankType]
-    if not state or not self.isOpen then
-        return
-    end
+    if not state or not self.isOpen then return end
 
-    state.pendingScanReason = reason or state.pendingScanReason
+    state.pendingScanReason = reason
+        or state.pendingScanReason
         or "bank-reconcile"
     if state.isLoading then
         state.rescanAfterLoad = true
         return
     end
 
-    if state.scanTimer then
-        return
-    end
+    if state.scanTimer then return end
 
     state.scanTimer = C_Timer.NewTimer(SCAN_DELAY_SECONDS, function()
         state.scanTimer = nil
@@ -399,9 +373,7 @@ end
 
 function BankInventory:IsBankTypeViewable(bankType)
     for index = 1, #self.viewableBankTypes do
-        if self.viewableBankTypes[index] == bankType then
-            return true
-        end
+        if self.viewableBankTypes[index] == bankType then return true end
     end
 
     return false
@@ -424,9 +396,7 @@ function BankInventory:Open(preferredBankType)
     end
 
     self.activeBankType = preferredBankType
-    if preferredBankType then
-        StartScan(preferredBankType, "bank-open")
-    end
+    if preferredBankType then StartScan(preferredBankType, "bank-open") end
 
     return preferredBankType
 end
@@ -465,9 +435,7 @@ function BankInventory:Close()
 end
 
 function BankInventory:SetActiveBankType(bankType)
-    if not self:IsBankTypeViewable(bankType) then
-        return false
-    end
+    if not self:IsBankTypeViewable(bankType) then return false end
 
     self.activeBankType = bankType
     local state = self.states[bankType]
@@ -498,12 +466,9 @@ end
 
 function BankInventory:GetDisplayContainers(bankType)
     local state = self:GetState(bankType)
-    if not state then
-        return {}
-    end
+    if not state then return {} end
 
-    return state.scanTarget and state.scanTarget.containers
-        or state.containers
+    return state.scanTarget and state.scanTarget.containers or state.containers
 end
 
 function BankInventory:GetContainer(tabID)
@@ -529,14 +494,10 @@ end
 
 function BankInventory:HasLockedItems(bankType)
     local state = self:GetState(bankType)
-    if not state then
-        return false
-    end
+    if not state then return false end
 
     for index = 1, #state.items do
-        if state.items[index].isLocked then
-            return true
-        end
+        if state.items[index].isLocked then return true end
     end
 
     return false
@@ -549,7 +510,9 @@ end
 function BankInventory:CanAcceptCursorItem(cursorItemLocation)
     local bankType = self.activeBankType
     local state = self.states[bankType]
-    return state ~= nil and state.isLoaded and C_Bank.CanUseBank(bankType)
+    return state ~= nil
+        and state.isLoaded
+        and C_Bank.CanUseBank(bankType)
         and cursorItemLocation ~= nil
         and C_Bank.IsItemAllowedInBankType(bankType, cursorItemLocation)
 end
@@ -561,16 +524,16 @@ function BankInventory:FindCursorItemEmptySlot(
     sourceSlotIndex
 )
     local cursorItemLocation = C_Cursor.GetCursorItem()
-    if not self:CanAcceptCursorItem(cursorItemLocation) then
-        return nil
-    end
+    if not self:CanAcceptCursorItem(cursorItemLocation) then return nil end
 
     local state = self.states[self.activeBankType]
     local sourceFallback
     for index = 1, #state.emptySlots do
         local slot = state.emptySlots[index]
-        if slot.bagID == sourceContainerID
-            and slot.slotIndex == sourceSlotIndex then
+        if
+            slot.bagID == sourceContainerID
+            and slot.slotIndex == sourceSlotIndex
+        then
             sourceFallback = slot
         else
             return slot.bagID, slot.slotIndex
@@ -595,9 +558,7 @@ end
 function BankInventory:RefreshItemLockNow(tabID, slotIndex)
     local bankType = self.tabBankTypes[tabID]
     local state = bankType and self.states[bankType]
-    if not state then
-        return
-    end
+    if not state then return end
 
     local key = Containers.MakeLocationKey(tabID, slotIndex)
     local item = state.itemsByLocation[key]
@@ -617,8 +578,10 @@ function BankInventory:RefreshItemLockNow(tabID, slotIndex)
 end
 
 local function RefreshCategories(changeType, categoryID)
-    if changeType == Categories.ChangeTypes.RuleMoved
-        or changeType == Categories.ChangeTypes.Created then
+    if
+        changeType == Categories.ChangeTypes.RuleMoved
+        or changeType == Categories.ChangeTypes.Created
+    then
         return
     end
 
@@ -674,10 +637,7 @@ local function RefreshPins(pinKey)
         end
 
         if refreshed then
-            NotifyUpdateCallbacks(
-                BankInventory.UpdateReasons.Pins,
-                bankType
-            )
+            NotifyUpdateCallbacks(BankInventory.UpdateReasons.Pins, bankType)
         end
     end
 end
@@ -696,9 +656,7 @@ local function OnBagUpdate(_, tabID)
 end
 
 local function OnBagUpdateDelayed()
-    if not BankInventory.isOpen then
-        return
-    end
+    if not BankInventory.isOpen then return end
 
     for bankType in pairs(BankInventory.delayedScanBankTypes) do
         BankInventory.delayedScanBankTypes[bankType] = nil
@@ -710,10 +668,7 @@ local function OnBagUpdateDelayed()
 end
 
 local function OnPlayerBankSlotsChanged()
-    BankInventory:ScheduleScan(
-        CHARACTER_BANK,
-        "PLAYERBANKSLOTS_CHANGED"
-    )
+    BankInventory:ScheduleScan(CHARACTER_BANK, "PLAYERBANKSLOTS_CHANGED")
 end
 
 local function OnAccountBankSlotsChanged()
@@ -748,14 +703,13 @@ local function OnItemLockChanged(_, tabID, slotIndex)
 end
 
 local function OnItemInfoReceived(_, itemID, success)
-    if not success then
-        return
-    end
+    if not success then return end
 
     for bankType, state in pairs(BankInventory.states) do
-        if state.pendingItemIDs[itemID]
-            or (state.scanTarget
-                and state.scanTarget.pendingItemIDs[itemID]) then
+        if
+            state.pendingItemIDs[itemID]
+            or (state.scanTarget and state.scanTarget.pendingItemIDs[itemID])
+        then
             BankInventory:ScheduleScan(bankType, "GET_ITEM_INFO_RECEIVED")
         end
     end
@@ -767,11 +721,11 @@ local function RefreshTooltipItems(items, pendingDataIDs, refreshAll)
     for index = 1, #items do
         local item = items[index]
         local dataInstanceID = item.tooltipDataInstanceID
-        if refreshAll
-            or (dataInstanceID and pendingDataIDs[dataInstanceID]) then
-            if ItemModel.RefreshTooltipData(item) then
-                refreshed = true
-            end
+        if
+            refreshAll
+            or (dataInstanceID and pendingDataIDs[dataInstanceID])
+        then
+            if ItemModel.RefreshTooltipData(item) then refreshed = true end
         end
     end
 
@@ -779,16 +733,11 @@ local function RefreshTooltipItems(items, pendingDataIDs, refreshAll)
 end
 
 local function RefreshResolvedTooltipData(pendingDataIDs, refreshAll)
-    if not BankInventory.isOpen then
-        return
-    end
+    if not BankInventory.isOpen then return end
 
     for bankType, state in pairs(BankInventory.states) do
-        local refreshed = RefreshTooltipItems(
-            state.items,
-            pendingDataIDs,
-            refreshAll
-        )
+        local refreshed =
+            RefreshTooltipItems(state.items, pendingDataIDs, refreshAll)
 
         if state.scanTarget then
             RefreshTooltipItems(
@@ -808,9 +757,7 @@ local function RefreshResolvedTooltipData(pendingDataIDs, refreshAll)
 end
 
 function BankInventory:Initialize()
-    if self.initialized then
-        return
-    end
+    if self.initialized then return end
 
     self.initialized = true
     NS:RegisterEventHandler("BAG_UPDATE", OnBagUpdate)
@@ -823,10 +770,7 @@ function BankInventory:Initialize()
     NS:RegisterEventHandler("ITEM_LOCK_CHANGED", OnItemLockChanged)
     NS:RegisterEventHandler("GET_ITEM_INFO_RECEIVED", OnItemInfoReceived)
     ItemModel.RegisterTooltipDataCallback(RefreshResolvedTooltipData)
-    NS:RegisterEventHandler(
-        "PLAYERBANKSLOTS_CHANGED",
-        OnPlayerBankSlotsChanged
-    )
+    NS:RegisterEventHandler("PLAYERBANKSLOTS_CHANGED", OnPlayerBankSlotsChanged)
     NS:RegisterEventHandler(
         "PLAYER_ACCOUNT_BANK_TAB_SLOTS_CHANGED",
         OnAccountBankSlotsChanged

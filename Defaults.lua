@@ -102,24 +102,57 @@ NS.defaults = {
                 "junk",
             },
             definitions = {
-                openable = CreateDefaultCategoryDefinition("openable", "Openable"),
-                cosmetic = CreateDefaultCategoryDefinition("cosmetic", "Cosmetic"),
-                collectables = CreateDefaultCategoryDefinition("collectables", "Collectables"),
-                keystone = CreateDefaultCategoryDefinition("keystone", "Mythic Keystone"),
-                consumable = CreateDefaultCategoryDefinition("consumable", "Consumable"),
-                equipment = CreateDefaultCategoryDefinition("equipment", "Equipment"),
+                openable = CreateDefaultCategoryDefinition(
+                    "openable",
+                    "Openable"
+                ),
+                cosmetic = CreateDefaultCategoryDefinition(
+                    "cosmetic",
+                    "Cosmetic"
+                ),
+                collectables = CreateDefaultCategoryDefinition(
+                    "collectables",
+                    "Collectables"
+                ),
+                keystone = CreateDefaultCategoryDefinition(
+                    "keystone",
+                    "Mythic Keystone"
+                ),
+                consumable = CreateDefaultCategoryDefinition(
+                    "consumable",
+                    "Consumable"
+                ),
+                equipment = CreateDefaultCategoryDefinition(
+                    "equipment",
+                    "Equipment"
+                ),
                 quest = CreateDefaultCategoryDefinition("quest", "Quest"),
-                enhancement = CreateDefaultCategoryDefinition("enhancement", "Enhancement"),
+                enhancement = CreateDefaultCategoryDefinition(
+                    "enhancement",
+                    "Enhancement"
+                ),
                 gem = CreateDefaultCategoryDefinition("gem", "Gem"),
                 recipe = CreateDefaultCategoryDefinition("recipe", "Recipe"),
                 reagent = CreateDefaultCategoryDefinition("reagent", "Reagent"),
-                tradegoods = CreateDefaultCategoryDefinition("tradegoods", "Trade Goods"),
-                profession = CreateDefaultCategoryDefinition("profession", "Profession"),
-                container = CreateDefaultCategoryDefinition("container", "Container"),
+                tradegoods = CreateDefaultCategoryDefinition(
+                    "tradegoods",
+                    "Trade Goods"
+                ),
+                profession = CreateDefaultCategoryDefinition(
+                    "profession",
+                    "Profession"
+                ),
+                container = CreateDefaultCategoryDefinition(
+                    "container",
+                    "Container"
+                ),
                 glyph = CreateDefaultCategoryDefinition("glyph", "Glyph"),
                 token = CreateDefaultCategoryDefinition("token", "Token"),
                 housing = CreateDefaultCategoryDefinition("housing", "Housing"),
-                miscellaneous = CreateDefaultCategoryDefinition("miscellaneous", "Miscellaneous"),
+                miscellaneous = CreateDefaultCategoryDefinition(
+                    "miscellaneous",
+                    "Miscellaneous"
+                ),
                 other = { name = "Other" },
                 junk = CreateDefaultCategoryDefinition("junk", "Junk"),
             },

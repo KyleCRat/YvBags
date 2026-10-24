@@ -19,24 +19,23 @@ local function CanSellJunk()
         and C_MerchantFrame
         and C_MerchantFrame.SellAllJunkItems
         and (not C_MerchantFrame.IsSellAllJunkEnabled or C_MerchantFrame.IsSellAllJunkEnabled())
-        and (not C_MerchantFrame.GetNumJunkItems or C_MerchantFrame.GetNumJunkItems() > 0)
+        and (
+            not C_MerchantFrame.GetNumJunkItems
+            or C_MerchantFrame.GetNumJunkItems() > 0
+        )
 end
 
 local function SellJunk()
     sellScheduled = false
 
-    if not CanSellJunk() then
-        return
-    end
+    if not CanSellJunk() then return end
 
     C_MerchantFrame.SellAllJunkItems()
 end
 
 -- Public scheduling contract
 function JunkAutosell.ScheduleSell()
-    if sellScheduled or not CanSellJunk() then
-        return
-    end
+    if sellScheduled or not CanSellJunk() then return end
 
     sellScheduled = true
     if C_Timer and C_Timer.After then
@@ -67,8 +66,6 @@ NS:RegisterInitCallback(function()
     NS:RegisterEventHandler("MERCHANT_CLOSED", OnMerchantClosed)
 
     NS.globalDB:RegisterCallback(function(_, enabled)
-        if enabled == true then
-            JunkAutosell.ScheduleSell()
-        end
+        if enabled == true then JunkAutosell.ScheduleSell() end
     end, "features", "autosellGrayJunk")
 end)

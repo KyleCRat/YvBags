@@ -60,7 +60,9 @@ local availableColumns
 local columnsByKey
 
 local function GetQualityColor(quality, fallbackR, fallbackG, fallbackB)
-    local color = ColorManager and ColorManager.GetColorDataForItemQuality and ColorManager.GetColorDataForItemQuality(quality)
+    local color = ColorManager
+        and ColorManager.GetColorDataForItemQuality
+        and ColorManager.GetColorDataForItemQuality(quality)
     color = color or (ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality])
     return {
         r = color and color.r or fallbackR,
@@ -79,7 +81,8 @@ local defaultBindingIconColor = {
     g = DEFAULT_BINDING_ICON_COLOR_G,
     b = DEFAULT_BINDING_ICON_COLOR_B,
 }
-local rarityIconColor = GetQualityColor(RARE_QUALITY, RARE_COLOR_R, RARE_COLOR_G, RARE_COLOR_B)
+local rarityIconColor =
+    GetQualityColor(RARE_QUALITY, RARE_COLOR_R, RARE_COLOR_G, RARE_COLOR_B)
 local defaultBindingIconInfo = {
     texture = Media.GetSoulboundBindingIconTexture(),
     desaturated = false,
@@ -231,9 +234,7 @@ local COLUMNS = {
 
 -- Column formatting
 local function EmptyDash(value)
-    if value == nil or value == "" then
-        return "-"
-    end
+    if value == nil or value == "" then return "-" end
 
     return tostring(value)
 end
@@ -251,17 +252,13 @@ local function FormatSubtype(item)
 end
 
 local function FormatExpansion(expansionID)
-    if expansionID == nil then
-        return "-"
-    end
+    if expansionID == nil then return "-" end
 
     return EXPANSION_LABELS[expansionID] or tostring(expansionID)
 end
 
 local function GetAvailableColumns()
-    if availableColumns then
-        return availableColumns
-    end
+    if availableColumns then return availableColumns end
 
     availableColumns = {}
     columnsByKey = {}
@@ -275,16 +272,24 @@ end
 
 -- Column visual state
 local function SetNameTextColor(fontString, item)
-    local color = item and item.quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[item.quality]
+    local color = item
+        and item.quality
+        and ITEM_QUALITY_COLORS
+        and ITEM_QUALITY_COLORS[item.quality]
     if color then
         fontString:SetTextColor(color.r, color.g, color.b)
     else
-        fontString:SetTextColor(DEFAULT_NAME_COLOR_R, DEFAULT_NAME_COLOR_G, DEFAULT_NAME_COLOR_B)
+        fontString:SetTextColor(
+            DEFAULT_NAME_COLOR_R,
+            DEFAULT_NAME_COLOR_G,
+            DEFAULT_NAME_COLOR_B
+        )
     end
 end
 
 local function SetSellValueTextColor(fontString, item)
-    local display = item and NS.Money.GetDisplay(item.totalSellValue or item.sellValue)
+    local display = item
+        and NS.Money.GetDisplay(item.totalSellValue or item.sellValue)
     local color = display and display.color
     if color then
         fontString:SetTextColor(color.r, color.g, color.b)
@@ -308,19 +313,23 @@ function Columns.GetLabel(column)
 end
 
 function Columns.ClampWidth(column, width)
-    if type(width) ~= "number" or width ~= width
-        or width == math.huge or width == -math.huge then
+    if
+        type(width) ~= "number"
+        or width ~= width
+        or width == math.huge
+        or width == -math.huge
+    then
         return column.width
     end
 
-    return math.floor(math.max(column.minWidth, math.min(MAX_COLUMN_WIDTH, width)) + 0.5)
+    return math.floor(
+        math.max(column.minWidth, math.min(MAX_COLUMN_WIDTH, width)) + 0.5
+    )
 end
 
 function Columns.GetColumnBySortKey(sortKey)
     for _, column in ipairs(GetAvailableColumns()) do
-        if column.sortKey and column.sortKey == sortKey then
-            return column
-        end
+        if column.sortKey and column.sortKey == sortKey then return column end
     end
 
     return nil
@@ -332,13 +341,14 @@ function Columns.GetDefaultSortAscending(sortKey)
 end
 
 function Columns.GetSortLabel(sortKey)
-    if SORT_LABELS[sortKey] then
-        return SORT_LABELS[sortKey]
-    end
+    if SORT_LABELS[sortKey] then return SORT_LABELS[sortKey] end
 
     local column = Columns.GetColumnBySortKey(sortKey)
     if column then
-        return column.tooltipTitle or column.sortLabel or column.label or sortKey
+        return column.tooltipTitle
+            or column.sortLabel
+            or column.label
+            or sortKey
     end
 
     return sortKey or ""
@@ -355,9 +365,7 @@ function Columns.GetContentWidth()
     -- Default frame sizing excludes optional, initially hidden columns.
     for _, column in ipairs(columns) do
         if not column.defaultHidden then
-            if width > 0 then
-                width = width + COLUMN_GAP
-            end
+            if width > 0 then width = width + COLUMN_GAP end
             width = width + column.width
         end
     end
@@ -394,14 +402,10 @@ function Columns.FormatColumn(item, columnKey)
 end
 
 function Columns.GetProfessionQualityAtlas(item)
-    if not item.professionQuality or not C_TradeSkillUI then
-        return nil
-    end
+    if not item.professionQuality or not C_TradeSkillUI then return nil end
 
     local itemInfo = item.link or item.staticLink or item.itemID
-    if not itemInfo then
-        return nil
-    end
+    if not itemInfo then return nil end
 
     local cacheKey = tostring(itemInfo)
     if professionQualityAtlasCache[cacheKey] ~= nil then
@@ -417,22 +421,30 @@ function Columns.GetProfessionQualityAtlas(item)
         qualityInfo = C_TradeSkillUI.GetItemCraftedQualityInfo(itemInfo)
     end
 
-    local atlas = qualityInfo and (qualityInfo.icon or qualityInfo.iconSmall or qualityInfo.iconChat or qualityInfo.iconInventory)
+    local atlas = qualityInfo
+        and (
+            qualityInfo.icon
+            or qualityInfo.iconSmall
+            or qualityInfo.iconChat
+            or qualityInfo.iconInventory
+        )
     professionQualityAtlasCache[cacheKey] = atlas or false
     return professionQualityAtlasCache[cacheKey]
 end
 
 function Columns.GetExpansionIconInfo(expansionID)
-    if expansionID == nil then
-        return nil
-    end
+    if expansionID == nil then return nil end
 
     if expansionIconInfoCache[expansionID] == nil then
         local icon = Media.GetExpansionIconInfo(expansionID)
         if not icon then
             expansionIconInfoCache[expansionID] = false
         else
-            local scale = math.min(1, EXPANSION_ICON_WIDTH / icon.width, EXPANSION_ICON_HEIGHT / icon.height)
+            local scale = math.min(
+                1,
+                EXPANSION_ICON_WIDTH / icon.width,
+                EXPANSION_ICON_HEIGHT / icon.height
+            )
             expansionIconInfoCache[expansionID] = {
                 texture = icon.texture,
                 texCoord = icon.texCoord,
@@ -446,9 +458,7 @@ function Columns.GetExpansionIconInfo(expansionID)
 end
 
 function Columns.GetBindingIconInfo(item)
-    if not item or not item.bindingKey then
-        return nil
-    end
+    if not item or not item.bindingKey then return nil end
 
     if not Binding.HasBindingIcon(item.bindingKey) then
         return nil
@@ -472,7 +482,11 @@ function Columns.GetWarboundColor()
 end
 
 function Columns.SetDefaultTextColor(fontString)
-    fontString:SetTextColor(DEFAULT_TEXT_COLOR_R, DEFAULT_TEXT_COLOR_G, DEFAULT_TEXT_COLOR_B)
+    fontString:SetTextColor(
+        DEFAULT_TEXT_COLOR_R,
+        DEFAULT_TEXT_COLOR_G,
+        DEFAULT_TEXT_COLOR_B
+    )
 end
 
 function Columns.ApplyTextColor(fontString, columnKey, item)

@@ -9,6 +9,7 @@
 
 ### Fixed
 
+- Use Blizzard's localized item-class name for caged pets in the Type column.
 - Show season-capped currencies in bag tooltips as current balance (earned/maximum),
   so spending currency does not imply more can be earned before reaching the cap.
 

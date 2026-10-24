@@ -23,15 +23,11 @@ local function ApplyNativeFrameOwnership()
 end
 
 local function OnPlayerRegenEnabled()
-    if BlizzardBank.applyAfterCombat then
-        ApplyNativeFrameOwnership()
-    end
+    if BlizzardBank.applyAfterCombat then ApplyNativeFrameOwnership() end
 end
 
 local function OnBankFrameOpened()
-    if IsReplacementEnabled() then
-        NS.BankFrame.Open()
-    end
+    if IsReplacementEnabled() then NS.BankFrame.Open() end
 end
 
 local function HideNativeBankPanel()
@@ -47,19 +43,17 @@ local function OnBankFrameClosed()
 end
 
 local function OnReplacementChanged(_db, enabled)
-    if C_Bank.AreAnyBankTypesViewable() then
-        C_Bank.CloseBankFrame()
-    end
+    if C_Bank.AreAnyBankTypesViewable() then C_Bank.CloseBankFrame() end
 
-    if enabled == false
+    if
+        enabled == false
         and NS.bankFrame
-        and (NS.bankFrame:IsShown() or NS.BankInventory.isOpen) then
+        and (NS.bankFrame:IsShown() or NS.BankInventory.isOpen)
+    then
         NS.BankFrame.CloseFromBankEvent()
     end
 
-    if enabled == false then
-        HideNativeBankPanel()
-    end
+    if enabled == false then HideNativeBankPanel() end
 
     C_Timer.After(0, ApplyNativeFrameOwnership)
 end
@@ -78,9 +72,7 @@ function BlizzardBank.SyncNativeBankType(bankType, expectedTabID)
         BankPanel:SetBankType(bankType)
     end
 
-    if not BankPanel:IsShown() then
-        BankPanel:Show()
-    end
+    if not BankPanel:IsShown() then BankPanel:Show() end
 
     -- On a cold open BankPanel can already be shown with the requested type
     -- while its purchased-tab cache is still empty. Refresh it once YvBags
@@ -91,9 +83,7 @@ function BlizzardBank.SyncNativeBankType(bankType, expectedTabID)
 end
 
 function BlizzardBank.Initialize()
-    if BlizzardBank.initialized then
-        return
-    end
+    if BlizzardBank.initialized then return end
 
     BlizzardBank.initialized = true
     BlizzardBank.originalParent = BankFrame:GetParent()

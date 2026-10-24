@@ -35,9 +35,7 @@ Inventory.updateCallbacks = {}
 
 -- Pending item diagnostics
 local function RequestPendingItemLoad(itemID, itemInfo)
-    if not C_Item or not C_Item.RequestLoadItemDataByID then
-        return false
-    end
+    if not C_Item or not C_Item.RequestLoadItemDataByID then return false end
 
     if itemID then
         C_Item.RequestLoadItemDataByID(itemID)
@@ -53,9 +51,7 @@ local function RequestPendingItemLoad(itemID, itemInfo)
 end
 
 local function TrackPendingItemInfo(item, itemInfo, containerItemInfo)
-    if item.itemID then
-        Inventory.pendingItemIDs[item.itemID] = true
-    end
+    if item.itemID then Inventory.pendingItemIDs[item.itemID] = true end
 
     Inventory.pendingItems[#Inventory.pendingItems + 1] = {
         locationKey = item.locationKey,
@@ -113,9 +109,7 @@ local function RebuildPendingItemIDIndex()
     wipe(Inventory.pendingItemIDs)
 
     for _, item in ipairs(Inventory.pendingItems) do
-        if item.itemID then
-            Inventory.pendingItemIDs[item.itemID] = true
-        end
+        if item.itemID then Inventory.pendingItemIDs[item.itemID] = true end
     end
 end
 
@@ -129,9 +123,7 @@ local function RemovePendingItemsForContainer(containerID)
         end
     end
 
-    if removed then
-        RebuildPendingItemIDIndex()
-    end
+    if removed then RebuildPendingItemIDIndex() end
 end
 
 -- Scanner update notifications
@@ -149,10 +141,8 @@ local function CancelNewItemStateRefresh()
 end
 
 local function ReconcileNewItemState()
-    local placementChanged, visualsChanged = NewItems.Reconcile(
-        Inventory.items,
-        Inventory.itemsByLocation
-    )
+    local placementChanged, visualsChanged =
+        NewItems.Reconcile(Inventory.items, Inventory.itemsByLocation)
 
     if placementChanged then
         NotifyUpdateCallbacks(Inventory.UpdateReasons.NewItemPlacement)
@@ -168,14 +158,10 @@ local function ScheduleNewItemStateRefresh()
 
     local timer
     timer = C_Timer.NewTimer(0, function()
-        if Inventory.newItemStateRefreshTimer ~= timer then
-            return
-        end
+        if Inventory.newItemStateRefreshTimer ~= timer then return end
 
         Inventory.newItemStateRefreshTimer = nil
-        if NewItems.IsSessionActive() then
-            ReconcileNewItemState()
-        end
+        if NewItems.IsSessionActive() then ReconcileNewItemState() end
     end)
     Inventory.newItemStateRefreshTimer = timer
 end
@@ -210,9 +196,11 @@ local function ScanContainerSlots(inventory, container)
     ResetContainerUsage(container)
 
     for slotIndex = 1, container.numSlots do
-        local containerItemInfo = C_Container.GetContainerItemInfo(container.id, slotIndex)
+        local containerItemInfo =
+            C_Container.GetContainerItemInfo(container.id, slotIndex)
         if containerItemInfo then
-            local item, itemInfo = ItemModel.Normalize(container, slotIndex, containerItemInfo)
+            local item, itemInfo =
+                ItemModel.Normalize(container, slotIndex, containerItemInfo)
             inventory.items[#inventory.items + 1] = item
             inventory.itemsByLocation[item.locationKey] = item
             container.usedSlots = container.usedSlots + 1
@@ -245,9 +233,7 @@ end
 local function CompareLocation(left, right)
     local leftBagID = left.bagID or 0
     local rightBagID = right.bagID or 0
-    if leftBagID ~= rightBagID then
-        return leftBagID < rightBagID
-    end
+    if leftBagID ~= rightBagID then return leftBagID < rightBagID end
 
     return (left.slotIndex or 0) < (right.slotIndex or 0)
 end
@@ -272,10 +258,14 @@ local function RebuildStats(inventory, reason)
     inventory.stats.lastScanTime = GetTime and GetTime() or 0
 
     for _, container in ipairs(inventory.containers) do
-        inventory.stats.totalSlots = inventory.stats.totalSlots + (container.numSlots or 0)
-        inventory.stats.freeSlots = inventory.stats.freeSlots + (container.freeSlotCount or 0)
-        inventory.stats.usedSlots = inventory.stats.usedSlots + (container.usedSlots or 0)
-        inventory.stats.emptySlots = inventory.stats.emptySlots + (container.emptySlotCount or 0)
+        inventory.stats.totalSlots = inventory.stats.totalSlots
+            + (container.numSlots or 0)
+        inventory.stats.freeSlots = inventory.stats.freeSlots
+            + (container.freeSlotCount or 0)
+        inventory.stats.usedSlots = inventory.stats.usedSlots
+            + (container.usedSlots or 0)
+        inventory.stats.emptySlots = inventory.stats.emptySlots
+            + (container.emptySlotCount or 0)
     end
 
     inventory.stats.itemCount = inventory.stats.usedSlots
@@ -305,9 +295,7 @@ local function OnBagNewItemsUpdated()
 end
 
 local function OnItemLockChanged(_, bagOrSlotIndex, slotIndex)
-    if not Containers.IsPlayerContainerID(bagOrSlotIndex) then
-        return
-    end
+    if not Containers.IsPlayerContainerID(bagOrSlotIndex) then return end
 
     if slotIndex then
         Inventory:RefreshItemLockNow(bagOrSlotIndex, slotIndex)
@@ -327,23 +315,20 @@ local function RefreshResolvedTooltipData(pendingDataIDs, refreshAll)
     local refreshed = false
     for _, item in ipairs(Inventory.items) do
         local dataInstanceID = item.tooltipDataInstanceID
-        if refreshAll
-            or (dataInstanceID and pendingDataIDs[dataInstanceID]) then
-            if ItemModel.RefreshTooltipData(item) then
-                refreshed = true
-            end
+        if
+            refreshAll
+            or (dataInstanceID and pendingDataIDs[dataInstanceID])
+        then
+            if ItemModel.RefreshTooltipData(item) then refreshed = true end
         end
     end
 
-    if not refreshed then
-        return
-    end
+    if not refreshed then return end
 
     for _, pendingItem in ipairs(Inventory.pendingItems) do
         local item = Inventory.itemsByLocation[pendingItem.locationKey]
         if item then
-            pendingItem.tooltipDataInstanceID =
-                item.tooltipDataInstanceID
+            pendingItem.tooltipDataInstanceID = item.tooltipDataInstanceID
             pendingItem.categoryKey = item.categoryKey
             pendingItem.categoryName = item.categoryName
         end
@@ -402,7 +387,11 @@ function Inventory:RefreshContainerNow(containerID, reason)
 
     local existingContainer = self.containerByID[containerID]
     local nextContainer = Containers.CreateContainer(containerID)
-    if not existingContainer or not nextContainer or existingContainer.numSlots ~= nextContainer.numSlots then
+    if
+        not existingContainer
+        or not nextContainer
+        or existingContainer.numSlots ~= nextContainer.numSlots
+    then
         self:ScanNow(reason or "container-layout-changed")
         return
     end
@@ -420,17 +409,13 @@ end
 function Inventory:ScheduleScan(reason)
     self.pendingScanReason = reason or self.pendingScanReason or "unknown"
 
-    if self.scanScheduled then
-        return
-    end
+    if self.scanScheduled then return end
 
     self.scanScheduled = true
 
     if C_Timer and C_Timer.After then
         C_Timer.After(SCAN_DELAY_SECONDS, function()
-            if not Inventory.scanScheduled then
-                return
-            end
+            if not Inventory.scanScheduled then return end
 
             local pendingReason = Inventory.pendingScanReason
             Inventory.pendingScanReason = nil
@@ -473,9 +458,7 @@ end
 
 function Inventory:HasLockedItems()
     for _, item in ipairs(self.items) do
-        if item.isLocked then
-            return true
-        end
+        if item.isLocked then return true end
     end
 
     return false
@@ -484,7 +467,11 @@ end
 function Inventory:RefreshItemLockNow(bagID, slotIndex)
     local item = self:GetItemByLocation(bagID, slotIndex)
     local containerItemInfo = C_Container.GetContainerItemInfo(bagID, slotIndex)
-    if not item or not containerItemInfo or item.itemID ~= containerItemInfo.itemID then
+    if
+        not item
+        or not containerItemInfo
+        or item.itemID ~= containerItemInfo.itemID
+    then
         return false
     end
 
@@ -537,18 +524,14 @@ function Inventory:ScheduleCategoryRuleRefresh()
 end
 
 function Inventory:RefreshCategories(changeType, categoryID)
-    if changeType == Categories.ChangeTypes.RuleMoved then
-        return
-    end
+    if changeType == Categories.ChangeTypes.RuleMoved then return end
 
     if changeType == Categories.ChangeTypes.RulesChanged then
         self:ScheduleCategoryRuleRefresh()
         return
     end
 
-    if changeType == Categories.ChangeTypes.Created then
-        return
-    end
+    if changeType == Categories.ChangeTypes.Created then return end
 
     local refreshAll = changeType == Categories.ChangeTypes.Reset
         or changeType == Categories.ChangeTypes.Changed
@@ -556,9 +539,7 @@ function Inventory:RefreshCategories(changeType, categoryID)
         or changeType == Categories.ChangeTypes.ProfileChanged
         or changeType == Categories.ChangeTypes.ProfileReset
 
-    if refreshAll then
-        self:CancelCategoryRuleRefresh()
-    end
+    if refreshAll then self:CancelCategoryRuleRefresh() end
 
     local refreshedItem = false
 
@@ -579,9 +560,11 @@ function Inventory:RefreshCategories(changeType, categoryID)
         end
     end
 
-    if (refreshAll or refreshedItem)
+    if
+        (refreshAll or refreshedItem)
         and changeType ~= Categories.ChangeTypes.ProfileChanged
-        and changeType ~= Categories.ChangeTypes.ProfileReset then
+        and changeType ~= Categories.ChangeTypes.ProfileReset
+    then
         NotifyUpdateCallbacks(Inventory.UpdateReasons.Categories)
     end
 end
@@ -595,10 +578,9 @@ local function RefreshPinnedItems(pinKey)
 
     for _, pendingItem in ipairs(Inventory.pendingItems) do
         if Pins.GetKey(pendingItem) == pinKey then
-            local currentItem = Inventory.itemsByLocation[pendingItem.locationKey]
-            if currentItem then
-                pendingItem.isPinned = currentItem.isPinned
-            end
+            local currentItem =
+                Inventory.itemsByLocation[pendingItem.locationKey]
+            if currentItem then pendingItem.isPinned = currentItem.isPinned end
         end
     end
 
@@ -616,9 +598,7 @@ end
 
 -- Initialization
 function Inventory:Initialize()
-    if self.initialized then
-        return
-    end
+    if self.initialized then return end
 
     self.initialized = true
 

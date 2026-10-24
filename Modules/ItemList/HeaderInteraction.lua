@@ -19,9 +19,7 @@ end
 
 function Interaction.Cancel(header)
     local state = header.interaction
-    if not state then
-        return
-    end
+    if not state then return end
     header.interaction = nil
     state.source:SetAlpha(1)
     state.source.isPressed = false
@@ -34,30 +32,36 @@ end
 
 local function Finish(header)
     local state = header.interaction
-    if not state then
-        return
-    end
+    if not state then return end
     Interaction.Cancel(header)
-    if not ListSettings.CanEditColumns() or not header:IsShown() then
-        return
-    end
+    if not ListSettings.CanEditColumns() or not header:IsShown() then return end
     if state.kind == "resize" then
         if state.valid and state.width ~= state.initialWidth then
-            ListSettings.SetColumnWidth(header.list.settingsScope, state.key, state.width)
+            ListSettings.SetColumnWidth(
+                header.list.settingsScope,
+                state.key,
+                state.width
+            )
         end
     elseif state.targetKey then
-        ListSettings.MoveColumn(header.list.settingsScope, state.key, state.targetKey, state.after)
+        ListSettings.MoveColumn(
+            header.list.settingsScope,
+            state.key,
+            state.targetKey,
+            state.after
+        )
     end
     header.list:RefreshColumnSettings()
 end
 
 local function UpdateInteraction(header)
     local state = header.interaction
-    if not state then
-        return
-    end
-    if InCombatLockdown() or not header:IsShown()
-        or header.content:GetEffectiveScale() ~= state.scale then
+    if not state then return end
+    if
+        InCombatLockdown()
+        or not header:IsShown()
+        or header.content:GetEffectiveScale() ~= state.scale
+    then
         Interaction.Cancel(header)
         return
     end
@@ -68,7 +72,10 @@ local function UpdateInteraction(header)
     indicator:Hide()
 
     if state.kind == "resize" then
-        local width = Columns.ClampWidth(state.column, state.initialWidth + x - state.startX)
+        local width = Columns.ClampWidth(
+            state.column,
+            state.initialWidth + x - state.startX
+        )
         width = math.min(width, state.maxWidth)
         if width ~= state.width then
             state.width = width
@@ -80,22 +87,28 @@ local function UpdateInteraction(header)
         if state.valid and x >= 0 and x <= viewportWidth then
             local markerX
             for _, entry in ipairs(header.list.columnLayout.entries) do
-                if entry.x >= viewportWidth then
-                    break
-                end
+                if entry.x >= viewportWidth then break end
                 if entry.column.key ~= state.key then
                     state.targetKey = entry.column.key
                     state.after = x >= entry.x + entry.width / 2
-                    markerX = state.after and entry.x + entry.width + Columns.GetColumnGap() / 2
+                    markerX = state.after
+                            and entry.x + entry.width + Columns.GetColumnGap() / 2
                         or entry.x - Columns.GetColumnGap() / 2
-                    if not state.after then
-                        break
-                    end
+                    if not state.after then break end
                 end
             end
             if markerX then
                 indicator:ClearAllPoints()
-                indicator:SetPoint("TOPLEFT", header.content, "TOPLEFT", math.max(0, math.min(viewportWidth - INSERTION_WIDTH, markerX)), 0)
+                indicator:SetPoint(
+                    "TOPLEFT",
+                    header.content,
+                    "TOPLEFT",
+                    math.max(
+                        0,
+                        math.min(viewportWidth - INSERTION_WIDTH, markerX)
+                    ),
+                    0
+                )
                 indicator:SetSize(INSERTION_WIDTH, header.content:GetHeight())
                 indicator:Show()
             end
@@ -103,9 +116,7 @@ local function UpdateInteraction(header)
     end
 
     -- Also catches releases outside the source button, without idle polling.
-    if not IsMouseButtonDown("LeftButton") then
-        Finish(header)
-    end
+    if not IsMouseButtonDown("LeftButton") then Finish(header) end
 end
 
 local function Begin(header, source, kind)
@@ -116,9 +127,7 @@ local function Begin(header, source, kind)
     GameTooltip:Hide()
     local key = source.column.key
     local entry = header.list.columnLayout.byKey[key]
-    if not entry or not source:IsShown() then
-        return
-    end
+    if not entry or not source:IsShown() then return end
     local x = GetCursorPositionInHeader(header)
     header.interaction = {
         source = source,
@@ -134,13 +143,15 @@ local function Begin(header, source, kind)
     if kind == "resize" then
         -- The header spans the inner frame, including above the scrollbar.
         -- Keep the entire handle reachable at that edge, at every scale.
-        header.interaction.maxWidth = math.max(source.column.minWidth,
-            math.floor(entry.width + header.content:GetRight() - source:GetRight()))
+        header.interaction.maxWidth = math.max(
+            source.column.minWidth,
+            math.floor(
+                entry.width + header.content:GetRight() - source:GetRight()
+            )
+        )
     end
     source.suppressClick = true
-    if kind == "reorder" then
-        source:SetAlpha(DRAG_ALPHA)
-    end
+    if kind == "reorder" then source:SetAlpha(DRAG_ALPHA) end
     local driver = header.interactionDriver
     driver:SetPropagateKeyboardInput(true)
     driver:Show()
@@ -159,7 +170,9 @@ function Interaction.Attach(header, list)
     driver:SetPropagateKeyboardInput(true)
     driver:Hide()
     local indicator = NS.Skins:CreateTexture(driver, {
-        geometryRoot = list.window, layer = "OVERLAY", colorToken = "accent",
+        geometryRoot = list.window,
+        layer = "OVERLAY",
+        colorToken = "accent",
     })
     indicator:Hide()
     driver.indicator = indicator
@@ -170,9 +183,7 @@ function Interaction.Attach(header, list)
             return
         end
         self:SetPropagateKeyboardInput(key ~= "ESCAPE")
-        if key == "ESCAPE" then
-            Interaction.Cancel(header)
-        end
+        if key == "ESCAPE" then Interaction.Cancel(header) end
     end)
 
     for _, button in ipairs(header.buttons) do

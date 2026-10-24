@@ -50,9 +50,7 @@ local function FormatLargeAmount(amount)
 end
 
 local function FormatExactAmount(amount)
-    if BreakUpLargeNumbers then
-        return BreakUpLargeNumbers(amount or 0)
-    end
+    if BreakUpLargeNumbers then return BreakUpLargeNumbers(amount or 0) end
 
     return tostring(amount or 0)
 end
@@ -70,7 +68,10 @@ local function FormatAmountWithMax(currency)
             )
         end
 
-        return ("%s / %s"):format(FormatExactAmount(quantity), FormatExactAmount(maxQuantity))
+        return ("%s / %s"):format(
+            FormatExactAmount(quantity),
+            FormatExactAmount(maxQuantity)
+        )
     end
 
     return FormatExactAmount(quantity)
@@ -86,10 +87,10 @@ end
 
 local function GetCurrencyQualityColor(currency)
     local quality = currency and currency.quality
-    local color = quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality]
-    if color then
-        return color.r, color.g, color.b
-    end
+    local color = quality
+        and ITEM_QUALITY_COLORS
+        and ITEM_QUALITY_COLORS[quality]
+    if color then return color.r, color.g, color.b end
 
     return NS.Media.GetAccentColor()
 end
@@ -130,9 +131,7 @@ local function GetTrackedCurrencies()
 
     for index = 1, MAX_TRACKED_CURRENCY_SCAN do
         local backpackInfo = C_CurrencyInfo.GetBackpackCurrencyInfo(index)
-        if not backpackInfo then
-            break
-        end
+        if not backpackInfo then break end
 
         currencies[#currencies + 1] = BuildCurrencyData(backpackInfo)
     end
@@ -156,7 +155,9 @@ end
 
 local function GetTooltipAnchor(frame)
     local center = frame:GetCenter()
-    local screenCenter = UIParent and UIParent:GetWidth() and UIParent:GetWidth() / 2
+    local screenCenter = UIParent
+        and UIParent:GetWidth()
+        and UIParent:GetWidth() / 2
 
     if center and screenCenter and center > screenCenter then
         return "ANCHOR_LEFT"
@@ -168,7 +169,11 @@ end
 local function GetCurrencyTooltipLabel(currency)
     local name = currency.name or ""
     if currency.iconFileID then
-        return ("|T%d:%d|t %s"):format(currency.iconFileID, TOOLTIP_CURRENCY_ICON_SIZE, name)
+        return ("|T%d:%d|t %s"):format(
+            currency.iconFileID,
+            TOOLTIP_CURRENCY_ICON_SIZE,
+            name
+        )
     end
 
     return name
@@ -179,16 +184,18 @@ local function AddCurrencyTooltipLine(currency)
     GameTooltip:AddDoubleLine(
         GetCurrencyTooltipLabel(currency),
         FormatAmountWithMax(currency),
-        r, g, b,
-        1, 1, 1
+        r,
+        g,
+        b,
+        1,
+        1,
+        1
     )
 end
 
 local function ShowCurrencyTooltip(button)
     local hoveredCurrency = button.currency
-    if not hoveredCurrency then
-        return
-    end
+    if not hoveredCurrency then return end
 
     local currencies = GetTrackedCurrencies()
     GameTooltip:SetOwner(button, GetTooltipAnchor(button))
@@ -224,12 +231,13 @@ local function RefreshTokenFrame()
 end
 
 local function StopTrackingCurrency(button)
-    if not button.currency or not button.currency.currencyID then
-        return
-    end
+    if not button.currency or not button.currency.currencyID then return end
 
     if C_CurrencyInfo and C_CurrencyInfo.SetCurrencyBackpackByID then
-        C_CurrencyInfo.SetCurrencyBackpackByID(button.currency.currencyID, false)
+        C_CurrencyInfo.SetCurrencyBackpackByID(
+            button.currency.currencyID,
+            false
+        )
         RefreshTokenFrame()
         FooterCurrencies.Refresh(NS.frame)
         HideCurrencyTooltip()
@@ -237,20 +245,28 @@ local function StopTrackingCurrency(button)
 end
 
 local function OnCurrencyClick(button, mouseButton)
-    if not button.currency then
-        return
-    end
+    if not button.currency then return end
 
-    if IsModifiedClick and IsModifiedClick("CHATLINK") and HandleModifiedItemClick and C_CurrencyInfo and C_CurrencyInfo.GetCurrencyLink then
-        local linkedToChat = HandleModifiedItemClick(C_CurrencyInfo.GetCurrencyLink(button.currency.currencyID))
-        if linkedToChat then
-            return
-        end
+    if
+        IsModifiedClick
+        and IsModifiedClick("CHATLINK")
+        and HandleModifiedItemClick
+        and C_CurrencyInfo
+        and C_CurrencyInfo.GetCurrencyLink
+    then
+        local linkedToChat = HandleModifiedItemClick(
+            C_CurrencyInfo.GetCurrencyLink(button.currency.currencyID)
+        )
+        if linkedToChat then return end
     end
 
     if mouseButton == "MiddleButton" then
         StopTrackingCurrency(button)
-    elseif mouseButton == "LeftButton" and CharacterFrame and CharacterFrame.ToggleTokenFrame then
+    elseif
+        mouseButton == "LeftButton"
+        and CharacterFrame
+        and CharacterFrame.ToggleTokenFrame
+    then
         CharacterFrame:ToggleTokenFrame()
     end
 end
@@ -259,7 +275,7 @@ local function OnCurrencyEnter(button)
     ShowCurrencyTooltip(button)
 end
 
-local function OnCurrencyLeave(button)
+local function OnCurrencyLeave(_button)
     HideCurrencyTooltip()
 end
 
@@ -268,7 +284,9 @@ local function MeasureCurrencyButton(button, currency)
     button.countText:SetText(FormatLargeAmount(currency.quantity))
     return math.max(
         CURRENCY_BUTTON_MIN_WIDTH,
-        button.countText:GetStringWidth() + CURRENCY_BUTTON_TEXT_ICON_GAP + CURRENCY_ICON_BORDER_SIZE
+        button.countText:GetStringWidth()
+            + CURRENCY_BUTTON_TEXT_ICON_GAP
+            + CURRENCY_ICON_BORDER_SIZE
     )
 end
 
@@ -293,18 +311,38 @@ local function CreateCurrencyButton(frame, parent)
     button:RegisterForClicks("LeftButtonUp", "MiddleButtonUp")
 
     button.countText = NS.Skins:CreateText(button, {
-        geometryRoot = frame, layer = CURRENCY_FONT_LAYER, fontSize = CURRENCY_TEXT_SIZE,
+        geometryRoot = frame,
+        layer = CURRENCY_FONT_LAYER,
+        fontSize = CURRENCY_TEXT_SIZE,
     })
-    button.countText:SetTextColor(CURRENCY_TEXT_COLOR_R, CURRENCY_TEXT_COLOR_G, CURRENCY_TEXT_COLOR_B)
-    button.countText:SetPoint("TOPLEFT", button, "TOPLEFT", 0, CURRENCY_TEXT_Y_OFFSET)
-    button.countText:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -(CURRENCY_ICON_BORDER_SIZE + CURRENCY_BUTTON_TEXT_ICON_GAP), CURRENCY_TEXT_Y_OFFSET)
+    button.countText:SetTextColor(
+        CURRENCY_TEXT_COLOR_R,
+        CURRENCY_TEXT_COLOR_G,
+        CURRENCY_TEXT_COLOR_B
+    )
+    button.countText:SetPoint(
+        "TOPLEFT",
+        button,
+        "TOPLEFT",
+        0,
+        CURRENCY_TEXT_Y_OFFSET
+    )
+    button.countText:SetPoint(
+        "BOTTOMRIGHT",
+        button,
+        "BOTTOMRIGHT",
+        -(CURRENCY_ICON_BORDER_SIZE + CURRENCY_BUTTON_TEXT_ICON_GAP),
+        CURRENCY_TEXT_Y_OFFSET
+    )
     button.countText:SetJustifyH("RIGHT")
     button.countText:SetJustifyV("MIDDLE")
 
     button.icon, button.iconAppearance = NS.Skins:CreateIcon(button, {
-        geometryRoot = frame, width = CURRENCY_ICON_SIZE,
+        geometryRoot = frame,
+        width = CURRENCY_ICON_SIZE,
         borderOutset = (CURRENCY_ICON_BORDER_SIZE - CURRENCY_ICON_SIZE) / 2,
-        layer = TEXTURE_LAYER_ARTWORK, borderLayer = TEXTURE_LAYER_OVERLAY,
+        layer = TEXTURE_LAYER_ARTWORK,
+        borderLayer = TEXTURE_LAYER_OVERLAY,
     })
     button.icon:SetPoint("RIGHT", button, "RIGHT", -3, 0)
     button.icon:SetSize(CURRENCY_ICON_SIZE, CURRENCY_ICON_SIZE)
@@ -318,7 +356,11 @@ end
 
 -- Public footer-currency contract
 function FooterCurrencies.Refresh(frame)
-    if not frame or not frame.currencyContainer or not frame.currencyButtons then
+    if
+        not frame
+        or not frame.currencyContainer
+        or not frame.currencyButtons
+    then
         return
     end
 
@@ -339,25 +381,25 @@ function FooterCurrencies.Refresh(frame)
 
     for _, currency in ipairs(currencies) do
         local button = frame.currencyButtons[visibleIndex + 1]
-        if not button then
-            break
-        end
+        if not button then break end
 
         local buttonWidth = MeasureCurrencyButton(button, currency)
         local nextWidth = usedWidth + buttonWidth
-        if visibleIndex > 0 then
-            nextWidth = nextWidth + CURRENCY_BUTTON_GAP
-        end
+        if visibleIndex > 0 then nextWidth = nextWidth + CURRENCY_BUTTON_GAP end
 
-        if nextWidth > availableWidth then
-            break
-        end
+        if nextWidth > availableWidth then break end
 
         visibleIndex = visibleIndex + 1
         usedWidth = nextWidth
 
         if previousButton then
-            button:SetPoint("RIGHT", previousButton, "LEFT", -CURRENCY_BUTTON_GAP, 0)
+            button:SetPoint(
+                "RIGHT",
+                previousButton,
+                "LEFT",
+                -CURRENCY_BUTTON_GAP,
+                0
+            )
         else
             button:SetPoint("RIGHT", frame.currencyContainer, "RIGHT", 0, 0)
         end
@@ -369,8 +411,20 @@ end
 
 function FooterCurrencies.Create(frame, footer, leftAnchor, rightAnchor)
     local container = CreateFrame(FRAME_TYPE, nil, footer)
-    container:SetPoint("LEFT", leftAnchor, "RIGHT", CURRENCY_CONTAINER_LEFT_PADDING, 0)
-    container:SetPoint("RIGHT", rightAnchor, "LEFT", -CURRENCY_CONTAINER_RIGHT_PADDING, 0)
+    container:SetPoint(
+        "LEFT",
+        leftAnchor,
+        "RIGHT",
+        CURRENCY_CONTAINER_LEFT_PADDING,
+        0
+    )
+    container:SetPoint(
+        "RIGHT",
+        rightAnchor,
+        "LEFT",
+        -CURRENCY_CONTAINER_RIGHT_PADDING,
+        0
+    )
     container:SetHeight(CURRENCY_BUTTON_HEIGHT)
     frame.currencyContainer = container
 
@@ -386,11 +440,13 @@ end
 
 local function RefreshVisibleCurrencies()
     local frame = NS.frame
-    if frame and frame:IsShown() then
-        FooterCurrencies.Refresh(frame)
-    end
+    if frame and frame:IsShown() then FooterCurrencies.Refresh(frame) end
 end
 
 NS:RegisterEventHandler("CURRENCY_DISPLAY_UPDATE", RefreshVisibleCurrencies)
 -- Tracking changes use Blizzard's callback rather than an amount-update event.
-EventRegistry:RegisterCallback("TokenFrame.OnTokenWatchChanged", RefreshVisibleCurrencies, FooterCurrencies)
+EventRegistry:RegisterCallback(
+    "TokenFrame.OnTokenWatchChanged",
+    RefreshVisibleCurrencies,
+    FooterCurrencies
+)

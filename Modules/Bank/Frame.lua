@@ -19,12 +19,9 @@ local TYPE_BUTTON_TEXT_SIZE = 13
 local EMPTY_ITEMS = {}
 
 local LOCKED_MESSAGES = {
-    [Enum.BankLockedReason.BankConversionFailed] =
-        BANK_LOCKED_REASON_BANK_CONVERSION_FAILED,
-    [Enum.BankLockedReason.BankDisabled] =
-        BANK_LOCKED_REASON_BANK_DISABLED,
-    [Enum.BankLockedReason.NoAccountInventoryLock] =
-        BANK_LOCKED_REASON_NO_ACCOUNT_INVENTORY_LOCK,
+    [Enum.BankLockedReason.BankConversionFailed] = BANK_LOCKED_REASON_BANK_CONVERSION_FAILED,
+    [Enum.BankLockedReason.BankDisabled] = BANK_LOCKED_REASON_BANK_DISABLED,
+    [Enum.BankLockedReason.NoAccountInventoryLock] = BANK_LOCKED_REASON_NO_ACCOUNT_INVENTORY_LOCK,
 }
 
 local function GetBankTypeToken(bankType)
@@ -41,42 +38,34 @@ local function GetEmptyText(bankType)
         return LOCKED_MESSAGES[lockedReason] or "This bank is unavailable."
     end
 
-    if Inventory:IsLoading(bankType) then
-        return "Loading bank items..."
-    end
+    if Inventory:IsLoading(bankType) then return "Loading bank items..." end
 
-    if #Inventory:GetContainers(bankType) == 0
-        and C_Bank.FetchNextPurchasableBankTabData(bankType) then
+    if
+        #Inventory:GetContainers(bankType) == 0
+        and C_Bank.FetchNextPurchasableBankTabData(bankType)
+    then
         return "Purchase a bank tab to begin."
     end
 
-    return bankType == ACCOUNT_BANK
-        and "No Warband bank items"
+    return bankType == ACCOUNT_BANK and "No Warband bank items"
         or "No Character bank items"
 end
 
 local function ApplyInventoryRefresh(frame, refreshFooter)
     local bankType = Inventory:GetActiveBankType()
-    if not bankType then
-        return
-    end
+    if not bankType then return end
 
     local containers = Inventory:GetContainers(bankType)
     local expectedTab = not Inventory:IsLoading(bankType) and containers[1]
-    NS.BlizzardBank.SyncNativeBankType(
-        bankType,
-        expectedTab and expectedTab.id
-    )
+    NS.BlizzardBank.SyncNativeBankType(bankType, expectedTab and expectedTab.id)
     frame.itemList:SetEmptyText(GetEmptyText(bankType))
     frame.itemList:SetItems(
         C_Bank.FetchBankLockedReason(bankType) == nil
-            and Inventory:GetItems(bankType)
+                and Inventory:GetItems(bankType)
             or EMPTY_ITEMS
     )
     frame.body:Show()
-    if refreshFooter ~= false then
-        NS.BankFooter.Refresh(frame)
-    end
+    if refreshFooter ~= false then NS.BankFooter.Refresh(frame) end
 end
 
 local function CancelScheduledInventoryRefresh(frame)
@@ -96,9 +85,7 @@ local function QueueInventoryRefreshAttempt(frame)
 
     local timer
     timer = C_Timer.NewTimer(0, function()
-        if frame.inventoryRefreshTimer ~= timer then
-            return
-        end
+        if frame.inventoryRefreshTimer ~= timer then return end
 
         frame.inventoryRefreshTimer = nil
         if NS.bankFrame ~= frame then
@@ -108,9 +95,11 @@ local function QueueInventoryRefreshAttempt(frame)
         end
 
         local bankType = Inventory:GetActiveBankType()
-        if not frame.inventoryRefreshPending
+        if
+            not frame.inventoryRefreshPending
             or not frame:IsShown()
-            or Inventory:HasLockedItems(bankType) then
+            or Inventory:HasLockedItems(bankType)
+        then
             return
         end
 
@@ -124,8 +113,8 @@ end
 
 local function RequestInventoryRefresh(frame, refreshFooter)
     frame.inventoryRefreshPending = true
-    frame.inventoryRefreshNeedsFooter =
-        frame.inventoryRefreshNeedsFooter or refreshFooter ~= false
+    frame.inventoryRefreshNeedsFooter = frame.inventoryRefreshNeedsFooter
+        or refreshFooter ~= false
     QueueInventoryRefreshAttempt(frame)
 end
 
@@ -170,11 +159,17 @@ end
 
 local function CreateTypeButton(frame, text, bankType, width)
     local button, appearance = NS.Skins:CreateTab(frame.toolbar, {
-        geometryRoot = frame, width = width, height = TYPE_BUTTON_HEIGHT,
-        text = text, fontSize = TYPE_BUTTON_TEXT_SIZE, fontFlags = "OUTLINE",
+        geometryRoot = frame,
+        width = width,
+        height = TYPE_BUTTON_HEIGHT,
+        text = text,
+        fontSize = TYPE_BUTTON_TEXT_SIZE,
+        fontFlags = "OUTLINE",
     })
     button.appearance = appearance
-    button:SetWidth(math.max(width, math.ceil(button:GetFontString():GetStringWidth()) + 24))
+    button:SetWidth(
+        math.max(width, math.ceil(button:GetFontString():GetStringWidth()) + 24)
+    )
     button.bankType = bankType
     button:SetScript("OnClick", function(self)
         frame:SetBankType(self.bankType)
@@ -193,9 +188,7 @@ local function RefreshTypeButtons(frame)
         local button = buttons[index]
         local shown = Inventory:IsBankTypeViewable(button.bankType)
         button:SetShown(shown)
-        if shown then
-            RefreshTypeButton(button, activeBankType)
-        end
+        if shown then RefreshTypeButton(button, activeBankType) end
     end
 
     NS.Skins:LayoutToolbar(frame.toolbar)
@@ -214,34 +207,30 @@ local function CreateToolbarControls(frame)
         frameLabel = "bank",
     })
 
-    frame.characterBankButton = CreateTypeButton(
-        frame,
-        "Character",
-        CHARACTER_BANK,
-        108
-    )
-    frame.accountBankButton = CreateTypeButton(
-        frame,
-        "Warband",
-        ACCOUNT_BANK,
-        96
-    )
+    frame.characterBankButton =
+        CreateTypeButton(frame, "Character", CHARACTER_BANK, 108)
+    frame.accountBankButton =
+        CreateTypeButton(frame, "Warband", ACCOUNT_BANK, 96)
 
     Controls.CreateSearch(frame)
 end
 
 local function RegisterCallbacks(frame)
     Inventory:RegisterUpdateCallback(function(_, reason, bankType, ...)
-        if NS.bankFrame ~= frame
-            or bankType ~= Inventory:GetActiveBankType() then
+        if
+            NS.bankFrame ~= frame
+            or bankType ~= Inventory:GetActiveBankType()
+        then
             return
         end
 
         if reason == Inventory.UpdateReasons.Locks then
             local tabID, slotIndex, isLocked = ...
             frame.itemList:RefreshItemLock(tabID, slotIndex, isLocked)
-            if frame.inventoryRefreshPending
-                and not Inventory:HasLockedItems(bankType) then
+            if
+                frame.inventoryRefreshPending
+                and not Inventory:HasLockedItems(bankType)
+            then
                 QueueInventoryRefreshAttempt(frame)
             end
         elseif reason == Inventory.UpdateReasons.Loading then
@@ -261,26 +250,18 @@ local function RegisterCallbacks(frame)
     end)
 
     NS:RegisterEventHandler("ACCOUNT_MONEY", function()
-        if frame:IsShown() then
-            NS.BankFooter.Refresh(frame)
-        end
+        if frame:IsShown() then NS.BankFooter.Refresh(frame) end
     end)
     NS:RegisterEventHandler("PLAYER_MONEY", function()
-        if frame:IsShown() then
-            NS.BankFooter.Refresh(frame)
-        end
+        if frame:IsShown() then NS.BankFooter.Refresh(frame) end
     end)
     NS:RegisterEventHandler("BAG_UPDATE_COOLDOWN", function()
-        if frame:IsShown() then
-            frame.itemList:RefreshVisibleCooldowns()
-        end
+        if frame:IsShown() then frame.itemList:RefreshVisibleCooldowns() end
     end)
 end
 
 function BankFrameController.Create()
-    if NS.bankFrame then
-        return NS.bankFrame
-    end
+    if NS.bankFrame then return NS.bankFrame end
 
     local frame = NS.Skins:CreateWindow(UIParent, {
         name = NS.BANK_FRAME_NAME,
@@ -315,18 +296,16 @@ function BankFrameController.Create()
     Controls.RegisterSearchShortcut(frame)
 
     function frame:SetBankType(bankType)
-        if bankType == Inventory:GetActiveBankType()
-            or not Inventory:IsBankTypeViewable(bankType) then
+        if
+            bankType == Inventory:GetActiveBankType()
+            or not Inventory:IsBankTypeViewable(bankType)
+        then
             return
         end
 
         NS.BlizzardBank.SyncNativeBankType(bankType)
         Inventory:SetActiveBankType(bankType)
-        NS.charDB:Set(
-            "bankFrame",
-            "lastBankType",
-            GetBankTypeToken(bankType)
-        )
+        NS.charDB:Set("bankFrame", "lastBankType", GetBankTypeToken(bankType))
         NS.BankFooter.HideTransientUI(self)
         self.itemList:InvalidateCursorDropTarget()
         RefreshTypeButtons(self)
@@ -339,9 +318,7 @@ function BankFrameController.Create()
     end)
     frame:SetScript("OnHide", function(self)
         NS.BankFooter.HideTransientUI(self)
-        if Inventory.isOpen then
-            C_Bank.CloseBankFrame()
-        end
+        if Inventory.isOpen then C_Bank.CloseBankFrame() end
     end)
 
     NS.bankFrame = frame
@@ -351,9 +328,8 @@ end
 
 function BankFrameController.Open()
     local frame = NS.bankFrame or BankFrameController.Create()
-    local preferredBankType = GetBankTypeFromToken(
-        NS.charDB:Get("bankFrame", "lastBankType")
-    )
+    local preferredBankType =
+        GetBankTypeFromToken(NS.charDB:Get("bankFrame", "lastBankType"))
     local bankType = Inventory:Open(preferredBankType)
     if not bankType then
         C_Bank.CloseBankFrame()
@@ -362,11 +338,7 @@ function BankFrameController.Open()
 
     NS.BankFooter.PreloadTabIcons(frame)
 
-    NS.charDB:Set(
-        "bankFrame",
-        "lastBankType",
-        GetBankTypeToken(bankType)
-    )
+    NS.charDB:Set("bankFrame", "lastBankType", GetBankTypeToken(bankType))
     NS.BlizzardBank.SyncNativeBankType(bankType)
     RefreshTypeButtons(frame)
     OpenAllBags(frame)

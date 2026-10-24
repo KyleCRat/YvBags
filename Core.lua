@@ -41,9 +41,7 @@ end
 
 function NS:UnregisterEventHandler(event, handler)
     local handlers = EVENT_HANDLERS[event]
-    if not handlers then
-        return
-    end
+    if not handlers then return end
 
     if not handler then
         EVENT_HANDLERS[event] = nil
@@ -52,9 +50,7 @@ function NS:UnregisterEventHandler(event, handler)
     end
 
     for index = #handlers, 1, -1 do
-        if handlers[index] == handler then
-            tremove(handlers, index)
-        end
+        if handlers[index] == handler then tremove(handlers, index) end
     end
 
     if #handlers == 0 then
@@ -92,9 +88,7 @@ end
 
 local function IsLegacyAccountStorage(storage)
     for index = 1, #LEGACY_ACCOUNT_ROOT_KEYS do
-        if storage[LEGACY_ACCOUNT_ROOT_KEYS[index]] ~= nil then
-            return true
-        end
+        if storage[LEGACY_ACCOUNT_ROOT_KEYS[index]] ~= nil then return true end
     end
 
     return false
@@ -121,9 +115,7 @@ local function AdoptLegacyAccountStorage(legacyPayload)
         }
         legacyPins.items = nil
 
-        if next(legacyPins) == nil then
-            legacyPayload.pins = nil
-        end
+        if next(legacyPins) == nil then legacyPayload.pins = nil end
     end
 
     -- Retain the original flat payload by reference, but only after the new
@@ -136,21 +128,24 @@ local function NormalizeAccountStorage(storage)
     local metadata = storage[NS.ACCOUNT_STORAGE_METADATA_KEY]
 
     if metadata ~= nil then
-        if type(metadata) ~= "table"
-            or metadata.schema ~= NS.ACCOUNT_STORAGE_SCHEMA_VERSION then
+        if
+            type(metadata) ~= "table"
+            or metadata.schema ~= NS.ACCOUNT_STORAGE_SCHEMA_VERSION
+        then
             error("YvBags: unsupported or corrupt account storage schema", 2)
         end
 
-        if type(storage.global) ~= "table" or type(storage.profiles) ~= "table" then
+        if
+            type(storage.global) ~= "table"
+            or type(storage.profiles) ~= "table"
+        then
             error("YvBags: corrupt account storage containers", 2)
         end
 
         return storage
     end
 
-    if next(storage) == nil then
-        return CreateAccountStorage()
-    end
+    if next(storage) == nil then return CreateAccountStorage() end
 
     if IsLegacyAccountStorage(storage) then
         return AdoptLegacyAccountStorage(storage)
@@ -189,9 +184,7 @@ function NS:InitializeDatabases()
 end
 
 function NS:Initialize()
-    if NS.initialized then
-        return
-    end
+    if NS.initialized then return end
 
     NS:InitializeDatabases()
     NS.initialized = true
@@ -205,9 +198,7 @@ function NS:Initialize()
 end
 
 local function OnAddonLoaded(self, loadedAddon)
-    if loadedAddon ~= ADDON_NAME then
-        return
-    end
+    if loadedAddon ~= ADDON_NAME then return end
 
     self:UnregisterEvent("ADDON_LOADED")
     NS:Initialize()

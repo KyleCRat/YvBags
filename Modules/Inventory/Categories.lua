@@ -56,9 +56,7 @@ Categories.labels = categoryLabels
 local function HasASCIIControl(value)
     for index = 1, #value do
         local byte = string.byte(value, index)
-        if byte <= 31 or byte == 127 then
-            return true
-        end
+        if byte <= 31 or byte == 127 then return true end
     end
 
     return false
@@ -89,21 +87,21 @@ end
 
 local function GetStoredName(categoryID, definition)
     local name = NormalizeCategoryName(definition and definition.name)
-    if name then
-        return name
-    end
+    if name then return name end
 
     local defaultDefinition = GetDefaultDefinition(categoryID)
-    if defaultDefinition then
-        return defaultDefinition.name
-    end
+    if defaultDefinition then return defaultDefinition.name end
 
     return categoryID
 end
 
 local function NormalizeNextCustomID(root, definitions)
     local nextCustomID = root.nextCustomID
-    if type(nextCustomID) ~= "number" or nextCustomID < 1 or nextCustomID % 1 ~= 0 then
+    if
+        type(nextCustomID) ~= "number"
+        or nextCustomID < 1
+        or nextCustomID % 1 ~= 0
+    then
         nextCustomID = 1
     end
 
@@ -118,35 +116,45 @@ local function NormalizeNextCustomID(root, definitions)
 end
 
 local function NormalizeRoot(root)
-    if type(root) ~= "table" then
-        root = CopyTable(DEFAULT_ROOT)
-    end
+    if type(root) ~= "table" then root = CopyTable(DEFAULT_ROOT) end
 
     local schemaVersion = root.schemaVersion
     if schemaVersion ~= nil and schemaVersion ~= CATEGORY_SCHEMA_VERSION then
-        error(("YvBags: unsupported category schema %s"):format(tostring(schemaVersion)), 3)
+        error(
+            ("YvBags: unsupported category schema %s"):format(
+                tostring(schemaVersion)
+            ),
+            3
+        )
     end
 
-    local sourceDefinitions = type(root.definitions) == "table" and root.definitions or {}
+    local sourceDefinitions = type(root.definitions) == "table"
+            and root.definitions
+        or {}
     local definitions = {}
 
     for categoryID, definition in pairs(sourceDefinitions) do
-        if type(categoryID) == "string" and categoryID ~= "" and type(definition) == "table" then
+        if
+            type(categoryID) == "string"
+            and categoryID ~= ""
+            and type(definition) == "table"
+        then
             local normalizedDefinition = CopyTable(definition)
-            normalizedDefinition.name = GetStoredName(categoryID, normalizedDefinition)
+            normalizedDefinition.name =
+                GetStoredName(categoryID, normalizedDefinition)
             if categoryID == OTHER_CATEGORY_ID then
                 normalizedDefinition.rules = nil
             else
-                normalizedDefinition.rules = Rules.NormalizeRuleSet(
-                    normalizedDefinition.rules
-                )
+                normalizedDefinition.rules =
+                    Rules.NormalizeRuleSet(normalizedDefinition.rules)
             end
             definitions[categoryID] = normalizedDefinition
         end
     end
 
     if not definitions[OTHER_CATEGORY_ID] then
-        definitions[OTHER_CATEGORY_ID] = CopyTable(GetDefaultDefinition(OTHER_CATEGORY_ID))
+        definitions[OTHER_CATEGORY_ID] =
+            CopyTable(GetDefaultDefinition(OTHER_CATEGORY_ID))
     end
 
     local order = {}
@@ -198,9 +206,8 @@ local function RebuildCaches(root)
             categoryLabels[categoryID] = cachedDefinition.name
             categorySortPriorities[categoryID] = sortPriority
             if categoryID ~= OTHER_CATEGORY_ID then
-                compiledRuleSets[categoryID] = Rules.CompileRuleSet(
-                    cachedDefinition.rules
-                )
+                compiledRuleSets[categoryID] =
+                    Rules.CompileRuleSet(cachedDefinition.rules)
             end
         end
     end
@@ -262,13 +269,13 @@ end
 
 local function ValidateName(name, excludedCategoryID)
     local normalizedName, errorCode = NormalizeCategoryName(name)
-    if not normalizedName then
-        return nil, errorCode
-    end
+    if not normalizedName then return nil, errorCode end
 
     for categoryID, definition in pairs(definitionsByID) do
-        if categoryID ~= excludedCategoryID
-            and strcmputf8i(definition.name, normalizedName) == 0 then
+        if
+            categoryID ~= excludedCategoryID
+            and strcmputf8i(definition.name, normalizedName) == 0
+        then
             return nil, Categories.ErrorCodes.DuplicateName
         end
     end
@@ -278,9 +285,7 @@ end
 
 local function FindCategoryIndex(root, categoryID)
     for index, orderedCategoryID in ipairs(root.order) do
-        if orderedCategoryID == categoryID then
-            return index
-        end
+        if orderedCategoryID == categoryID then return index end
     end
 
     return nil
@@ -292,9 +297,7 @@ local function GetMutableRuleSet(root, categoryID)
     end
 
     local definition = root.definitions[categoryID]
-    if not definition then
-        return nil, Categories.ErrorCodes.MissingCategory
-    end
+    if not definition then return nil, Categories.ErrorCodes.MissingCategory end
 
     definition.rules = Rules.NormalizeRuleSet(definition.rules)
     return definition.rules
@@ -302,17 +305,15 @@ end
 
 local function GetMutableMultiValueRule(root, categoryID, ruleID)
     local ruleSet, errorCode = GetMutableRuleSet(root, categoryID)
-    if not ruleSet then
-        return nil, errorCode
-    end
+    if not ruleSet then return nil, errorCode end
 
     local rule = Rules.FindRule(ruleSet, ruleID)
-    if not rule then
-        return nil, Categories.ErrorCodes.MissingRule
-    end
+    if not rule then return nil, Categories.ErrorCodes.MissingRule end
 
-    if not Rules.SupportsMultipleValues(rule.field)
-        or not Rules.OperatorNeedsValue(rule.operator) then
+    if
+        not Rules.SupportsMultipleValues(rule.field)
+        or not Rules.OperatorNeedsValue(rule.operator)
+    then
         return nil, Categories.ErrorCodes.InvalidRuleValue
     end
 
@@ -320,10 +321,12 @@ local function GetMutableMultiValueRule(root, categoryID, ruleID)
 end
 
 local function NormalizeValueIndex(values, valueIndex)
-    if type(valueIndex) ~= "number"
+    if
+        type(valueIndex) ~= "number"
         or valueIndex % 1 ~= 0
         or valueIndex < 1
-        or valueIndex > math.max(1, #values) then
+        or valueIndex > math.max(1, #values)
+    then
         return nil
     end
 
@@ -342,7 +345,8 @@ local function SetRuleAlternative(rule, valueIndex, value)
     local isValid
     local errorMessage
 
-    normalizedValue, isValid, errorMessage = Rules.NormalizeInputValue(rule.field, value)
+    normalizedValue, isValid, errorMessage =
+        Rules.NormalizeInputValue(rule.field, value)
     if not isValid then
         return nil, nil, Categories.ErrorCodes.InvalidRuleValue, errorMessage
     end
@@ -360,8 +364,10 @@ end
 function Categories.GetCategoryKey(item)
     for _, definition in ipairs(orderedDefinitions) do
         local categoryID = definition.id
-        if categoryID ~= OTHER_CATEGORY_ID
-            and Rules.Matches(compiledRuleSets[categoryID], item) then
+        if
+            categoryID ~= OTHER_CATEGORY_ID
+            and Rules.Matches(compiledRuleSets[categoryID], item)
+        then
             return categoryID
         end
     end
@@ -374,7 +380,8 @@ function Categories.GetCategoryName(categoryKey)
 end
 
 function Categories.GetSortPriority(categoryKey)
-    return categorySortPriorities[categoryKey] or categorySortPriorities[OTHER_CATEGORY_ID]
+    return categorySortPriorities[categoryKey]
+        or categorySortPriorities[OTHER_CATEGORY_ID]
 end
 
 function Categories.GetLabels()
@@ -408,9 +415,7 @@ function Categories.RegisterCallback(callback)
 end
 
 function Categories.UnregisterCallback(callback)
-    if not callbackLookup[callback] then
-        return false
-    end
+    if not callbackLookup[callback] then return false end
 
     callbackLookup[callback] = nil
     for index, registeredCallback in ipairs(callbacks) do
@@ -426,9 +431,7 @@ end
 -- Public category mutations
 function Categories.CreateCategory(name)
     local validatedName, errorCode = ValidateName(name)
-    if not validatedName then
-        return nil, errorCode
-    end
+    if not validatedName then return nil, errorCode end
 
     local root = CopyTable(activeRoot)
     local numericID = root.nextCustomID
@@ -454,9 +457,7 @@ function Categories.RenameCategory(categoryID, name)
     end
 
     local validatedName, errorCode = ValidateName(name, categoryID)
-    if not validatedName then
-        return nil, errorCode
-    end
+    if not validatedName then return nil, errorCode end
 
     if definitionsByID[categoryID].name == validatedName then
         return validatedName
@@ -475,16 +476,16 @@ function Categories.MoveCategory(categoryID, targetIndex)
         return nil, Categories.ErrorCodes.MissingCategory
     end
 
-    if type(targetIndex) ~= "number"
+    if
+        type(targetIndex) ~= "number"
         or targetIndex % 1 ~= 0
         or targetIndex < 1
-        or targetIndex > #root.order then
+        or targetIndex > #root.order
+    then
         return nil, Categories.ErrorCodes.InvalidIndex
     end
 
-    if currentIndex == targetIndex then
-        return targetIndex
-    end
+    if currentIndex == targetIndex then return targetIndex end
 
     table.remove(root.order, currentIndex)
     table.insert(root.order, targetIndex, categoryID)
@@ -503,9 +504,7 @@ function Categories.RemoveCategory(categoryID)
 
     local root = CopyTable(activeRoot)
     local categoryIndex = FindCategoryIndex(root, categoryID)
-    if categoryIndex then
-        table.remove(root.order, categoryIndex)
-    end
+    if categoryIndex then table.remove(root.order, categoryIndex) end
     root.definitions[categoryID] = nil
     CommitRoot(root, Categories.ChangeTypes.Removed, categoryID)
     return true
@@ -519,13 +518,9 @@ function Categories.SetRuleMode(categoryID, mode)
 
     local root = CopyTable(activeRoot)
     local ruleSet, errorCode = GetMutableRuleSet(root, categoryID)
-    if not ruleSet then
-        return nil, errorCode
-    end
+    if not ruleSet then return nil, errorCode end
 
-    if ruleSet.mode == mode then
-        return mode
-    end
+    if ruleSet.mode == mode then return mode end
 
     ruleSet.mode = mode
     CommitRoot(root, Categories.ChangeTypes.RulesChanged, categoryID)
@@ -535,9 +530,7 @@ end
 function Categories.CreateRule(categoryID)
     local root = CopyTable(activeRoot)
     local ruleSet, errorCode = GetMutableRuleSet(root, categoryID)
-    if not ruleSet then
-        return nil, errorCode
-    end
+    if not ruleSet then return nil, errorCode end
 
     local ruleID = Rules.AllocateRule(ruleSet)
     CommitRoot(root, Categories.ChangeTypes.RulesChanged, categoryID)
@@ -547,25 +540,21 @@ end
 function Categories.MoveRule(categoryID, ruleID, targetIndex)
     local root = CopyTable(activeRoot)
     local ruleSet, errorCode = GetMutableRuleSet(root, categoryID)
-    if not ruleSet then
-        return nil, errorCode
-    end
+    if not ruleSet then return nil, errorCode end
 
     local _, currentIndex = Rules.FindRule(ruleSet, ruleID)
-    if not currentIndex then
-        return nil, Categories.ErrorCodes.MissingRule
-    end
+    if not currentIndex then return nil, Categories.ErrorCodes.MissingRule end
 
-    if type(targetIndex) ~= "number"
+    if
+        type(targetIndex) ~= "number"
         or targetIndex % 1 ~= 0
         or targetIndex < 1
-        or targetIndex > #ruleSet.entries then
+        or targetIndex > #ruleSet.entries
+    then
         return nil, Categories.ErrorCodes.InvalidIndex
     end
 
-    if currentIndex == targetIndex then
-        return targetIndex
-    end
+    if currentIndex == targetIndex then return targetIndex end
 
     local rule = table.remove(ruleSet.entries, currentIndex)
     table.insert(ruleSet.entries, targetIndex, rule)
@@ -580,17 +569,15 @@ function Categories.UpdateRuleField(categoryID, ruleID, fieldID)
 
     local root = CopyTable(activeRoot)
     local ruleSet, errorCode = GetMutableRuleSet(root, categoryID)
-    if not ruleSet then
-        return nil, errorCode
-    end
+    if not ruleSet then return nil, errorCode end
 
     local rule = Rules.FindRule(ruleSet, ruleID)
-    if not rule then
-        return nil, Categories.ErrorCodes.MissingRule
-    end
+    if not rule then return nil, Categories.ErrorCodes.MissingRule end
 
-    if rule.field == fieldID
-        and Rules.IsOperatorValid(fieldID, rule.operator) then
+    if
+        rule.field == fieldID
+        and Rules.IsOperatorValid(fieldID, rule.operator)
+    then
         return fieldID
     end
 
@@ -604,27 +591,19 @@ end
 function Categories.UpdateRuleOperator(categoryID, ruleID, operatorID)
     local root = CopyTable(activeRoot)
     local ruleSet, errorCode = GetMutableRuleSet(root, categoryID)
-    if not ruleSet then
-        return nil, errorCode
-    end
+    if not ruleSet then return nil, errorCode end
 
     local rule = Rules.FindRule(ruleSet, ruleID)
-    if not rule then
-        return nil, Categories.ErrorCodes.MissingRule
-    end
+    if not rule then return nil, Categories.ErrorCodes.MissingRule end
 
     if not Rules.IsOperatorValid(rule.field, operatorID) then
         return nil, Categories.ErrorCodes.InvalidRuleOperator
     end
 
-    if rule.operator == operatorID then
-        return operatorID
-    end
+    if rule.operator == operatorID then return operatorID end
 
     rule.operator = operatorID
-    if not Rules.OperatorNeedsValue(operatorID) then
-        rule.value = nil
-    end
+    if not Rules.OperatorNeedsValue(operatorID) then rule.value = nil end
 
     CommitRoot(root, Categories.ChangeTypes.RulesChanged, categoryID)
     return operatorID
@@ -633,14 +612,10 @@ end
 function Categories.UpdateRuleValue(categoryID, ruleID, value)
     local root = CopyTable(activeRoot)
     local ruleSet, errorCode = GetMutableRuleSet(root, categoryID)
-    if not ruleSet then
-        return nil, errorCode
-    end
+    if not ruleSet then return nil, errorCode end
 
     local rule = Rules.FindRule(ruleSet, ruleID)
-    if not rule then
-        return nil, Categories.ErrorCodes.MissingRule
-    end
+    if not rule then return nil, Categories.ErrorCodes.MissingRule end
 
     if not Rules.OperatorNeedsValue(rule.operator) then
         return nil, Categories.ErrorCodes.InvalidRuleValue
@@ -651,18 +626,11 @@ function Categories.UpdateRuleValue(categoryID, ruleID, value)
         local changed
         local errorMessage
 
-        normalizedValue, changed, errorCode, errorMessage = SetRuleAlternative(
-            rule,
-            1,
-            value
-        )
-        if normalizedValue == nil then
-            return nil, errorCode, errorMessage
-        end
+        normalizedValue, changed, errorCode, errorMessage =
+            SetRuleAlternative(rule, 1, value)
+        if normalizedValue == nil then return nil, errorCode, errorMessage end
 
-        if not changed then
-            return normalizedValue
-        end
+        if not changed then return normalizedValue end
 
         CommitRoot(root, Categories.ChangeTypes.RulesChanged, categoryID)
         return normalizedValue
@@ -671,48 +639,33 @@ function Categories.UpdateRuleValue(categoryID, ruleID, value)
     local normalizedValue
     local isValid
     local errorMessage
-    normalizedValue, isValid, errorMessage = Rules.NormalizeInputValue(rule.field, value)
+    normalizedValue, isValid, errorMessage =
+        Rules.NormalizeInputValue(rule.field, value)
     if not isValid then
         return nil, Categories.ErrorCodes.InvalidRuleValue, errorMessage
     end
 
-    if rule.value == normalizedValue then
-        return normalizedValue
-    end
+    if rule.value == normalizedValue then return normalizedValue end
 
     rule.value = normalizedValue
     CommitRoot(root, Categories.ChangeTypes.RulesChanged, categoryID)
     return normalizedValue
 end
 
-function Categories.UpdateRuleAlternative(
-    categoryID,
-    ruleID,
-    valueIndex,
-    value
-)
+function Categories.UpdateRuleAlternative(categoryID, ruleID, valueIndex, value)
     local root = CopyTable(activeRoot)
     local rule, errorCode = GetMutableMultiValueRule(root, categoryID, ruleID)
-    if not rule then
-        return nil, errorCode
-    end
+    if not rule then return nil, errorCode end
 
     local normalizedValue
     local changed
     local errorMessage
 
-    normalizedValue, changed, errorCode, errorMessage = SetRuleAlternative(
-        rule,
-        valueIndex,
-        value
-    )
-    if normalizedValue == nil then
-        return nil, errorCode, errorMessage
-    end
+    normalizedValue, changed, errorCode, errorMessage =
+        SetRuleAlternative(rule, valueIndex, value)
+    if normalizedValue == nil then return nil, errorCode, errorMessage end
 
-    if not changed then
-        return normalizedValue
-    end
+    if not changed then return normalizedValue end
 
     CommitRoot(root, Categories.ChangeTypes.RulesChanged, categoryID)
     return normalizedValue
@@ -721,14 +674,10 @@ end
 function Categories.AddRuleAlternative(categoryID, ruleID)
     local root = CopyTable(activeRoot)
     local rule, errorCode = GetMutableMultiValueRule(root, categoryID, ruleID)
-    if not rule then
-        return nil, errorCode
-    end
+    if not rule then return nil, errorCode end
 
     local values = Rules.GetRuleAlternatives(rule)
-    if #values == 0 then
-        values[1] = ""
-    end
+    if #values == 0 then values[1] = "" end
 
     values[#values + 1] = ""
     rule.value = values
@@ -739,15 +688,15 @@ end
 function Categories.RemoveRuleAlternative(categoryID, ruleID, valueIndex)
     local root = CopyTable(activeRoot)
     local rule, errorCode = GetMutableMultiValueRule(root, categoryID, ruleID)
-    if not rule then
-        return nil, errorCode
-    end
+    if not rule then return nil, errorCode end
 
     local values = Rules.GetRuleAlternatives(rule)
-    if type(valueIndex) ~= "number"
+    if
+        type(valueIndex) ~= "number"
         or valueIndex % 1 ~= 0
         or valueIndex < 1
-        or valueIndex > #values then
+        or valueIndex > #values
+    then
         return nil, Categories.ErrorCodes.InvalidRuleValueIndex
     end
 
@@ -760,14 +709,10 @@ end
 function Categories.RemoveRule(categoryID, ruleID)
     local root = CopyTable(activeRoot)
     local ruleSet, errorCode = GetMutableRuleSet(root, categoryID)
-    if not ruleSet then
-        return nil, errorCode
-    end
+    if not ruleSet then return nil, errorCode end
 
     local _, ruleIndex = Rules.FindRule(ruleSet, ruleID)
-    if not ruleIndex then
-        return nil, Categories.ErrorCodes.MissingRule
-    end
+    if not ruleIndex then return nil, Categories.ErrorCodes.MissingRule end
 
     table.remove(ruleSet.entries, ruleIndex)
     CommitRoot(root, Categories.ChangeTypes.RulesChanged, categoryID)
@@ -775,9 +720,7 @@ function Categories.RemoveRule(categoryID, ruleID)
 end
 
 function Categories.ResetCategories()
-    if not NS.db:IsModified(DB_KEY) then
-        return false
-    end
+    if not NS.db:IsModified(DB_KEY) then return false end
 
     pendingChangeType = Categories.ChangeTypes.Reset
     pendingCategoryID = nil
@@ -801,9 +744,7 @@ function Categories.ResetCategories()
 end
 
 function Categories.Initialize()
-    if Categories.initialized then
-        return
-    end
+    if Categories.initialized then return end
 
     RebuildCaches(NS.db:GetCopy(DB_KEY))
     Categories.initialized = true

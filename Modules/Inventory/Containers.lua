@@ -40,22 +40,18 @@ function Containers.GetFirstReagentBagID()
 end
 
 function Containers.IsPlayerContainerID(containerID)
-    if type(containerID) ~= "number" then
-        return false
-    end
+    if type(containerID) ~= "number" then return false end
 
-    if containerID == BACKPACK_ID then
-        return true
-    end
+    if containerID == BACKPACK_ID then return true end
 
     local normalBagSlots = NUM_BAG_SLOTS or 4
-    if containerID >= 1 and containerID <= normalBagSlots then
-        return true
-    end
+    if containerID >= 1 and containerID <= normalBagSlots then return true end
 
     local reagentBagSlots = NUM_REAGENTBAG_SLOTS or 0
     local firstReagentBagID = Containers.GetFirstReagentBagID()
-    return reagentBagSlots > 0 and containerID >= firstReagentBagID and containerID < firstReagentBagID + reagentBagSlots
+    return reagentBagSlots > 0
+        and containerID >= firstReagentBagID
+        and containerID < firstReagentBagID + reagentBagSlots
 end
 
 -- Container metadata helpers
@@ -74,14 +70,10 @@ end
 function Containers.GetContainerName(containerID)
     if C_Container and C_Container.GetBagName then
         local name = C_Container.GetBagName(containerID)
-        if name and name ~= "" then
-            return name
-        end
+        if name and name ~= "" then return name end
     end
 
-    if containerID == BACKPACK_ID then
-        return BACKPACK_TOOLTIP or "Backpack"
-    end
+    if containerID == BACKPACK_ID then return BACKPACK_TOOLTIP or "Backpack" end
 
     return ("Bag %d"):format(containerID)
 end
@@ -94,9 +86,7 @@ function Containers.GetContainerIcon(containerID)
     local inventoryID = Containers.GetContainerInventoryID(containerID)
     if inventoryID then
         local icon = GetInventoryItemTexture("player", inventoryID)
-        if icon then
-            return icon
-        end
+        if icon then return icon end
     end
 
     return UNKNOWN_ITEM_ICON
@@ -120,7 +110,8 @@ function Containers.GetContainerFreeSlotData(containerID)
     end
 
     if C_Container and C_Container.GetContainerNumFreeSlots then
-        freeSlotCount, bagFamily = C_Container.GetContainerNumFreeSlots(containerID)
+        freeSlotCount, bagFamily =
+            C_Container.GetContainerNumFreeSlots(containerID)
     end
 
     if type(freeSlotCount) ~= "number" then
@@ -131,9 +122,7 @@ function Containers.GetContainerFreeSlotData(containerID)
 end
 
 function Containers.GetContainerKind(containerID)
-    if containerID == BACKPACK_ID then
-        return "backpack"
-    end
+    if containerID == BACKPACK_ID then return "backpack" end
 
     if containerID >= Containers.GetFirstReagentBagID() then
         return "reagentBag"
@@ -155,11 +144,10 @@ end
 
 function Containers.CreateContainer(containerID)
     local numSlots = Containers.GetContainerNumSlots(containerID)
-    if containerID ~= BACKPACK_ID and numSlots <= 0 then
-        return nil
-    end
+    if containerID ~= BACKPACK_ID and numSlots <= 0 then return nil end
 
-    local freeSlots, freeSlotCount, bagFamily = Containers.GetContainerFreeSlotData(containerID)
+    local freeSlots, freeSlotCount, bagFamily =
+        Containers.GetContainerFreeSlotData(containerID)
     return {
         id = containerID,
         kind = Containers.GetContainerKind(containerID),
@@ -182,9 +170,7 @@ function Containers.DiscoverPlayerContainers()
 
     local function AddContainer(containerID)
         local container = Containers.CreateContainer(containerID)
-        if not container then
-            return
-        end
+        if not container then return end
 
         containers[#containers + 1] = container
         containerByID[containerID] = container

@@ -22,6 +22,11 @@ ignore:
   - AGENTS.md
   - TODO.md
   - PLAN.md
+  - selene.toml
+  - wow.yml
+  - "Libs/*/AGENTS.md"
+  - "Libs/*/selene.toml"
+  - "Libs/*/wow.yml"
   - "Libs/LibSimpleDB-2.0/benchmarks"
   - "Libs/LibSimpleDB-2.0/tests"
   - "Libs/LibSimpleDBProfiles-1.0/tests"

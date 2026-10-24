@@ -29,9 +29,7 @@ local MODE_MANUAL = "manual"
 local function GetDropText(itemID, itemLink, textFormat)
     local itemName = itemLink
 
-    if not itemName and itemID then
-        itemName = C_Item.GetItemInfo(itemID)
-    end
+    if not itemName and itemID then itemName = C_Item.GetItemInfo(itemID) end
 
     return (textFormat or DEFAULT_TEXT_FORMAT):format(
         itemName or FALLBACK_ITEM_NAME
@@ -39,9 +37,7 @@ local function GetDropText(itemID, itemLink, textFormat)
 end
 
 local function SetHovered(overlay, hovered)
-    if overlay.hovered == hovered then
-        return
-    end
+    if overlay.hovered == hovered then return end
 
     overlay.hovered = hovered
     overlay.hoverBackground:SetShown(hovered)
@@ -53,9 +49,7 @@ local function StartGlow(overlay)
 end
 
 local function StopGlow(overlay)
-    if overlay.glowPulse:IsPlaying() then
-        overlay.glowPulse:Stop()
-    end
+    if overlay.glowPulse:IsPlaying() then overlay.glowPulse:Stop() end
 
     overlay.glow:SetAlpha(GLOW_MIN_ALPHA)
 end
@@ -89,24 +83,45 @@ local function CreateOverlay(list)
     overlay:SetScript("OnShow", StartGlow)
     overlay:SetScript("OnHide", StopGlow)
 
-    local background = NS.Skins:CreateTexture(overlay, { geometryRoot = list.window, layer = "BACKGROUND" })
+    local background = NS.Skins:CreateTexture(
+        overlay,
+        { geometryRoot = list.window, layer = "BACKGROUND" }
+    )
     background:SetAllPoints(overlay)
     background:SetColorTexture(0, 0, 0, BACKGROUND_ALPHA)
     overlay.background = background
 
     local hoverBackground = NS.Skins:CreateTexture(overlay, {
-        geometryRoot = list.window, layer = "BACKGROUND", sublevel = 1,
-        colorToken = "accent", alpha = HOVER_BACKGROUND_ALPHA,
+        geometryRoot = list.window,
+        layer = "BACKGROUND",
+        sublevel = 1,
+        colorToken = "accent",
+        alpha = HOVER_BACKGROUND_ALPHA,
     })
-    hoverBackground:SetPoint("TOPLEFT", overlay, "TOPLEFT", HOVER_BACKGROUND_INSET, -HOVER_BACKGROUND_INSET)
-    hoverBackground:SetPoint("BOTTOMRIGHT", overlay, "BOTTOMRIGHT", -HOVER_BACKGROUND_INSET, HOVER_BACKGROUND_INSET)
+    hoverBackground:SetPoint(
+        "TOPLEFT",
+        overlay,
+        "TOPLEFT",
+        HOVER_BACKGROUND_INSET,
+        -HOVER_BACKGROUND_INSET
+    )
+    hoverBackground:SetPoint(
+        "BOTTOMRIGHT",
+        overlay,
+        "BOTTOMRIGHT",
+        -HOVER_BACKGROUND_INSET,
+        HOVER_BACKGROUND_INSET
+    )
     hoverBackground:Hide()
     overlay.hoverBackground = hoverBackground
 
     CreateGlow(overlay, list.window)
 
     local text = NS.Skins:CreateText(overlay, {
-        geometryRoot = list.window, fontSize = TEXT_SIZE, fontFlags = TEXT_FLAGS, colorToken = "accent",
+        geometryRoot = list.window,
+        fontSize = TEXT_SIZE,
+        fontFlags = TEXT_FLAGS,
+        colorToken = "accent",
     })
     text:SetPoint("LEFT", overlay, "LEFT", TEXT_SIDE_PADDING, 0)
     text:SetPoint("RIGHT", overlay, "RIGHT", -TEXT_SIDE_PADDING, 0)
@@ -125,34 +140,60 @@ local function CreateOverlay(list)
 end
 
 local function SetManualDropActive(list, active)
-    if list.manualDropActive == active then
-        return
-    end
+    if list.manualDropActive == active then return end
 
     list.manualDropActive = active
     list.scrollBox:ClearAllPoints()
-    list.scrollBox:SetPoint("TOPLEFT", list.header.content, "BOTTOMLEFT", Layout.ScrollBoxLeftOffset, Layout.ScrollBoxTopGap)
+    list.scrollBox:SetPoint(
+        "TOPLEFT",
+        list.header.content,
+        "BOTTOMLEFT",
+        Layout.ScrollBoxLeftOffset,
+        Layout.ScrollBoxTopGap
+    )
 
     if active then
-        list.scrollBox:SetPoint("BOTTOMRIGHT", list.cursorDropOverlay, "TOPRIGHT", Layout.ScrollBoxRightOffset, 0)
+        list.scrollBox:SetPoint(
+            "BOTTOMRIGHT",
+            list.cursorDropOverlay,
+            "TOPRIGHT",
+            Layout.ScrollBoxRightOffset,
+            0
+        )
     else
-        list.scrollBox:SetPoint("BOTTOMRIGHT", list.frame, "BOTTOMRIGHT", Layout.ScrollBoxRightOffset, Layout.ScrollBoxBottomOffset)
+        list.scrollBox:SetPoint(
+            "BOTTOMRIGHT",
+            list.frame,
+            "BOTTOMRIGHT",
+            Layout.ScrollBoxRightOffset,
+            Layout.ScrollBoxBottomOffset
+        )
     end
     -- LibYvSkins anchors the scrollbar to this viewport; it follows automatically.
 end
 
 local function SetOverlayMode(list, mode)
     local overlay = list.cursorDropOverlay
-    if overlay.mode == mode then
-        return
-    end
+    if overlay.mode == mode then return end
 
     overlay.mode = mode
     overlay:ClearAllPoints()
 
     if mode == MODE_MANUAL then
-        overlay:SetPoint("BOTTOMLEFT", list.frame, "BOTTOMLEFT", Layout.ScrollBoxLeftOffset, Layout.ScrollBoxBottomOffset)
-        overlay:SetPoint("BOTTOMRIGHT", list.frame, "BOTTOMRIGHT", Layout.ScrollBoxRightOffset, Layout.ScrollBoxBottomOffset)
+        overlay:SetPoint(
+            "BOTTOMLEFT",
+            list.frame,
+            "BOTTOMLEFT",
+            Layout.ScrollBoxLeftOffset,
+            Layout.ScrollBoxBottomOffset
+        )
+        overlay:SetPoint(
+            "BOTTOMRIGHT",
+            list.frame,
+            "BOTTOMRIGHT",
+            Layout.ScrollBoxRightOffset,
+            Layout.ScrollBoxBottomOffset
+        )
         overlay:SetHeight(MANUAL_OVERLAY_HEIGHT)
     else
         overlay:SetPoint("TOPLEFT", list.scrollBox, "TOPLEFT", 0, 0)
@@ -163,13 +204,9 @@ local function SetOverlayMode(list, mode)
 end
 
 local function IsCursorOverDropArea(list)
-    if list.cursorDropOverlay.dropTarget:IsMouseOver() then
-        return true
-    end
+    if list.cursorDropOverlay.dropTarget:IsMouseOver() then return true end
 
-    if not list.frame:IsMouseOver() then
-        return false
-    end
+    if not list.frame:IsMouseOver() then return false end
 
     return not list.header:IsMouseOver()
 end
@@ -209,32 +246,40 @@ local function RefreshDropTarget(overlay, cursor)
         local valid
         if overlay.isMergeTarget then
             valid = CursorItem.GetMergeSlotInfo(
-                cursor, overlay.targetBagID, overlay.targetSlotIndex,
+                cursor,
+                overlay.targetBagID,
+                overlay.targetSlotIndex,
                 overlay.targetLocation
             )
         else
             valid = dropContext.isSlotEmpty(
-                overlay.targetBagID, overlay.targetSlotIndex
+                overlay.targetBagID,
+                overlay.targetSlotIndex
             )
         end
-        if not valid then
-            InvalidateTarget(overlay)
-        end
+        if not valid then InvalidateTarget(overlay) end
     end
 
     if overlay.dropTargetDirty then
         local bagID, slotIndex, info
         if allowMerge then
-            local items, excludedBagID = dropContext.getMergeItems(cursor.location)
+            local items, excludedBagID =
+                dropContext.getMergeItems(cursor.location)
             if items then
                 bagID, slotIndex, info = CursorItem.FindMergeSlot(
-                    cursor, items, overlay.targetLocation, excludedBagID
+                    cursor,
+                    items,
+                    overlay.targetLocation,
+                    excludedBagID
                 )
             end
         end
         if not bagID then
             bagID, slotIndex = dropContext.findEmptySlot(
-                cursor.itemID, cursor.link, cursor.bagID, cursor.slotIndex
+                cursor.itemID,
+                cursor.link,
+                cursor.bagID,
+                cursor.slotIndex
             )
         end
         overlay.targetBagID = bagID
@@ -280,7 +325,9 @@ function CursorDrop.Update(list)
         InvalidateTarget(overlay)
     end
 
-    if not IsCursorOverDropArea(list) or not RefreshDropTarget(overlay, cursor) then
+    if
+        not IsCursorOverDropArea(list) or not RefreshDropTarget(overlay, cursor)
+    then
         HideOverlay(list)
         return true
     end
@@ -295,7 +342,8 @@ function CursorDrop.Update(list)
 
     local textFormat = list.context.cursorDrop.textFormat
     if overlay.isMergeTarget then
-        textFormat = list.context.cursorDrop.mergeTextFormat or DEFAULT_MERGE_TEXT_FORMAT
+        textFormat = list.context.cursorDrop.mergeTextFormat
+            or DEFAULT_MERGE_TEXT_FORMAT
     end
     local dropText = GetDropText(cursor.itemID, cursor.link, textFormat)
     if overlay.dropText ~= dropText then
@@ -324,14 +372,10 @@ function CursorDrop.Attach(list)
 
     local function OnUpdate(_, elapsed)
         elapsedSinceUpdate = elapsedSinceUpdate + elapsed
-        if elapsedSinceUpdate < UPDATE_INTERVAL then
-            return
-        end
+        if elapsedSinceUpdate < UPDATE_INTERVAL then return end
 
         elapsedSinceUpdate = 0
-        if not CursorDrop.Update(list) then
-            StopPolling()
-        end
+        if not CursorDrop.Update(list) then StopPolling() end
     end
 
     local function RefreshNow()
@@ -369,12 +413,15 @@ function CursorDrop.Attach(list)
 
     list.frame:HookScript("OnShow", RefreshTarget)
     list.frame:HookScript("OnHide", StopPolling)
-    list.cursorDropOverlay.dropTarget:HookScript("OnMouseDown", function(_, button)
-        if button == "LeftButton" then
-            list.cursorDropOverlay.dropTargetDirty = true
-            RefreshNow()
+    list.cursorDropOverlay.dropTarget:HookScript(
+        "OnMouseDown",
+        function(_, button)
+            if button == "LeftButton" then
+                list.cursorDropOverlay.dropTargetDirty = true
+                RefreshNow()
+            end
         end
-    end)
+    )
 
     RefreshNow()
 end

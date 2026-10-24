@@ -46,16 +46,15 @@ local function GetScreenSize()
 end
 
 local function GetCursorUiPosition()
-    if not GetCursorPosition then
-        return nil, nil
-    end
+    if not GetCursorPosition then return nil, nil end
 
     local x, y = GetCursorPosition()
-    if not x or not y then
-        return nil, nil
-    end
+    if not x or not y then return nil, nil end
 
-    local scale = UIParent and UIParent.GetEffectiveScale and UIParent:GetEffectiveScale() or 1
+    local scale = UIParent
+            and UIParent.GetEffectiveScale
+            and UIParent:GetEffectiveScale()
+        or 1
     if scale and scale > 0 then
         x = x / scale
         y = y / scale
@@ -118,19 +117,23 @@ end
 
 local function AnchorToCursor(tooltip)
     local cursorX, cursorY = GetCursorUiPosition()
-    if not cursorX or not cursorY then
-        return
-    end
+    if not cursorX or not cursorY then return end
 
     local screenWidth, screenHeight = GetScreenSize()
     local x = cursorX + CURSOR_OFFSET_X
     local y = cursorY + CURSOR_OFFSET_Y
 
     if screenWidth > 0 then
-        x = math.max(SCREEN_PADDING, math.min(x, screenWidth - ESTIMATED_TOOLTIP_WIDTH - SCREEN_PADDING))
+        x = math.max(
+            SCREEN_PADDING,
+            math.min(x, screenWidth - ESTIMATED_TOOLTIP_WIDTH - SCREEN_PADDING)
+        )
     end
     if screenHeight > 0 then
-        y = math.max(ESTIMATED_TOOLTIP_HEIGHT + SCREEN_PADDING, math.min(y, screenHeight - SCREEN_PADDING))
+        y = math.max(
+            ESTIMATED_TOOLTIP_HEIGHT + SCREEN_PADDING,
+            math.min(y, screenHeight - SCREEN_PADDING)
+        )
     end
 
     tooltip:ClearAllPoints()
@@ -145,19 +148,29 @@ local function AnchorToRowEdge(tooltip, row)
         if tooltip.SetAnchorType then
             tooltip:SetAnchorType("ANCHOR_LEFT", 0, 0)
         end
-        tooltip:SetPoint("BOTTOMRIGHT", row, "TOPLEFT", -ROW_SIDE_OFFSET_X, ROW_SIDE_OFFSET_Y)
+        tooltip:SetPoint(
+            "BOTTOMRIGHT",
+            row,
+            "TOPLEFT",
+            -ROW_SIDE_OFFSET_X,
+            ROW_SIDE_OFFSET_Y
+        )
     else
         if tooltip.SetAnchorType then
             tooltip:SetAnchorType("ANCHOR_RIGHT", 0, 0)
         end
-        tooltip:SetPoint("BOTTOMLEFT", row, "TOPRIGHT", ROW_SIDE_OFFSET_X, ROW_SIDE_OFFSET_Y)
+        tooltip:SetPoint(
+            "BOTTOMLEFT",
+            row,
+            "TOPRIGHT",
+            ROW_SIDE_OFFSET_X,
+            ROW_SIDE_OFFSET_Y
+        )
     end
 end
 
 local function AnchorRowTooltip(row, tooltip)
-    if not row or not tooltip then
-        return
-    end
+    if not row or not tooltip then return end
 
     if USE_CURSOR_ANCHOR then
         AnchorToCursor(tooltip)
@@ -187,9 +200,7 @@ local function CancelPendingTooltip(button)
     if pendingButton == button then
         pendingButton = nil
         pendingElapsed = 0
-        if schedulerFrame then
-            schedulerFrame:Hide()
-        end
+        if schedulerFrame then schedulerFrame:Hide() end
     end
 end
 
@@ -198,36 +209,44 @@ local function ClearCursorState()
         ResetCursor()
     end
 
-    if ClearCursorHoveredItem then
-        ClearCursorHoveredItem()
-    end
+    if ClearCursorHoveredItem then ClearCursorHoveredItem() end
 end
 
 local function UpdateContainerCursorState(button)
-    if not button or not button.GetBagID or not button.GetID then
-        return
-    end
+    if not button or not button.GetBagID or not button.GetID then return end
 
     if not (SpellIsTargeting and SpellIsTargeting()) then
-        if IsModifiedClick and IsModifiedClick("DRESSUP") and button.HasItem and button:HasItem() then
-            if ShowInspectCursor then
-                ShowInspectCursor()
-            end
-        elseif MerchantFrame and MerchantFrame.IsShown and MerchantFrame:IsShown() and MerchantFrame.selectedTab == 1 then
+        -- Match Blizzard's DRESSUP > merchant > readable cursor precedence.
+        -- selene: allow(if_same_then_else)
+        if
+            IsModifiedClick
+            and IsModifiedClick("DRESSUP")
+            and button.HasItem
+            and button:HasItem()
+        then
+            if ShowInspectCursor then ShowInspectCursor() end
+        elseif
+            MerchantFrame
+            and MerchantFrame.IsShown
+            and MerchantFrame:IsShown()
+            and MerchantFrame.selectedTab == 1
+        then
             if C_Container and C_Container.ShowContainerSellCursor then
-                C_Container.ShowContainerSellCursor(button:GetBagID(), button:GetID())
+                C_Container.ShowContainerSellCursor(
+                    button:GetBagID(),
+                    button:GetID()
+                )
             end
         elseif button.IsReadable and button:IsReadable() then
-            if ShowInspectCursor then
-                ShowInspectCursor()
-            end
+            if ShowInspectCursor then ShowInspectCursor() end
         elseif ResetCursor then
             ResetCursor()
         end
     end
 
     if ItemLocation and SetCursorHoveredItem then
-        local itemLocation = ItemLocation:CreateFromBagAndSlot(button:GetBagID(), button:GetID())
+        local itemLocation =
+            ItemLocation:CreateFromBagAndSlot(button:GetBagID(), button:GetID())
         if itemLocation and itemLocation:IsValid() then
             SetCursorHoveredItem(itemLocation)
         end
@@ -250,9 +269,7 @@ local function HideTooltip(button)
         ClearCursorState()
     end
 
-    if state then
-        state.tooltipShown = false
-    end
+    if state then state.tooltipShown = false end
 end
 
 -- Delayed native tooltip rendering
@@ -265,37 +282,32 @@ local function ShouldShowTooltip(button)
 end
 
 local function AddPinActionLine(tooltip)
-    if tooltip ~= GameTooltip then
-        return
-    end
+    if tooltip ~= GameTooltip then return end
 
     local button = tooltip:GetOwner()
     local state = IsRegisteredRowButton(button)
-    if not state or not ShouldShowTooltip(button) then
-        return
-    end
+    if not state or not ShouldShowTooltip(button) then return end
 
     local item = state.row and state.row.item
-    if not item then
-        return
-    end
+    if not item then return end
 
     local r, g, b = NS.Media.GetAccentColor()
     GameTooltip_AddBlankLineToTooltip(tooltip)
-    tooltip:AddLine(item.isPinned and UNPIN_ACTION_TEXT or PIN_ACTION_TEXT, r, g, b)
+    tooltip:AddLine(
+        item.isPinned and UNPIN_ACTION_TEXT or PIN_ACTION_TEXT,
+        r,
+        g,
+        b
+    )
 end
 
 local function ShowTooltip(button)
     pendingButton = nil
     pendingElapsed = 0
-    if schedulerFrame then
-        schedulerFrame:Hide()
-    end
+    if schedulerFrame then schedulerFrame:Hide() end
 
     local state = IsRegisteredRowButton(button)
-    if not state or not ShouldShowTooltip(button) then
-        return
-    end
+    if not state or not ShouldShowTooltip(button) then return end
 
     state.nativeOnEnter(button)
     AnchorRowTooltip(state.row, GameTooltip)
@@ -304,9 +316,7 @@ local function ShowTooltip(button)
 end
 
 local function EnsureSchedulerFrame()
-    if schedulerFrame then
-        return schedulerFrame
-    end
+    if schedulerFrame then return schedulerFrame end
 
     schedulerFrame = CreateFrame("Frame")
     schedulerFrame:Hide()
@@ -317,9 +327,7 @@ local function EnsureSchedulerFrame()
         end
 
         pendingElapsed = pendingElapsed + elapsed
-        if pendingElapsed < TOOLTIP_SHOW_DELAY then
-            return
-        end
+        if pendingElapsed < TOOLTIP_SHOW_DELAY then return end
 
         ShowTooltip(pendingButton)
     end)
@@ -335,9 +343,7 @@ end
 
 local function OnRowButtonEnter(button)
     local state = buttonStates[button]
-    if state then
-        state.tooltipShown = false
-    end
+    if state then state.tooltipShown = false end
     state.updateCursor(button)
     ScheduleTooltip(button)
 end
@@ -348,37 +354,40 @@ end
 
 -- Public tooltip contract
 function ItemTooltip.Initialize()
-    if hooked or not hooksecurefunc or not ContainerFrameItemButton_CalculateItemTooltipAnchors then
+    if
+        hooked
+        or not hooksecurefunc
+        or not ContainerFrameItemButton_CalculateItemTooltipAnchors
+    then
         return
     end
 
-    hooksecurefunc("ContainerFrameItemButton_CalculateItemTooltipAnchors", function(button, tooltip)
-        local state = IsRegisteredRowButton(button)
-        if state then
-            AnchorRowTooltip(state.row, tooltip)
+    hooksecurefunc(
+        "ContainerFrameItemButton_CalculateItemTooltipAnchors",
+        function(button, tooltip)
+            local state = IsRegisteredRowButton(button)
+            if state then AnchorRowTooltip(state.row, tooltip) end
         end
-    end)
+    )
     hooksecurefunc(GameTooltip, "SetOwner", AnchorOwnedRowTooltip)
-    TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, AddPinActionLine)
+    TooltipDataProcessor.AddTooltipPostCall(
+        Enum.TooltipDataType.Item,
+        AddPinActionLine
+    )
 
     hooked = true
 end
 
 function ItemTooltip.RegisterRowButton(button, row, options)
-    if not button or not row then
-        return
-    end
+    if not button or not row then return end
 
     options = options or {}
     buttonStates[button] = {
         row = row,
         tooltipShown = false,
-        nativeOnEnter = options.nativeOnEnter
-            or EnterContainerItemButton,
-        nativeOnLeave = options.nativeOnLeave
-            or LeaveContainerItemButton,
-        updateCursor = options.updateCursor
-            or UpdateContainerCursorState,
+        nativeOnEnter = options.nativeOnEnter or EnterContainerItemButton,
+        nativeOnLeave = options.nativeOnLeave or LeaveContainerItemButton,
+        updateCursor = options.updateCursor or UpdateContainerCursorState,
     }
     button:SetScript("OnEnter", OnRowButtonEnter)
     button:SetScript("OnLeave", OnRowButtonLeave)
@@ -387,7 +396,11 @@ end
 
 function ItemTooltip.ResetButton(button)
     local state = button and buttonStates[button]
-    if pendingButton == button or (state and state.tooltipShown) or (button.IsMouseOver and button:IsMouseOver()) then
+    if
+        pendingButton == button
+        or (state and state.tooltipShown)
+        or (button.IsMouseOver and button:IsMouseOver())
+    then
         HideTooltip(button)
     end
 end

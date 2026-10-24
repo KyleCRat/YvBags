@@ -179,9 +179,7 @@ local function Lower(value)
 end
 
 local function NumberValue(value, fallback)
-    if type(value) == "number" then
-        return value
-    end
+    if type(value) == "number" then return value end
 
     return fallback or 0
 end
@@ -191,17 +189,13 @@ local function TextValue(value)
 end
 
 local function GetQualityName(quality)
-    if quality == nil then
-        return UNKNOWN
-    end
+    if quality == nil then return UNKNOWN end
 
     return _G["ITEM_QUALITY" .. tostring(quality) .. "_DESC"]
 end
 
 local function GetExpansionName(expansionID)
-    if expansionID == nil then
-        return UNKNOWN
-    end
+    if expansionID == nil then return UNKNOWN end
 
     return _G.GetExpansionName(expansionID)
 end
@@ -247,9 +241,7 @@ end
 local function CompareLocation(left, right)
     local leftBag = NumberValue(left.bagID, 0)
     local rightBag = NumberValue(right.bagID, 0)
-    if leftBag ~= rightBag then
-        return leftBag < rightBag
-    end
+    if leftBag ~= rightBag then return leftBag < rightBag end
 
     return NumberValue(left.slotIndex, 0) < NumberValue(right.slotIndex, 0)
 end
@@ -264,9 +256,7 @@ local function BuildSortValueCache(items, sortKey)
 end
 
 local function BuildSortPriorityCache(items, sortKey)
-    if sortKey ~= "category" then
-        return nil
-    end
+    if sortKey ~= "category" then return nil end
 
     local priorities = {}
     for _, item in ipairs(items) do
@@ -290,15 +280,11 @@ end
 local function CompareItemIdentity(left, right, names, itemIDs)
     local leftName = names[left]
     local rightName = names[right]
-    if leftName ~= rightName then
-        return leftName < rightName
-    end
+    if leftName ~= rightName then return leftName < rightName end
 
     local leftItemID = itemIDs[left]
     local rightItemID = itemIDs[right]
-    if leftItemID ~= rightItemID then
-        return leftItemID < rightItemID
-    end
+    if leftItemID ~= rightItemID then return leftItemID < rightItemID end
 
     return nil
 end
@@ -316,9 +302,7 @@ local function CompareSort(left, right, values, sortAscending, priorities)
     local rightValue = values[right]
 
     if leftValue ~= rightValue then
-        if sortAscending then
-            return leftValue < rightValue
-        end
+        if sortAscending then return leftValue < rightValue end
 
         return leftValue > rightValue
     end
@@ -326,7 +310,13 @@ local function CompareSort(left, right, values, sortAscending, priorities)
     return nil
 end
 
-local function SortItems(items, sortKey, sortAscending, secondarySortKey, secondarySortAscending)
+local function SortItems(
+    items,
+    sortKey,
+    sortAscending,
+    secondarySortKey,
+    secondarySortAscending
+)
     local primaryValues
     local secondaryValues
     local primaryPriorities
@@ -341,36 +331,47 @@ local function SortItems(items, sortKey, sortAscending, secondarySortKey, second
         if sortKey ~= "quantity" and secondarySortKey ~= "quantity" then
             defaultQuantityValues = BuildSortValueCache(items, "quantity")
         end
-        if secondarySortKey and secondarySortKey ~= NO_SECONDARY_SORT_KEY and secondarySortKey ~= sortKey then
+        if
+            secondarySortKey
+            and secondarySortKey ~= NO_SECONDARY_SORT_KEY
+            and secondarySortKey ~= sortKey
+        then
             secondaryValues = BuildSortValueCache(items, secondarySortKey)
-            secondaryPriorities = BuildSortPriorityCache(items, secondarySortKey)
+            secondaryPriorities =
+                BuildSortPriorityCache(items, secondarySortKey)
         end
     end
 
     table.sort(items, function(left, right)
         if primaryValues then
-            local primaryResult = CompareSort(left, right, primaryValues, sortAscending, primaryPriorities)
-            if primaryResult ~= nil then
-                return primaryResult
-            end
+            local primaryResult = CompareSort(
+                left,
+                right,
+                primaryValues,
+                sortAscending,
+                primaryPriorities
+            )
+            if primaryResult ~= nil then return primaryResult end
 
             if secondaryValues then
-                local secondaryResult = CompareSort(left, right, secondaryValues, secondarySortAscending, secondaryPriorities)
-                if secondaryResult ~= nil then
-                    return secondaryResult
-                end
+                local secondaryResult = CompareSort(
+                    left,
+                    right,
+                    secondaryValues,
+                    secondarySortAscending,
+                    secondaryPriorities
+                )
+                if secondaryResult ~= nil then return secondaryResult end
             end
 
-            local identityResult = CompareItemIdentity(left, right, identityNames, identityItemIDs)
-            if identityResult ~= nil then
-                return identityResult
-            end
+            local identityResult =
+                CompareItemIdentity(left, right, identityNames, identityItemIDs)
+            if identityResult ~= nil then return identityResult end
 
             if defaultQuantityValues then
-                local quantityResult = CompareSort(left, right, defaultQuantityValues, false)
-                if quantityResult ~= nil then
-                    return quantityResult
-                end
+                local quantityResult =
+                    CompareSort(left, right, defaultQuantityValues, false)
+                if quantityResult ~= nil then return quantityResult end
             end
         end
 
@@ -384,31 +385,30 @@ local function IsSecretValue(value)
 end
 
 local function AppendSearchValue(values, value)
-    if IsSecretValue(value) then
-        return
-    end
+    if IsSecretValue(value) then return end
 
-    if value == nil then
-        return
-    end
+    if value == nil then return end
 
     local text = C_StringUtil.StripHyperlinks(tostring(value))
-    if IsSecretValue(text) then
-        return
-    end
+    if IsSecretValue(text) then return end
 
-    if text ~= "" then
-        values[#values + 1] = text
-    end
+    if text ~= "" then values[#values + 1] = text end
 end
 
 local function AppendFormattedColumns(values, item)
     for _, column in ipairs(Columns.GetAvailableColumns()) do
         local formatted = Columns.FormatColumn(item, column.key)
-        if not IsSecretValue(formatted) and formatted and formatted ~= "" and formatted ~= "-" then
+        if
+            not IsSecretValue(formatted)
+            and formatted
+            and formatted ~= ""
+            and formatted ~= "-"
+        then
             AppendSearchValue(values, formatted)
 
-            local label = column.tooltipTitle or column.sortLabel or column.label
+            local label = column.tooltipTitle
+                or column.sortLabel
+                or column.label
             if label and label ~= "" then
                 AppendSearchValue(values, label .. " " .. formatted)
             end
@@ -417,20 +417,26 @@ local function AppendFormattedColumns(values, item)
 end
 
 local function GetMoneySearchText(copper)
-    if IsSecretValue(copper) then
-        return nil
-    end
+    if IsSecretValue(copper) then return nil end
 
-    if type(copper) ~= "number" or copper <= 0 then
-        return nil
-    end
+    if type(copper) ~= "number" or copper <= 0 then return nil end
 
     local copperPerGold = COPPER_PER_GOLD or 10000
     local copperPerSilver = COPPER_PER_SILVER or 100
     local gold = math.floor(copper / copperPerGold)
-    local silver = math.floor((copper - (gold * copperPerGold)) / copperPerSilver)
-    local copperOnly = copper - (gold * copperPerGold) - (silver * copperPerSilver)
-    return ("%d gold %d silver %d copper %dg %ds %dc"):format(gold, silver, copperOnly, gold, silver, copperOnly)
+    local silver =
+        math.floor((copper - (gold * copperPerGold)) / copperPerSilver)
+    local copperOnly = copper
+        - (gold * copperPerGold)
+        - (silver * copperPerSilver)
+    return ("%d gold %d silver %d copper %dg %ds %dc"):format(
+        gold,
+        silver,
+        copperOnly,
+        gold,
+        silver,
+        copperOnly
+    )
 end
 
 local function BuildItemSearchDocument(item)
@@ -449,13 +455,17 @@ local function BuildItemSearchDocument(item)
     AppendSearchValue(values, item.keystoneMapName)
     AppendSearchValue(values, item.battlePetName)
 
-    if item.isPinned then
-        AppendSearchValue(values, "pin pinned")
-    end
+    if item.isPinned then AppendSearchValue(values, "pin pinned") end
 
     local professionQuality = item.professionQuality
-    if not IsSecretValue(professionQuality) and type(professionQuality) == "number" then
-        AppendSearchValue(values, ("profession quality %d"):format(professionQuality))
+    if
+        not IsSecretValue(professionQuality)
+        and type(professionQuality) == "number"
+    then
+        AppendSearchValue(
+            values,
+            ("profession quality %d"):format(professionQuality)
+        )
     end
 
     AppendSearchValue(values, GetMoneySearchText(item.totalSellValue))
@@ -465,9 +475,7 @@ local function BuildItemSearchDocument(item)
 end
 
 local function ItemMatchesSearch(item, searchText)
-    if not searchText or searchText == "" then
-        return true
-    end
+    if not searchText or searchText == "" then return true end
 
     local searchDocument = item.searchDocument or BuildItemSearchDocument(item)
     return string.find(searchDocument, searchText, 1, true) ~= nil
@@ -475,7 +483,8 @@ end
 
 local function GetGroupInfo(item, groupKey)
     if groupKey == "category" then
-        return item.categoryKey or "other", item.categoryName or Categories.GetCategoryName(item.categoryKey)
+        return item.categoryKey or "other",
+            item.categoryName or Categories.GetCategoryName(item.categoryKey)
     elseif groupKey == "type" then
         local typeKey = item.type or item.subtype or "other"
         return typeKey, typeKey
@@ -494,16 +503,12 @@ local function GetGroupInfo(item, groupKey)
 end
 
 local function NormalizeKey(key, aliases, validKeys, defaultKey)
-    if validKeys[key] then
-        return key
-    end
+    if validKeys[key] then return key end
 
     key = Lower(key)
     key = aliases[key] or key
 
-    if validKeys[key] then
-        return key
-    end
+    if validKeys[key] then return key end
 
     return defaultKey
 end
@@ -551,23 +556,43 @@ function ListModel.GetGroupLabel(groupKey)
 end
 
 function ListModel.NormalizeSortKey(sortKey)
-    return NormalizeKey(sortKey, PRIMARY_SORT_KEY_ALIASES, VALID_SORT_KEYS, DEFAULT_SORT_KEY)
+    return NormalizeKey(
+        sortKey,
+        PRIMARY_SORT_KEY_ALIASES,
+        VALID_SORT_KEYS,
+        DEFAULT_SORT_KEY
+    )
 end
 
 function ListModel.NormalizeSecondarySortKey(sortKey)
-    return NormalizeKey(sortKey, SECONDARY_SORT_KEY_ALIASES, VALID_SECONDARY_SORT_KEYS, NO_SECONDARY_SORT_KEY)
+    return NormalizeKey(
+        sortKey,
+        SECONDARY_SORT_KEY_ALIASES,
+        VALID_SECONDARY_SORT_KEYS,
+        NO_SECONDARY_SORT_KEY
+    )
 end
 
 function ListModel.NormalizeGroupKey(groupKey)
-    return NormalizeKey(groupKey, GROUP_KEY_ALIASES, VALID_GROUP_KEYS, DEFAULT_GROUP_KEY)
+    return NormalizeKey(
+        groupKey,
+        GROUP_KEY_ALIASES,
+        VALID_GROUP_KEYS,
+        DEFAULT_GROUP_KEY
+    )
 end
 
 function ListModel.IsValidSortKey(sortKey)
-    return NormalizeKey(sortKey, PRIMARY_SORT_KEY_ALIASES, VALID_SORT_KEYS) ~= nil
+    return NormalizeKey(sortKey, PRIMARY_SORT_KEY_ALIASES, VALID_SORT_KEYS)
+        ~= nil
 end
 
 function ListModel.IsValidSecondarySortKey(sortKey)
-    return NormalizeKey(sortKey, SECONDARY_SORT_KEY_ALIASES, VALID_SECONDARY_SORT_KEYS) ~= nil
+    return NormalizeKey(
+        sortKey,
+        SECONDARY_SORT_KEY_ALIASES,
+        VALID_SECONDARY_SORT_KEYS
+    ) ~= nil
 end
 
 function ListModel.IsValidGroupKey(groupKey)
@@ -581,7 +606,9 @@ end
 function ListModel.IsSecondarySortEnabled(secondarySortKey, primarySortKey)
     secondarySortKey = ListModel.NormalizeSecondarySortKey(secondarySortKey)
     primarySortKey = ListModel.NormalizeSortKey(primarySortKey)
-    return primarySortKey ~= MANUAL_SORT_KEY and secondarySortKey ~= NO_SECONDARY_SORT_KEY and secondarySortKey ~= primarySortKey
+    return primarySortKey ~= MANUAL_SORT_KEY
+        and secondarySortKey ~= NO_SECONDARY_SORT_KEY
+        and secondarySortKey ~= primarySortKey
 end
 
 local function AppendItemRows(rows, items)
@@ -594,9 +621,11 @@ local function AppendItemRows(rows, items)
 end
 
 local function AppendTopRowsDivider(rows, newItems, pinnedItems, pinDisplayMode)
-    if pinDisplayMode ~= Pins.DisplayModes.Top
+    if
+        pinDisplayMode ~= Pins.DisplayModes.Top
         or #newItems == 0
-        or #pinnedItems == 0 then
+        or #pinnedItems == 0
+    then
         return
     end
 
@@ -609,16 +638,18 @@ function ListModel.BuildRows(items, state)
     local searchText = Lower(state and state.searchText)
     local sortKey = ListModel.NormalizeSortKey(state and state.sortKey)
     local sortAscending = not (state and state.sortAscending == false)
-    local secondarySortKey = ListModel.NormalizeSecondarySortKey(state and state.secondarySortKey)
-    local secondarySortAscending = not (state and state.secondarySortAscending == false)
+    local secondarySortKey =
+        ListModel.NormalizeSecondarySortKey(state and state.secondarySortKey)
+    local secondarySortAscending = not (
+        state and state.secondarySortAscending == false
+    )
     if not ListModel.IsSecondarySortEnabled(secondarySortKey, sortKey) then
         secondarySortKey = NO_SECONDARY_SORT_KEY
     end
     local groupKey = ListModel.NormalizeGroupKey(state and state.groupKey)
     local collapsedGroups = state and state.collapsedGroups or {}
-    local pinDisplayMode = Pins.NormalizeDisplayMode(
-        state and state.pinDisplayMode
-    )
+    local pinDisplayMode =
+        Pins.NormalizeDisplayMode(state and state.pinDisplayMode)
     local filteredItems = {}
     local newItems = {}
     local regularItems = {}
@@ -631,7 +662,13 @@ function ListModel.BuildRows(items, state)
         end
     end
 
-    SortItems(filteredItems, sortKey, sortAscending, secondarySortKey, secondarySortAscending)
+    SortItems(
+        filteredItems,
+        sortKey,
+        sortAscending,
+        secondarySortKey,
+        secondarySortAscending
+    )
 
     for _, item in ipairs(filteredItems) do
         local target = item.isNewThisSession and newItems or regularItems
@@ -694,7 +731,8 @@ function ListModel.BuildRows(items, state)
         else
             local key
             local label
-            local isPinnedGroup = item.isPinned and pinDisplayMode == Pins.DisplayModes.Group
+            local isPinnedGroup = item.isPinned
+                and pinDisplayMode == Pins.DisplayModes.Group
             if isPinnedGroup then
                 key = PINNED_GROUP_KEY
                 label = PINNED_GROUP_LABEL
@@ -702,7 +740,8 @@ function ListModel.BuildRows(items, state)
                 key, label = GetGroupInfo(item, groupKey)
             end
 
-            local id = isPinnedGroup and PINNED_GROUP_ID or groupKey .. ":" .. tostring(key)
+            local id = isPinnedGroup and PINNED_GROUP_ID
+                or groupKey .. ":" .. tostring(key)
             local group = groupMap[id]
 
             if not group then
@@ -725,7 +764,10 @@ function ListModel.BuildRows(items, state)
                 groups[#groups + 1] = group
             end
 
-            if item.isPinned and pinDisplayMode == Pins.DisplayModes.TopOfGroups then
+            if
+                item.isPinned
+                and pinDisplayMode == Pins.DisplayModes.TopOfGroups
+            then
                 group.pinnedItems = group.pinnedItems or {}
                 group.pinnedItems[#group.pinnedItems + 1] = item
             else

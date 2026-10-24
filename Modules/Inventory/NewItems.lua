@@ -22,14 +22,11 @@ end
 local function GetItemGUID(item)
     local locationKey = item.locationKey
     local itemGUID = guidByLocation[locationKey]
-    if itemGUID then
-        return itemGUID
-    end
+    if itemGUID then return itemGUID end
 
-    local itemLocation = ItemLocation:CreateFromBagAndSlot(item.bagID, item.slotIndex)
-    if not itemLocation:IsValid() then
-        return nil
-    end
+    local itemLocation =
+        ItemLocation:CreateFromBagAndSlot(item.bagID, item.slotIndex)
+    if not itemLocation:IsValid() then return nil end
 
     itemGUID = C_Item.GetItemGUID(itemLocation)
     guidByLocation[locationKey] = itemGUID
@@ -60,17 +57,13 @@ function NewItems.IsSessionActive()
 end
 
 function NewItems.Reconcile(items, itemsByLocation)
-    if not sessionActive then
-        return false, false
-    end
+    if not sessionActive then return false, false end
 
     wipe(guidByLocation)
 
     local now = GetTime()
     for itemGUID, expiresAt in pairs(dismissedGUIDs) do
-        if expiresAt < now then
-            dismissedGUIDs[itemGUID] = nil
-        end
+        if expiresAt < now then dismissedGUIDs[itemGUID] = nil end
     end
 
     for _, item in ipairs(items) do
@@ -137,14 +130,10 @@ function NewItems.EndSession(items)
 end
 
 function NewItems.MarkSeen(item)
-    if not sessionActive or not item.isNewUnseen then
-        return false
-    end
+    if not sessionActive or not item.isNewUnseen then return false end
 
     local entry = sessionEntries[item.locationKey]
-    if not entry or entry.itemGUID ~= item.newItemGUID then
-        return false
-    end
+    if not entry or entry.itemGUID ~= item.newItemGUID then return false end
 
     entry.isUnseen = false
     item.isNewUnseen = false

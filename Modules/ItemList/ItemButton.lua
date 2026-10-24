@@ -13,27 +13,21 @@ local buttonRows = setmetatable({}, { __mode = "k" })
 local dropTargets = setmetatable({}, { __mode = "k" })
 
 local function ClearNativeTexture(texture)
-    if not texture then
-        return
-    end
+    if not texture then return end
 
-    if texture.SetTexture then
-        texture:SetTexture("")
-    end
-    if texture.SetAlpha then
-        texture:SetAlpha(0)
-    end
-    if texture.ClearAllPoints then
-        texture:ClearAllPoints()
-    end
-    if texture.Hide then
-        texture:Hide()
-    end
+    if texture.SetTexture then texture:SetTexture("") end
+    if texture.SetAlpha then texture:SetAlpha(0) end
+    if texture.ClearAllPoints then texture:ClearAllPoints() end
+    if texture.Hide then texture:Hide() end
 end
 
 local function SuppressNativeVisuals(button)
     for _, region in pairs(button) do
-        if region ~= button:GetParent() and type(region) == "table" and region.Hide then
+        if
+            region ~= button:GetParent()
+            and type(region) == "table"
+            and region.Hide
+        then
             ClearNativeTexture(region)
         end
     end
@@ -72,14 +66,19 @@ end
 
 local function CreateNativeButton(parent)
     buttonCount = buttonCount + 1
-    local button = CreateFrame("ItemButton", GLOBAL_NAME_PREFIX .. buttonCount, parent, BUTTON_TEMPLATE)
+    local button = CreateFrame(
+        "ItemButton",
+        GLOBAL_NAME_PREFIX .. buttonCount,
+        parent,
+        BUTTON_TEMPLATE
+    )
     Configure(button, parent)
     button:Show()
     SuppressNativeVisuals(button)
     return button
 end
 
-function ItemButton.Create(row, list)
+function ItemButton.Create(row, _list)
     local button = CreateNativeButton(row)
     buttonRows[button] = row
     NS.ItemTooltip.RegisterRowButton(button, row)
@@ -94,20 +93,14 @@ function ItemButton.Create(row, list)
     end)
     button:HookScript("OnLeave", function(self)
         local buttonRow = buttonRows[self]
-        if buttonRow then
-            buttonRow.highlight:Hide()
-        end
+        if buttonRow then buttonRow.highlight:Hide() end
     end)
     button:HookScript("OnMouseUp", function(self, mouseButton, upInside)
-        if mouseButton ~= "MiddleButton" or upInside == false then
-            return
-        end
+        if mouseButton ~= "MiddleButton" or upInside == false then return end
 
         local buttonRow = buttonRows[self]
         local item = buttonRow and buttonRow.item
-        if item then
-            NS.ItemPins.Toggle(item)
-        end
+        if item then NS.ItemPins.Toggle(item) end
     end)
     return button
 end
@@ -130,8 +123,11 @@ end
 function ItemButton.SetDropTarget(button, bagID, slotIndex, info)
     local target = dropTargets[button]
     local count = info and info.stackCount or 0
-    if target.bagID == bagID and target.slotIndex == slotIndex
-        and target.count == count then
+    if
+        target.bagID == bagID
+        and target.slotIndex == slotIndex
+        and target.count == count
+    then
         return false
     end
 

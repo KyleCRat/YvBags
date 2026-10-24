@@ -16,12 +16,10 @@ local CONTROL_HEIGHT = 34
 local ROW_HORIZONTAL_INSET = 6
 local RULE_LINE_GAP = 4
 local RULE_VERTICAL_PADDING = 4
-local SINGLE_LINE_ROW_HEIGHT =
-    CONTROL_HEIGHT + (RULE_VERTICAL_PADDING * 2)
-local VALUE_ROW_HEIGHT =
-    (CONTROL_HEIGHT * 2)
-        + RULE_LINE_GAP
-        + (RULE_VERTICAL_PADDING * 2)
+local SINGLE_LINE_ROW_HEIGHT = CONTROL_HEIGHT + (RULE_VERTICAL_PADDING * 2)
+local VALUE_ROW_HEIGHT = (CONTROL_HEIGHT * 2)
+    + RULE_LINE_GAP
+    + (RULE_VERTICAL_PADDING * 2)
 local ALTERNATIVE_ROW_STEP = CONTROL_HEIGHT + RULE_LINE_GAP
 local CONTROL_GAP = 8
 local SCROLLBAR_GAP = 6
@@ -46,10 +44,14 @@ local RULE_ERROR_MESSAGES = {
 }
 
 local function ReportRuleError(action, errorCode, errorMessage)
-    NS:Print(("%s failed: %s"):format(
-        action,
-        errorMessage or RULE_ERROR_MESSAGES[errorCode] or tostring(errorCode)
-    ))
+    NS:Print(
+        ("%s failed: %s"):format(
+            action,
+            errorMessage
+                or RULE_ERROR_MESSAGES[errorCode]
+                or tostring(errorCode)
+        )
+    )
 end
 
 local function RuleUsesValueRow(rule)
@@ -59,24 +61,19 @@ local function RuleUsesValueRow(rule)
 end
 
 local function IsBooleanRule(rule)
-    return Rules.GetFieldValueKind(rule.field)
-        == Rules.ValueKinds.Boolean
+    return Rules.GetFieldValueKind(rule.field) == Rules.ValueKinds.Boolean
 end
 
 local function IsMultiValueRule(rule)
-    return RuleUsesValueRow(rule)
-        and Rules.SupportsMultipleValues(rule.field)
+    return RuleUsesValueRow(rule) and Rules.SupportsMultipleValues(rule.field)
 end
 
 local function GetRuleRowHeight(rule)
-    if not RuleUsesValueRow(rule) then
-        return SINGLE_LINE_ROW_HEIGHT
-    end
+    if not RuleUsesValueRow(rule) then return SINGLE_LINE_ROW_HEIGHT end
 
     if IsMultiValueRule(rule) then
         return VALUE_ROW_HEIGHT
-            + ((Rules.GetRuleAlternativeCount(rule) - 1)
-                * ALTERNATIVE_ROW_STEP)
+            + ((Rules.GetRuleAlternativeCount(rule) - 1) * ALTERNATIVE_ROW_STEP)
     end
 
     return VALUE_ROW_HEIGHT
@@ -89,42 +86,27 @@ local function LayoutRuleRow(row)
     end
 
     local contentLeft = ROW_HORIZONTAL_INSET + HANDLE_WIDTH
-    local contentWidth = math.max(
-        1,
-        rowWidth - (ROW_HORIZONTAL_INSET * 2) - HANDLE_WIDTH
-    )
+    local contentWidth =
+        math.max(1, rowWidth - (ROW_HORIZONTAL_INSET * 2) - HANDLE_WIDTH)
     local hasValueRow = row.hasValueRow == true
     local isBoolean = row.isBoolean == true
     local alternativeCount = row.alternativeCount or 0
-    local firstRowControlsWidth = math.max(
-        64,
-        contentWidth - ACTION_BUTTON_SIZE - CONTROL_GAP
-    )
+    local firstRowControlsWidth =
+        math.max(64, contentWidth - ACTION_BUTTON_SIZE - CONTROL_GAP)
     local fieldWidth
     local operatorWidth
 
     if hasValueRow then
-        local dropdownsWidth = math.max(
-            64,
-            firstRowControlsWidth - CONTROL_GAP
-        )
+        local dropdownsWidth = math.max(64, firstRowControlsWidth - CONTROL_GAP)
 
-        fieldWidth = math.max(
-            32,
-            math.floor(dropdownsWidth / 2)
-        )
-        operatorWidth = math.max(
-            32,
-            dropdownsWidth - fieldWidth
-        )
+        fieldWidth = math.max(32, math.floor(dropdownsWidth / 2))
+        operatorWidth = math.max(32, dropdownsWidth - fieldWidth)
     else
         local separatorWidth = isBoolean
-            and (BOOLEAN_IS_WIDTH + (CONTROL_GAP * 2))
+                and (BOOLEAN_IS_WIDTH + (CONTROL_GAP * 2))
             or CONTROL_GAP
-        local controlsWidth = math.max(
-            64,
-            firstRowControlsWidth - separatorWidth
-        )
+        local controlsWidth =
+            math.max(64, firstRowControlsWidth - separatorWidth)
 
         fieldWidth = math.max(32, math.floor(controlsWidth * 0.58))
         operatorWidth = math.max(32, controlsWidth - fieldWidth)
@@ -282,10 +264,12 @@ local function CreateAlternativeControl(row)
 
     control.input = ModernSettings:CreateTextInput(row, {
         onCommit = function(value)
-            if not row.owner
+            if
+                not row.owner
                 or not row.categoryID
                 or not row.ruleID
-                or not control.valueIndex then
+                or not control.valueIndex
+            then
                 return nil, Categories.ErrorCodes.MissingRule
             end
 
@@ -297,9 +281,7 @@ local function CreateAlternativeControl(row)
                 value
             )
 
-            if updated == nil then
-                return nil, errorCode
-            end
+            if updated == nil then return nil, errorCode end
 
             UpdateRenderedRuleAlternative(row, valueIndex, updated)
             return tostring(updated)
@@ -311,10 +293,12 @@ local function CreateAlternativeControl(row)
         iconAtlas = Media.GetRemoveAtlas(),
         tooltip = "Remove this alternative.",
         onClick = function()
-            if row.owner
+            if
+                row.owner
                 and row.categoryID
                 and row.ruleID
-                and control.valueIndex then
+                and control.valueIndex
+            then
                 row.owner:RemoveRuleAlternative(
                     row.categoryID,
                     row.ruleID,
@@ -337,9 +321,7 @@ end
 
 local function InitializeRuleRow(row)
     -- ScrollBox calls the element initializer again when it reacquires a row.
-    if row.ruleRowInitialized then
-        return
-    end
+    if row.ruleRowInitialized then return end
 
     row.ruleRowInitialized = true
 
@@ -399,11 +381,7 @@ local function InitializeRuleRow(row)
         choices = Rules.GetFieldChoices(),
         onChanged = function(fieldID)
             if row.owner and row.categoryID and row.ruleID then
-                row.owner:UpdateRuleField(
-                    row.categoryID,
-                    row.ruleID,
-                    fieldID
-                )
+                row.owner:UpdateRuleField(row.categoryID, row.ruleID, fieldID)
             end
         end,
     })
@@ -431,15 +409,10 @@ local function InitializeRuleRow(row)
         choices = {},
         onChanged = function(value)
             if row.owner and row.categoryID and row.ruleID then
-                local updated = row.owner:UpdateRuleValue(
-                    row.categoryID,
-                    row.ruleID,
-                    value
-                )
+                local updated =
+                    row.owner:UpdateRuleValue(row.categoryID, row.ruleID, value)
 
-                if updated ~= nil then
-                    UpdateRenderedRuleValue(row, updated)
-                end
+                if updated ~= nil then UpdateRenderedRuleValue(row, updated) end
             end
         end,
     })
@@ -456,9 +429,7 @@ local function InitializeRuleRow(row)
                 value
             )
 
-            if updated == nil then
-                return nil, errorCode
-            end
+            if updated == nil then return nil, errorCode end
 
             UpdateRenderedRuleValue(row, updated)
             return updated
@@ -519,22 +490,26 @@ local function ShowRuleValueControl(row, rule)
     end
     row.booleanIsText:SetShown(row.isBoolean)
 
-    if fieldID
+    if
+        fieldID
         and rule.operator
         and needsValue
-        and (valueKind == Rules.ValueKinds.Enum
-            or valueKind == Rules.ValueKinds.OrderedEnum) then
+        and (
+            valueKind == Rules.ValueKinds.Enum
+            or valueKind == Rules.ValueKinds.OrderedEnum
+        )
+    then
         row.valueDropdown:SetChoices(row.owner:GetValueChoices(fieldID))
         row.valueDropdown:SetValue(rule.value)
         row.valueDropdown:Show()
-    elseif fieldID
+    elseif
+        fieldID
         and rule.operator
         and needsValue
-        and Rules.SupportsMultipleValues(fieldID) then
+        and Rules.SupportsMultipleValues(fieldID)
+    then
         local values = Rules.GetRuleAlternatives(rule)
-        if #values == 0 then
-            values[1] = ""
-        end
+        if #values == 0 then values[1] = "" end
 
         EnsureAlternativeControls(row, #values)
         row.alternativeCount = #values
@@ -575,20 +550,18 @@ local function RenderRuleRow(row, rule, editor)
     row.stripe:SetShown(rule.index % 2 == 0)
     row.handle.hoverIcon:Hide()
     row.fieldDropdown:SetValue(rule.field)
-    row.operatorDropdown:SetChoices(
-        Rules.GetOperatorChoices(rule.field)
-    )
+    row.operatorDropdown:SetChoices(Rules.GetOperatorChoices(rule.field))
     row.operatorDropdown:SetValue(rule.operator)
     row.operatorDropdown:SetControlEnabled(rule.field ~= nil)
     ShowRuleValueControl(row, rule)
     LayoutRuleRow(row)
 
-    if editor.pendingAlternativeIndex
+    if
+        editor.pendingAlternativeIndex
         and editor.pendingAlternativeCategoryID == row.categoryID
-        and editor.pendingAlternativeRuleID == row.ruleID then
-        local control = row.alternativeControls[
-            editor.pendingAlternativeIndex
-        ]
+        and editor.pendingAlternativeRuleID == row.ruleID
+    then
+        local control = row.alternativeControls[editor.pendingAlternativeIndex]
 
         if control then
             editor.pendingAlternativeCategoryID = nil
@@ -670,26 +643,20 @@ local function PerformMutation(editor, action, mutation, refreshEditor)
     local succeeded, result, errorCode, errorMessage = pcall(mutation)
 
     editor.categoryEditor.suppressCategoryRefresh = nil
-    if not succeeded then
-        error(result, 0)
-    end
+    if not succeeded then error(result, 0) end
 
     if result == nil or result == false then
         ReportRuleError(action, errorCode, errorMessage)
         return nil, errorCode
     end
 
-    if refreshEditor ~= false then
-        editor:ScheduleRefresh()
-    end
+    if refreshEditor ~= false then editor:ScheduleRefresh() end
 
     return result
 end
 
 local function ScheduleRefresh(editor)
-    if editor.refreshTimer then
-        editor.refreshTimer:Cancel()
-    end
+    if editor.refreshTimer then editor.refreshTimer:Cancel() end
 
     editor.refreshTimer = C_Timer.NewTimer(0, function()
         editor.refreshTimer = nil
@@ -704,16 +671,17 @@ local function SetDefinition(editor, definition)
     editor.definition = definition
     editor.categoryID = definition and definition.id or nil
 
-    if editor.pendingAlternativeCategoryID
-        and editor.pendingAlternativeCategoryID ~= editor.categoryID then
+    if
+        editor.pendingAlternativeCategoryID
+        and editor.pendingAlternativeCategoryID ~= editor.categoryID
+    then
         editor.pendingAlternativeCategoryID = nil
         editor.pendingAlternativeRuleID = nil
         editor.pendingAlternativeIndex = nil
         editor.pendingAlternativeScrollOffset = nil
     end
 
-    local pendingAlternativeScrollOffset =
-        editor.pendingAlternativeScrollOffset
+    local pendingAlternativeScrollOffset = editor.pendingAlternativeScrollOffset
 
     local isOther = editor.categoryID == OTHER_CATEGORY_ID
     local hasDefinition = definition ~= nil
@@ -764,8 +732,10 @@ local function SetDefinition(editor, definition)
         )
     end
 
-    if editor.pendingRuleID
-        and editor.pendingRuleCategoryID == editor.categoryID then
+    if
+        editor.pendingRuleID
+        and editor.pendingRuleCategoryID == editor.categoryID
+    then
         for index, rule in ipairs(entries) do
             if rule.id == editor.pendingRuleID then
                 editor.scrollBox:ScrollToElementDataIndex(
@@ -789,15 +759,11 @@ local function CommitFocusedValue(editor)
     -- runs, after HasFocus() is already false. Unfocused inputs are a no-op.
     editor.scrollBox:ForEachFrame(function(row)
         local rowCommitted = row.scalarValueEdit:CommitAndClearFocus()
-        if not rowCommitted then
-            committed = false
-        end
+        if not rowCommitted then committed = false end
 
         for _, control in ipairs(row.alternativeControls) do
             rowCommitted = control.input:CommitAndClearFocus()
-            if not rowCommitted then
-                committed = false
-            end
+            if not rowCommitted then committed = false end
         end
     end)
     return committed
@@ -822,44 +788,26 @@ end
 
 local function UpdateRuleField(editor, categoryID, ruleID, fieldID)
     return PerformMutation(editor, "Updating rule field", function()
-        return Categories.UpdateRuleField(
-            categoryID,
-            ruleID,
-            fieldID
-        )
+        return Categories.UpdateRuleField(categoryID, ruleID, fieldID)
     end)
 end
 
 local function UpdateRuleOperator(editor, categoryID, ruleID, operatorID)
     return PerformMutation(editor, "Updating rule operator", function()
-        return Categories.UpdateRuleOperator(
-            categoryID,
-            ruleID,
-            operatorID
-        )
+        return Categories.UpdateRuleOperator(categoryID, ruleID, operatorID)
     end)
 end
 
 local function UpdateRuleValue(editor, categoryID, ruleID, value)
     return PerformMutation(editor, "Updating rule value", function()
-        return Categories.UpdateRuleValue(
-            categoryID,
-            ruleID,
-            value
-        )
+        return Categories.UpdateRuleValue(categoryID, ruleID, value)
     end, false)
 end
 
 local function CommitRuleScalarValue(editor, categoryID, ruleID, value)
-    local updated, errorCode = UpdateRuleValue(
-        editor,
-        categoryID,
-        ruleID,
-        value
-    )
-    if updated == nil then
-        return nil, errorCode
-    end
+    local updated, errorCode =
+        UpdateRuleValue(editor, categoryID, ruleID, value)
+    if updated == nil then return nil, errorCode end
 
     return tostring(updated)
 end
@@ -884,52 +832,33 @@ local function CommitRuleAlternative(
         end,
         false
     )
-    if updated == nil then
-        return nil, errorCode
-    end
+    if updated == nil then return nil, errorCode end
 
     return updated
 end
 
 local function AddRuleAlternative(editor, categoryID, ruleID)
-    if not editor:CommitFocusedValue() then
-        return
-    end
+    if not editor:CommitFocusedValue() then return end
 
     local scrollOffset = editor.scrollBox:GetDerivedScrollOffset()
 
-    local valueIndex = PerformMutation(
-        editor,
-        "Adding alternative",
-        function()
-            return Categories.AddRuleAlternative(categoryID, ruleID)
-        end
-    )
+    local valueIndex = PerformMutation(editor, "Adding alternative", function()
+        return Categories.AddRuleAlternative(categoryID, ruleID)
+    end)
     if valueIndex then
         editor.pendingAlternativeCategoryID = categoryID
         editor.pendingAlternativeRuleID = ruleID
         editor.pendingAlternativeIndex = valueIndex
-        editor.pendingAlternativeScrollOffset =
-            scrollOffset + ALTERNATIVE_ROW_STEP
+        editor.pendingAlternativeScrollOffset = scrollOffset
+            + ALTERNATIVE_ROW_STEP
     end
 end
 
-local function RemoveRuleAlternative(
-    editor,
-    categoryID,
-    ruleID,
-    valueIndex
-)
-    if not editor:CommitFocusedValue() then
-        return
-    end
+local function RemoveRuleAlternative(editor, categoryID, ruleID, valueIndex)
+    if not editor:CommitFocusedValue() then return end
 
     return PerformMutation(editor, "Removing alternative", function()
-        return Categories.RemoveRuleAlternative(
-            categoryID,
-            ruleID,
-            valueIndex
-        )
+        return Categories.RemoveRuleAlternative(categoryID, ruleID, valueIndex)
     end)
 end
 
@@ -976,16 +905,12 @@ local function UpdateRuleDrag(editor)
     local insertBefore
 
     editor.scrollBox:ForEachFrame(function(row)
-        if not row.ruleID then
-            return
-        end
+        if not row.ruleID then return end
 
         local top = row:GetTop()
         local bottom = row:GetBottom()
 
-        if not top or not bottom then
-            return
-        end
+        if not top or not bottom then return end
 
         local midpoint = (top + bottom) / 2
         local distance = math.abs(cursorY - midpoint)
@@ -1018,9 +943,7 @@ local function UpdateRuleDrag(editor)
 end
 
 local function StartRuleDrag(editor, row)
-    if not row.ruleID or row.categoryID ~= editor.categoryID then
-        return
-    end
+    if not row.ruleID or row.categoryID ~= editor.categoryID then return end
 
     editor.categoryEditor:CommitCategoryNameEdit()
     editor:CommitFocusedValue()
@@ -1043,10 +966,12 @@ local function FinishRuleDrag(editor)
 
     CancelRuleDrag(editor)
 
-    if not ruleID
+    if
+        not ruleID
         or categoryID ~= editor.categoryID
         or not insertionPosition
-        or not currentIndex then
+        or not currentIndex
+    then
         return
     end
 
@@ -1058,9 +983,7 @@ local function FinishRuleDrag(editor)
 
     targetIndex = math.max(1, math.min(ruleCount, targetIndex))
 
-    if targetIndex == currentIndex then
-        return
-    end
+    if targetIndex == currentIndex then return end
 
     PerformMutation(editor, "Moving rule", function()
         return Categories.MoveRule(categoryID, ruleID, targetIndex)
@@ -1085,13 +1008,7 @@ local function CreateHeader(editor)
         fontObject = GameFontHighlight,
         text = "Match",
     })
-    matchLabel:SetPoint(
-        "LEFT",
-        title,
-        "RIGHT",
-        HEADER_CONTROL_GAP * 2,
-        0
-    )
+    matchLabel:SetPoint("LEFT", title, "RIGHT", HEADER_CONTROL_GAP * 2, 0)
 
     local modeDropdown = ModernSettings:CreateDropdown(header, {
         height = HEADER_HEIGHT,
@@ -1105,13 +1022,7 @@ local function CreateHeader(editor)
             editor:ChangeMode(mode)
         end,
     })
-    modeDropdown:SetPoint(
-        "LEFT",
-        matchLabel,
-        "RIGHT",
-        HEADER_CONTROL_GAP,
-        0
-    )
+    modeDropdown:SetPoint("LEFT", matchLabel, "RIGHT", HEADER_CONTROL_GAP, 0)
 
     local addButton = ModernSettings:CreateButton(header, {
         text = "Add Rule",
@@ -1131,20 +1042,9 @@ local function CreateHeader(editor)
 end
 
 local function CreateRuleList(editor)
-    local scrollBox = CreateFrame(
-        "Frame",
-        nil,
-        editor,
-        "WowScrollBoxList"
-    )
+    local scrollBox = CreateFrame("Frame", nil, editor, "WowScrollBoxList")
 
-    scrollBox:SetPoint(
-        "TOPLEFT",
-        editor.header,
-        "BOTTOMLEFT",
-        0,
-        -SECTION_GAP
-    )
+    scrollBox:SetPoint("TOPLEFT", editor.header, "BOTTOMLEFT", 0, -SECTION_GAP)
     scrollBox:SetPoint(
         "BOTTOMRIGHT",
         editor,
@@ -1154,28 +1054,11 @@ local function CreateRuleList(editor)
     )
     scrollBox:SetClipsChildren(true)
 
-    local scrollBar = CreateFrame(
-        "EventFrame",
-        nil,
-        editor,
-        "MinimalScrollBar"
-    )
+    local scrollBar = CreateFrame("EventFrame", nil, editor, "MinimalScrollBar")
 
     scrollBar:SetWidth(SCROLLBAR_WIDTH)
-    scrollBar:SetPoint(
-        "TOPLEFT",
-        scrollBox,
-        "TOPRIGHT",
-        SCROLLBAR_GAP,
-        0
-    )
-    scrollBar:SetPoint(
-        "BOTTOMLEFT",
-        scrollBox,
-        "BOTTOMRIGHT",
-        SCROLLBAR_GAP,
-        0
-    )
+    scrollBar:SetPoint("TOPLEFT", scrollBox, "TOPRIGHT", SCROLLBAR_GAP, 0)
+    scrollBar:SetPoint("BOTTOMLEFT", scrollBox, "BOTTOMRIGHT", SCROLLBAR_GAP, 0)
 
     local view = CreateRuleListView(editor)
 

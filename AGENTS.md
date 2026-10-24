@@ -24,6 +24,41 @@ This file is the standing product and engineering contract for work in the YvBag
 - `.editorconfig` defines editor behavior and `.gitattributes` enforces LF normalization for repository text files. Do not introduce line-ending churn in embedded libraries while making feature changes.
 - Files load in the explicit order in `YvBags.toc`. When adding or moving a module, verify that every dependency loads before its consumer.
 
+## Lua Formatting And Linting
+
+- Use StyLua `2.5.2` and Selene `0.31.0`. Upgrade these versions deliberately
+  and review their formatting and rule changes. Invoke existing executables
+  directly; do not add a package manager, installer, or custom style checker.
+- `.stylua.toml` defines Lua 5.1, four spaces, LF, and an 80-column wrapping
+  guide. Short single-branch conditionals may collapse; nonempty functions,
+  callbacks, loops, and multi-branch conditionals remain multiline. Long
+  strings and comments may exceed the guide. Keep related declarations and
+  small records together; separate multiline blocks from same-scope neighbors
+  with blank lines. Review names, grouping, and complexity manually.
+- `selene.toml` keeps the default correctness checks enabled and denies
+  unrelated statements sharing a line. Prefix intentionally unused bindings
+  with `_`. Any other exception must be local and explain its external contract.
+- `wow.yml` extends Lua 5.1 with reviewed globals used here. Verify new names
+  against Blizzard's current export or the owning integration before adding
+  them. `any: true` checks the global name, not its members or secret-value
+  contract. The existing guarded compatibility aliases remain explicit.
+- Root formatting and linting cover YvBags-owned Lua. Both tools explicitly
+  exclude upstream LibStub, CallbackHandler, and LibSharedMedia, plus the five
+  pinned maintained libraries awaiting their separately completed migrations.
+- Library lint migrations are handled in another addon and will arrive here
+  through later submodule updates. Keep the current library copies untouched.
+  Once their formatted revisions and configurations arrive, remove their
+  temporary `.styluaignore` entries and run each library's checks from its own
+  root. Retain vendor exclusions and library-local upstream fixture ignores;
+  maintained tests, examples, and benchmarks belong in the library checks.
+- Run `stylua --verify .` to apply formatting, then `stylua --check .`,
+  `selene .`, and `git diff --check` from the addon root. Require zero findings,
+  including warnings, within that scope. When formatting explicit filenames,
+  also pass `--respect-ignores`.
+- Compile owned Lua with `luac -p`, resolve TOC/XML includes, and run existing
+  library suites after library changes. Static checks do not replace in-game
+  checks. Keep lint configuration and development guidance out of packages.
+
 ## Engineering Priorities
 
 Performance and extensibility are requirements, not cleanup tasks for later.
@@ -406,8 +441,8 @@ This audit is mandatory because YvBags immediately mirrors selected Blizzard mou
 4. Consider performance explicitly: event frequency, visible-row count, cacheability, allocations, tooltip work, and combat restrictions.
 5. Implement the smallest coherent change and preserve extension points documented here or in `TODO.md`.
 6. Update defaults, settings, TOC load order, README, `TODO.md`, or changelog when the behavior changes their contract.
-7. Run `git diff --check` and inspect the final diff. Do not introduce unrelated formatting or metadata churn.
-8. Run applicable reusable-library suites for library changes, run Lua 5.1 syntax checks for addon code, then validate in game in proportion to risk.
+7. Run the formatter/linter checks above with zero findings and inspect the final diff. Do not introduce unrelated formatting or metadata churn.
+8. Run applicable reusable-library suites for library changes, run Lua 5.1 syntax checks and TOC/XML resolution for addon code, then validate in game in proportion to risk.
    During active Flat visual iteration, limit appearance-only checks to the
    changed Lua files and focused diff/whitespace review. Defer full suites,
    visual test scaffolding, and broad diagnostics until the skin is near

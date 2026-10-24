@@ -33,10 +33,12 @@ local CATEGORY_ERROR_MESSAGES = {
 }
 
 local function ReportCategoryError(action, errorCode)
-    NS:Print(("%s failed: %s"):format(
-        action,
-        CATEGORY_ERROR_MESSAGES[errorCode] or tostring(errorCode)
-    ))
+    NS:Print(
+        ("%s failed: %s"):format(
+            action,
+            CATEGORY_ERROR_MESSAGES[errorCode] or tostring(errorCode)
+        )
+    )
 end
 
 -- Virtualized category list rows
@@ -50,9 +52,7 @@ end
 
 local function InitializeCategoryRow(row)
     -- ScrollBox calls the element initializer again when it reacquires a row.
-    if row.categoryRowInitialized then
-        return
-    end
+    if row.categoryRowInitialized then return end
 
     row.categoryRowInitialized = true
     row:RegisterForClicks("LeftButtonUp")
@@ -192,9 +192,7 @@ local function FindDefinition(editor, categoryID)
     for index = 1, #editor.definitions do
         local definition = editor.definitions[index]
 
-        if definition.id == categoryID then
-            return definition, index
-        end
+        if definition.id == categoryID then return definition, index end
     end
 
     return nil, nil
@@ -203,10 +201,7 @@ end
 local function RefreshVisibleSelection(editor)
     editor.scrollBox:ForEachFrame(function(row)
         if row.definition then
-            SetRowSelected(
-                row,
-                row.definition.id == editor.selectedCategoryID
-            )
+            SetRowSelected(row, row.definition.id == editor.selectedCategoryID)
         end
     end)
 end
@@ -227,13 +222,10 @@ local function RefreshCategoryDetail(editor)
 
     local canRemove = definition.id ~= OTHER_CATEGORY_ID
 
-    editor.removeButton:SetControlEnabled(
-        canRemove,
-        canRemove and nil or {
-            title = "Required Category",
-            text = "Other is the required fallback and cannot be removed.",
-        }
-    )
+    editor.removeButton:SetControlEnabled(canRemove, canRemove and nil or {
+        title = "Required Category",
+        text = "Other is the required fallback and cannot be removed.",
+    })
     editor.ruleEditor:SetDefinition(definition)
 end
 
@@ -242,17 +234,13 @@ local function CommitCategoryNameEdit(editor)
 end
 
 local function FlushPendingCategoryNameEdit(editor)
-    if editor.nameEdit:HasFocus() then
-        return true
-    end
+    if editor.nameEdit:HasFocus() then return true end
 
     return editor.nameEdit:CommitAndClearFocus()
 end
 
 local function SelectCategory(editor, categoryID)
-    if not FindDefinition(editor, categoryID) then
-        return false
-    end
+    if not FindDefinition(editor, categoryID) then return false end
 
     if categoryID ~= editor.selectedCategoryID then
         editor.ruleEditor:CommitFocusedValue()
@@ -279,14 +267,13 @@ local function RefreshCategories(editor, retainScroll, focusName)
     if not FindDefinition(editor, editor.selectedCategoryID) then
         if not SelectCategory(editor, OTHER_CATEGORY_ID) then
             editor.selectedCategoryID = editor.definitions[1]
-                and editor.definitions[1].id
+                    and editor.definitions[1].id
                 or nil
         end
     end
 
     local dataProvider = CreateDataProvider(editor.definitions)
-    local retain = retainScroll
-        and ScrollBoxConstants.RetainScrollPosition
+    local retain = retainScroll and ScrollBoxConstants.RetainScrollPosition
         or nil
 
     editor.scrollBox:SetDataProvider(dataProvider, retain)
@@ -294,10 +281,8 @@ local function RefreshCategories(editor, retainScroll, focusName)
     RefreshCategoryDetail(editor)
 
     if focusName then
-        local _, selectedIndex = FindDefinition(
-            editor,
-            editor.selectedCategoryID
-        )
+        local _, selectedIndex =
+            FindDefinition(editor, editor.selectedCategoryID)
 
         if selectedIndex then
             editor.scrollBox:ScrollToElementDataIndex(
@@ -312,24 +297,20 @@ end
 
 local function CommitSelectedCategoryName(editor, name)
     editor.suppressCategoryRefresh = true
-    local renamed, errorCode = Categories.RenameCategory(
-        editor.selectedCategoryID,
-        name
-    )
+    local renamed, errorCode =
+        Categories.RenameCategory(editor.selectedCategoryID, name)
     editor.suppressCategoryRefresh = nil
 
-    if not renamed then
-        return nil, errorCode
-    end
+    if not renamed then return nil, errorCode end
 
     local definition = FindDefinition(editor, editor.selectedCategoryID)
-    if definition then
-        definition.name = renamed
-    end
+    if definition then definition.name = renamed end
 
     editor.scrollBox:ForEachFrame(function(row)
-        if row.definition
-            and row.definition.id == editor.selectedCategoryID then
+        if
+            row.definition
+            and row.definition.id == editor.selectedCategoryID
+        then
             row.definition.name = renamed
             row.label:SetText(renamed)
         end
@@ -346,8 +327,7 @@ local function AddCategory(editor)
     local errorCode
 
     repeat
-        local name = suffix == 1
-            and NEW_CATEGORY_NAME
+        local name = suffix == 1 and NEW_CATEGORY_NAME
             or (NEW_CATEGORY_NAME .. " " .. suffix)
 
         editor.suppressCategoryRefresh = true
@@ -371,9 +351,7 @@ local function RemoveSelectedCategory(editor)
 
     local definition = FindDefinition(editor, editor.selectedCategoryID)
 
-    if not definition then
-        return
-    end
+    if not definition then return end
 
     if definition.id == OTHER_CATEGORY_ID then
         ReportCategoryError(
@@ -457,16 +435,12 @@ local function UpdateCategoryDrag(editor)
     local insertBefore
 
     editor.scrollBox:ForEachFrame(function(row)
-        if not row.definition then
-            return
-        end
+        if not row.definition then return end
 
         local top = row:GetTop()
         local bottom = row:GetBottom()
 
-        if not top or not bottom then
-            return
-        end
+        if not top or not bottom then return end
 
         local midpoint = (top + bottom) / 2
         local distance = math.abs(cursorY - midpoint)
@@ -499,9 +473,7 @@ local function UpdateCategoryDrag(editor)
 end
 
 local function StartCategoryDrag(editor, row)
-    if not row.definition then
-        return
-    end
+    if not row.definition then return end
 
     editor.ruleEditor:CommitFocusedValue()
     editor.ruleEditor:CancelRuleDrag()
@@ -533,9 +505,7 @@ local function FinishCategoryDrag(editor)
 
     targetIndex = math.max(1, math.min(categoryCount, targetIndex))
 
-    if targetIndex == currentIndex then
-        return
-    end
+    if targetIndex == currentIndex then return end
 
     editor.suppressCategoryRefresh = true
     local moved, errorCode = Categories.MoveCategory(categoryID, targetIndex)
@@ -581,21 +551,10 @@ local function CreateCategoryList(parent, editor)
     )
     scrollBox:SetClipsChildren(true)
 
-    local scrollBar = CreateFrame(
-        "EventFrame",
-        nil,
-        parent,
-        "MinimalScrollBar"
-    )
+    local scrollBar = CreateFrame("EventFrame", nil, parent, "MinimalScrollBar")
 
     scrollBar:SetWidth(LIST_SCROLLBAR_WIDTH)
-    scrollBar:SetPoint(
-        "TOPLEFT",
-        scrollBox,
-        "TOPRIGHT",
-        LIST_SCROLLBAR_GAP,
-        0
-    )
+    scrollBar:SetPoint("TOPLEFT", scrollBox, "TOPRIGHT", LIST_SCROLLBAR_GAP, 0)
     scrollBar:SetPoint(
         "BOTTOMLEFT",
         scrollBox,
@@ -663,13 +622,7 @@ local function CreateCategoryDetail(parent, editor)
         },
     })
 
-    nameField:SetPoint(
-        "TOPLEFT",
-        header,
-        "BOTTOMLEFT",
-        0,
-        -DETAIL_HEADER_GAP
-    )
+    nameField:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -DETAIL_HEADER_GAP)
     editor.nameField = nameField
     editor.nameEdit = nameField:GetControl()
 
@@ -740,14 +693,9 @@ local function BuildEditorFrame(frame, measurementFrame)
         marginBottom = 0,
     })
     local availableWidth = editorRegion:GetWidth()
-    local listWidth = math.max(
-        200,
-        math.min(LIST_WIDTH, math.floor(availableWidth * 0.38))
-    )
-    local rightWidth = availableWidth
-        - listWidth
-        - PANE_GAP
-        - DIVIDER_WIDTH
+    local listWidth =
+        math.max(200, math.min(LIST_WIDTH, math.floor(availableWidth * 0.38)))
+    local rightWidth = availableWidth - listWidth - PANE_GAP - DIVIDER_WIDTH
 
     local listPane = CreateFrame("Frame", nil, editorRegion)
 
@@ -764,13 +712,7 @@ local function BuildEditorFrame(frame, measurementFrame)
     local detailPane = CreateFrame("Frame", nil, editorRegion)
 
     detailPane:SetSize(rightWidth, editorHeight)
-    detailPane:SetPoint(
-        "TOPLEFT",
-        divider,
-        "TOPRIGHT",
-        PANE_GAP / 2,
-        0
-    )
+    detailPane:SetPoint("TOPLEFT", divider, "TOPRIGHT", PANE_GAP / 2, 0)
 
     CreateCategoryList(listPane, frame)
     CreateCategoryDetail(detailPane, frame)

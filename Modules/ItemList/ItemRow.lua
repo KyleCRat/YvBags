@@ -51,8 +51,10 @@ local ITEM_MARKER_LAYER = "OVERLAY"
 local ITEM_MARKER_SUBLEVEL = 2
 
 local function IsTextColumn(column)
-    return column.key ~= "icon" and column.key ~= "binding"
-        and column.key ~= "professionQuality" and column.key ~= "expansion"
+    return column.key ~= "icon"
+        and column.key ~= "binding"
+        and column.key ~= "professionQuality"
+        and column.key ~= "expansion"
 end
 
 local function GetRightClipPadding(row)
@@ -61,24 +63,43 @@ end
 
 -- Highlight and border state
 local function UpdateRowHighlightColor(row, item)
-    local color = item.quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[item.quality]
+    local color = item.quality
+        and ITEM_QUALITY_COLORS
+        and ITEM_QUALITY_COLORS[item.quality]
     if color then
-        row.highlight:SetColorTexture(color.r, color.g, color.b, RARITY_HIGHLIGHT_ALPHA)
+        row.highlight:SetColorTexture(
+            color.r,
+            color.g,
+            color.b,
+            RARITY_HIGHLIGHT_ALPHA
+        )
     else
-        row.highlight:SetColorTexture(DEFAULT_HIGHLIGHT_COLOR_R, DEFAULT_HIGHLIGHT_COLOR_G, DEFAULT_HIGHLIGHT_COLOR_B, DEFAULT_HIGHLIGHT_ALPHA)
+        row.highlight:SetColorTexture(
+            DEFAULT_HIGHLIGHT_COLOR_R,
+            DEFAULT_HIGHLIGHT_COLOR_G,
+            DEFAULT_HIGHLIGHT_COLOR_B,
+            DEFAULT_HIGHLIGHT_ALPHA
+        )
     end
 end
 
 local function UpdateIconBorderColor(row, item)
     local color = Columns.GetItemIconBorderColor(item)
     if not color then
-        color = item.quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[item.quality]
+        color = item.quality
+            and ITEM_QUALITY_COLORS
+            and ITEM_QUALITY_COLORS[item.quality]
     end
 
     if color then
         row.iconAppearance:SetBorderColor(color.r, color.g, color.b, 1)
     else
-        row.iconAppearance:SetBorderColor(DEFAULT_ICON_BORDER_COLOR_R, DEFAULT_ICON_BORDER_COLOR_G, DEFAULT_ICON_BORDER_COLOR_B, 1)
+        row.iconAppearance:SetBorderColor(
+            DEFAULT_ICON_BORDER_COLOR_R,
+            DEFAULT_ICON_BORDER_COLOR_G,
+            DEFAULT_ICON_BORDER_COLOR_B,
+            1
+        )
     end
 end
 
@@ -118,15 +139,16 @@ local function UpdateNewItemVisuals(row, item)
         row.newItemHighlight:SetAlpha(NEW_ITEM_HIGHLIGHT_MIN_ALPHA)
         row.newItemHighlight:Show()
     end
-    if not row.newItemAnimation:IsPlaying() then
-        row.newItemAnimation:Play()
-    end
+    if not row.newItemAnimation:IsPlaying() then row.newItemAnimation:Play() end
 end
 
 -- Row construction and layout
 local function LayoutRow(row)
     local layout = row.list.columnLayout
-    if row.columnLayout == layout and row.columnLayoutRevision == layout.revision then
+    if
+        row.columnLayout == layout
+        and row.columnLayoutRevision == layout.revision
+    then
         return
     end
 
@@ -142,9 +164,13 @@ local function LayoutRow(row)
             elseif key == "binding" then
                 row.bindingIcon:SetShown(row.hasBindingIcon == true and shown)
             elseif key == "professionQuality" then
-                row.professionQualityIcon:SetShown(row.hasProfessionQualityIcon == true and shown)
+                row.professionQualityIcon:SetShown(
+                    row.hasProfessionQualityIcon == true and shown
+                )
             elseif key == "expansion" then
-                row.expansionIcon:SetShown(row.hasExpansionIcon == true and shown)
+                row.expansionIcon:SetShown(
+                    row.hasExpansionIcon == true and shown
+                )
             else
                 row.text[key]:SetShown(shown)
             end
@@ -154,13 +180,19 @@ local function LayoutRow(row)
             local region, point, x = row.text[key], "LEFT", entry.x
             if key == "icon" then
                 region, point = row.icon, "CENTER"
-                x = x + entry.width / 2 + ICON_LEFT_OFFSET + (ICON_FRAME_SIZE - column.width) / 2
+                x = x
+                    + entry.width / 2
+                    + ICON_LEFT_OFFSET
+                    + (ICON_FRAME_SIZE - column.width) / 2
             elseif key == "binding" then
-                region, point, x = row.bindingIcon, "CENTER", x + entry.width / 2
+                region, point, x =
+                    row.bindingIcon, "CENTER", x + entry.width / 2
             elseif key == "professionQuality" then
-                region, point, x = row.professionQualityIcon, "CENTER", x + entry.width / 2
+                region, point, x =
+                    row.professionQualityIcon, "CENTER", x + entry.width / 2
             elseif key == "expansion" then
-                region, point, x = row.expansionIcon, "CENTER", x + entry.width / 2
+                region, point, x =
+                    row.expansionIcon, "CENTER", x + entry.width / 2
             end
             if row.columnPositions[key] ~= x then
                 region:ClearAllPoints()
@@ -170,7 +202,10 @@ local function LayoutRow(row)
                     row.iconAppearance:RefreshGeometry()
                 end
             end
-            if IsTextColumn(column) and row.columnWidths[key] ~= entry.width then
+            if
+                IsTextColumn(column)
+                and row.columnWidths[key] ~= entry.width
+            then
                 region:SetWidth(entry.width)
                 row.columnWidths[key] = entry.width
             end
@@ -185,16 +220,15 @@ local function CreateTextColumns(row, columns)
     for _, column in ipairs(columns) do
         if IsTextColumn(column) then
             local text = NS.Skins:CreateText(row.contentClip, {
-                geometryRoot = row.list.window, fontSize = ROW_TEXT_SIZE,
+                geometryRoot = row.list.window,
+                fontSize = ROW_TEXT_SIZE,
             })
             text:SetHeight(ROW_HEIGHT)
             text:SetJustifyH(column.justify or "LEFT")
             text:SetJustifyV("MIDDLE")
             text:SetWordWrap(false)
             text:SetMaxLines(1)
-            if column.key ~= "name" then
-                Columns.SetDefaultTextColor(text)
-            end
+            if column.key ~= "name" then Columns.SetDefaultTextColor(text) end
             row.text[column.key] = text
         end
     end
@@ -237,7 +271,9 @@ local function InitializeRow(row, list)
     row:SetID(0)
 
     row.newItemHighlight = NS.Skins:CreateTexture(row, {
-        geometryRoot = list.window, layer = ROW_HIGHLIGHT_LAYER, colorToken = "accent",
+        geometryRoot = list.window,
+        layer = ROW_HIGHLIGHT_LAYER,
+        colorToken = "accent",
     })
     row.newItemHighlight:SetAllPoints(row)
     row.newItemHighlight:SetAlpha(NEW_ITEM_HIGHLIGHT_MIN_ALPHA)
@@ -245,33 +281,57 @@ local function InitializeRow(row, list)
     CreateNewItemAnimation(row)
 
     row.containerHighlight = NS.Skins:CreateTexture(row, {
-        geometryRoot = list.window, layer = ROW_HIGHLIGHT_LAYER,
-        colorToken = "accent", alpha = CONTAINER_HIGHLIGHT_ALPHA,
+        geometryRoot = list.window,
+        layer = ROW_HIGHLIGHT_LAYER,
+        colorToken = "accent",
+        alpha = CONTAINER_HIGHLIGHT_ALPHA,
     })
     row.containerHighlight:SetAllPoints(row)
     row.containerHighlight:Hide()
 
-    row.highlight = NS.Skins:CreateTexture(row, { geometryRoot = list.window, layer = ROW_HIGHLIGHT_LAYER })
+    row.highlight = NS.Skins:CreateTexture(
+        row,
+        { geometryRoot = list.window, layer = ROW_HIGHLIGHT_LAYER }
+    )
     row.highlight:SetAllPoints(row)
-    row.highlight:SetColorTexture(DEFAULT_HIGHLIGHT_COLOR_R, DEFAULT_HIGHLIGHT_COLOR_G, DEFAULT_HIGHLIGHT_COLOR_B, DEFAULT_HIGHLIGHT_ALPHA)
+    row.highlight:SetColorTexture(
+        DEFAULT_HIGHLIGHT_COLOR_R,
+        DEFAULT_HIGHLIGHT_COLOR_G,
+        DEFAULT_HIGHLIGHT_COLOR_B,
+        DEFAULT_HIGHLIGHT_ALPHA
+    )
     row.highlight:Hide()
 
     row.contentClip = CreateFrame("Frame", nil, row)
     row.contentClip:SetClipsChildren(true)
     row.contentClip:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
-    row.contentClip:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -GetRightClipPadding(row), 0)
+    row.contentClip:SetPoint(
+        "BOTTOMRIGHT",
+        row,
+        "BOTTOMRIGHT",
+        -GetRightClipPadding(row),
+        0
+    )
 
     row.newItemMarker = NS.Skins:CreateTexture(row.contentClip, {
-        geometryRoot = list.window, layer = ITEM_MARKER_LAYER, sublevel = ITEM_MARKER_SUBLEVEL,
-        texture = NS.Media.GetNewItemTexture(), colorToken = "accent", alpha = NEW_ITEM_MARKER_ALPHA,
+        geometryRoot = list.window,
+        layer = ITEM_MARKER_LAYER,
+        sublevel = ITEM_MARKER_SUBLEVEL,
+        texture = NS.Media.GetNewItemTexture(),
+        colorToken = "accent",
+        alpha = NEW_ITEM_MARKER_ALPHA,
     })
     row.newItemMarker:SetSize(NEW_ITEM_MARKER_SIZE, NEW_ITEM_MARKER_SIZE)
     row.newItemMarker:SetPoint("LEFT", row.contentClip, "LEFT", 0, 0)
     row.newItemMarker:Hide()
 
     row.pinMarker = NS.Skins:CreateTexture(row.contentClip, {
-        geometryRoot = list.window, layer = ITEM_MARKER_LAYER, sublevel = ITEM_MARKER_SUBLEVEL,
-        texture = NS.Media.GetPinnedTexture(), colorToken = "accent", alpha = PIN_MARKER_ALPHA,
+        geometryRoot = list.window,
+        layer = ITEM_MARKER_LAYER,
+        sublevel = ITEM_MARKER_SUBLEVEL,
+        texture = NS.Media.GetPinnedTexture(),
+        colorToken = "accent",
+        alpha = PIN_MARKER_ALPHA,
     })
     row.pinMarker:SetSize(PIN_MARKER_SIZE, PIN_MARKER_SIZE)
     row.pinMarker:SetPoint("TOPLEFT", row.contentClip, "TOPLEFT", 0, 0)
@@ -279,8 +339,13 @@ local function InitializeRow(row, list)
 
     row.icon, row.iconAppearance = NS.Skins:CreateIcon(row.contentClip, {
         clip = list.scrollBox,
-        geometryRoot = list.window, width = ICON_SIZE, layer = ROW_ICON_LAYER, sublevel = ROW_ICON_SUBLEVEL,
-        borderLayer = ICON_BORDER_LAYER, borderSublevel = ICON_BORDER_SUBLEVEL, artworkOutset = 1,
+        geometryRoot = list.window,
+        width = ICON_SIZE,
+        layer = ROW_ICON_LAYER,
+        sublevel = ROW_ICON_SUBLEVEL,
+        borderLayer = ICON_BORDER_LAYER,
+        borderSublevel = ICON_BORDER_SUBLEVEL,
+        artworkOutset = 1,
     })
     row.icon:Hide()
     row.iconAppearance:SetBorderShown(false)
@@ -291,21 +356,33 @@ local function InitializeRow(row, list)
     CreateTextColumns(row, columns)
 
     row.professionQualityIcon = NS.Skins:CreateTexture(row.contentClip, {
-        geometryRoot = list.window, layer = PROFESSION_QUALITY_LAYER, sublevel = PROFESSION_QUALITY_SUBLEVEL,
+        geometryRoot = list.window,
+        layer = PROFESSION_QUALITY_LAYER,
+        sublevel = PROFESSION_QUALITY_SUBLEVEL,
     })
-    row.professionQualityIcon:SetSize(PROFESSION_QUALITY_ICON_SIZE, PROFESSION_QUALITY_ICON_SIZE)
-    row.professionQualityIcon:SetDrawLayer(PROFESSION_QUALITY_LAYER, PROFESSION_QUALITY_SUBLEVEL)
+    row.professionQualityIcon:SetSize(
+        PROFESSION_QUALITY_ICON_SIZE,
+        PROFESSION_QUALITY_ICON_SIZE
+    )
+    row.professionQualityIcon:SetDrawLayer(
+        PROFESSION_QUALITY_LAYER,
+        PROFESSION_QUALITY_SUBLEVEL
+    )
     row.professionQualityIcon:Hide()
 
     row.bindingIcon = NS.Skins:CreateTexture(row.contentClip, {
-        geometryRoot = list.window, layer = BINDING_ICON_LAYER, sublevel = BINDING_ICON_SUBLEVEL,
+        geometryRoot = list.window,
+        layer = BINDING_ICON_LAYER,
+        sublevel = BINDING_ICON_SUBLEVEL,
     })
     row.bindingIcon:SetSize(BINDING_ICON_SIZE, BINDING_ICON_SIZE)
     row.bindingIcon:SetDrawLayer(BINDING_ICON_LAYER, BINDING_ICON_SUBLEVEL)
     row.bindingIcon:Hide()
 
     row.expansionIcon = NS.Skins:CreateTexture(row.contentClip, {
-        geometryRoot = list.window, layer = EXPANSION_ICON_LAYER, sublevel = EXPANSION_ICON_SUBLEVEL,
+        geometryRoot = list.window,
+        layer = EXPANSION_ICON_LAYER,
+        sublevel = EXPANSION_ICON_SUBLEVEL,
     })
     row.expansionIcon:Hide()
 
@@ -318,7 +395,9 @@ local function RenderProfessionQuality(row, item)
     row.hasProfessionQualityIcon = atlas and true or false
     if atlas then
         row.professionQualityIcon:SetAtlas(atlas, false)
-        row.professionQualityIcon:SetShown(row.list.columnLayout.byKey.professionQuality ~= nil)
+        row.professionQualityIcon:SetShown(
+            row.list.columnLayout.byKey.professionQuality ~= nil
+        )
     else
         row.professionQualityIcon:Hide()
     end
@@ -332,7 +411,10 @@ local function RenderBinding(row, item)
         return
     end
 
-    row.bindingIcon:SetSize(iconInfo.size or BINDING_ICON_SIZE, iconInfo.size or BINDING_ICON_SIZE)
+    row.bindingIcon:SetSize(
+        iconInfo.size or BINDING_ICON_SIZE,
+        iconInfo.size or BINDING_ICON_SIZE
+    )
     if iconInfo.atlas then
         row.bindingIcon:SetAtlas(iconInfo.atlas, false)
     else
@@ -384,9 +466,7 @@ function ItemRow.GetRowHeight()
 end
 
 function ItemRow.Initialize(row, list)
-    if not row.rowInitialized then
-        InitializeRow(row, list)
-    end
+    if not row.rowInitialized then InitializeRow(row, list) end
 end
 
 function ItemRow.ApplyColumnLayout(row)
@@ -402,15 +482,11 @@ function ItemRow.RefreshCooldown(row)
 end
 
 function ItemRow.RefreshLock(row, isLocked)
-    if row.item then
-        row.icon:SetDesaturated(isLocked == true)
-    end
+    if row.item then row.icon:SetDesaturated(isLocked == true) end
 end
 
 function ItemRow.RefreshNewItemState(row)
-    if row.item then
-        UpdateNewItemVisuals(row, row.item)
-    end
+    if row.item then UpdateNewItemVisuals(row, row.item) end
 end
 
 function ItemRow.HandleItemEnter(row)
@@ -433,9 +509,7 @@ function ItemRow.Render(row, item, list)
 
     row.item = item
     LayoutRow(row)
-    if list then
-        row.highlightedBagID = list.highlightedBagID
-    end
+    if list then row.highlightedBagID = list.highlightedBagID end
 
     UpdateRowHighlightColor(row, item)
     UpdateContainerHighlight(row)

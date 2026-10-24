@@ -4,7 +4,8 @@ local Media = {}
 NS.Media = Media
 
 local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
-local MEDIA_TYPE_BORDER = LSM and LSM.MediaType and LSM.MediaType.BORDER or "border"
+local MEDIA_TYPE_BORDER = LSM and LSM.MediaType and LSM.MediaType.BORDER
+    or "border"
 local MEDIA_TYPE_FONT = LSM and LSM.MediaType and LSM.MediaType.FONT or "font"
 local ADDON_NAME = NS.ADDON_NAME
 local ADDON_MEDIA_PATH = NS.ADDON_MEDIA_PATH
@@ -62,7 +63,12 @@ for _, icon in pairs(ExpansionIcons) do
     icon.texture = EXPANSION_TEXTURE_PATH .. icon.file .. ".tga"
     icon.textureWidth = icon.textureWidth or icon.width
     icon.textureHeight = icon.textureHeight or icon.height
-    icon.texCoord = { 0, icon.width / icon.textureWidth, 0, icon.height / icon.textureHeight }
+    icon.texCoord = {
+        0,
+        icon.width / icon.textureWidth,
+        0,
+        icon.height / icon.textureHeight,
+    }
 end
 
 local Atlases = {
@@ -89,9 +95,7 @@ local Colors = {
 }
 
 local function RegisterMediaGroup(mediaGroup)
-    if not LSM then
-        return
-    end
+    if not LSM then return end
 
     for _, media in pairs(mediaGroup) do
         LSM:Register(media.type, media.key, media.path)
@@ -105,7 +109,8 @@ end
 
 function Media.GetIconBorderTexture()
     if LSM then
-        return LSM:Fetch(Borders.icon.type, Borders.icon.key, true) or Borders.icon.path
+        return LSM:Fetch(Borders.icon.type, Borders.icon.key, true)
+            or Borders.icon.path
     end
 
     return Borders.icon.path
@@ -190,19 +195,21 @@ end
 
 function Media.GetExpansionIconMarkup(expansionID, maxWidth, maxHeight)
     local icon = ExpansionIcons[expansionID]
-    if not icon then
-        return nil
-    end
+    if not icon then return nil end
 
     local scale = math.min(1, maxWidth / icon.width, maxHeight / icon.height)
     local width = math.max(1, math.floor(icon.width * scale + 0.5))
     local height = math.max(1, math.floor(icon.height * scale + 0.5))
     return CreateTextureMarkup(
         icon.texture,
-        icon.textureWidth, icon.textureHeight,
-        width, height,
-        0, icon.width / icon.textureWidth,
-        0, icon.height / icon.textureHeight
+        icon.textureWidth,
+        icon.textureHeight,
+        width,
+        height,
+        0,
+        icon.width / icon.textureWidth,
+        0,
+        icon.height / icon.textureHeight
     )
 end
 
@@ -213,7 +220,8 @@ end
 
 function Media.GetPrimaryFont()
     if LSM then
-        return LSM:Fetch(Fonts.primary.type, Fonts.primary.key, true) or Fonts.primary.path
+        return LSM:Fetch(Fonts.primary.type, Fonts.primary.key, true)
+            or Fonts.primary.path
     end
 
     return Fonts.primary.path

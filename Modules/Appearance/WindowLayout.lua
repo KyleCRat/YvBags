@@ -36,11 +36,19 @@ function WindowLayout.OnLayout(frame)
     if not toolbar then return end -- Window construction precedes its contents.
     local layout = TOOLBAR_LAYOUTS[NS.Skins:GetAppliedSkin()]
     toolbar:ClearAllPoints()
-    toolbar:SetPoint("TOPLEFT", frame.header, "TOPLEFT", layout.left, -layout.top)
+    toolbar:SetPoint(
+        "TOPLEFT",
+        frame.header,
+        "TOPLEFT",
+        layout.left,
+        -layout.top
+    )
     toolbar:SetPoint("TOPRIGHT", frame.header, "TOPRIGHT", 0, -layout.top)
     if frame.toolbarItems then
         local items = {}
-        for index, item in ipairs(frame.toolbarItems) do items[index] = item end
+        for index, item in ipairs(frame.toolbarItems) do
+            items[index] = item
+        end
         if layout.includeClose then
             frame.CloseButton:SetSize(TOOLBAR_HEIGHT, TOOLBAR_HEIGHT)
             items[#items + 1] = frame.CloseButton
@@ -50,7 +58,8 @@ function WindowLayout.OnLayout(frame)
 end
 
 function WindowLayout.CreateToolbar(frame)
-    frame.toolbar = NS.Skins:CreateToolbar(frame.header, { height = TOOLBAR_HEIGHT })
+    frame.toolbar =
+        NS.Skins:CreateToolbar(frame.header, { height = TOOLBAR_HEIGHT })
     NS.Skins:RegisterWindowDragRegion(frame, frame.toolbar)
     WindowLayout.OnLayout(frame)
 end
@@ -58,5 +67,6 @@ end
 function WindowLayout.GetMinimumWidth(frame)
     if not frame.toolbar then return 0 end
     return NS.Skins:GetToolbarMinimumWidth(frame.toolbar)
-        + frame:GetWidth() - frame.toolbar:GetWidth()
+        + frame:GetWidth()
+        - frame.toolbar:GetWidth()
 end

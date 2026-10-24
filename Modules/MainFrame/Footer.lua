@@ -76,9 +76,7 @@ end
 
 -- Money display
 function Footer.UpdateMoney(frame)
-    if not frame.moneyText then
-        return
-    end
+    if not frame.moneyText then return end
 
     local copper = GetMoney and GetMoney() or 0
     local display = NS.Money.GetDisplay(copper, true)
@@ -87,13 +85,22 @@ function Footer.UpdateMoney(frame)
     frame.moneyText:SetText(display.text)
     if frame.moneyHoverFrame then
         frame.moneyHoverFrame.copper = copper
-        frame.moneyHoverFrame:SetWidth(math.max(FOOTER_MONEY_HOVER_MIN_WIDTH, frame.moneyText:GetStringWidth() + FOOTER_MONEY_HOVER_PADDING))
+        frame.moneyHoverFrame:SetWidth(
+            math.max(
+                FOOTER_MONEY_HOVER_MIN_WIDTH,
+                frame.moneyText:GetStringWidth() + FOOTER_MONEY_HOVER_PADDING
+            )
+        )
     end
 
     if color then
         frame.moneyText:SetTextColor(color.r, color.g, color.b)
     else
-        frame.moneyText:SetTextColor(FOOTER_TEXT_COLOR_R, FOOTER_TEXT_COLOR_G, FOOTER_TEXT_COLOR_B)
+        frame.moneyText:SetTextColor(
+            FOOTER_TEXT_COLOR_R,
+            FOOTER_TEXT_COLOR_G,
+            FOOTER_TEXT_COLOR_B
+        )
     end
 
     NS.FooterCurrencies.Refresh(frame)
@@ -101,7 +108,9 @@ end
 
 local function GetMoneyTooltipAnchor(frame)
     local center = frame:GetCenter()
-    local screenCenter = UIParent and UIParent:GetWidth() and UIParent:GetWidth() / 2
+    local screenCenter = UIParent
+        and UIParent:GetWidth()
+        and UIParent:GetWidth() / 2
 
     if center and screenCenter and center > screenCenter then
         return "ANCHOR_LEFT"
@@ -113,9 +122,7 @@ end
 local function ShowMoneyTooltip(frame)
     local copper = frame.copper or (GetMoney and GetMoney() or 0)
 
-    if GameTooltip_ClearMoney then
-        GameTooltip_ClearMoney(GameTooltip)
-    end
+    if GameTooltip_ClearMoney then GameTooltip_ClearMoney(GameTooltip) end
 
     GameTooltip:SetOwner(frame, GetMoneyTooltipAnchor(frame))
     GameTooltip:ClearLines()
@@ -126,9 +133,7 @@ local function ShowMoneyTooltip(frame)
 end
 
 local function HideMoneyTooltip()
-    if GameTooltip_ClearMoney then
-        GameTooltip_ClearMoney(GameTooltip)
-    end
+    if GameTooltip_ClearMoney then GameTooltip_ClearMoney(GameTooltip) end
 
     GameTooltip:Hide()
 end
@@ -139,28 +144,54 @@ local function GetInventoryStatsTextColor(stats)
     local totalSlots = stats and stats.totalSlots or 0
 
     if freeSlots <= 0 then
-        return FOOTER_FREE_SPACE_ZERO_COLOR_R, FOOTER_FREE_SPACE_ZERO_COLOR_G, FOOTER_FREE_SPACE_ZERO_COLOR_B
-    elseif totalSlots > 0 and freeSlots <= totalSlots * FOOTER_FREE_SPACE_LOW_RATIO then
-        return FOOTER_FREE_SPACE_LOW_COLOR_R, FOOTER_FREE_SPACE_LOW_COLOR_G, FOOTER_FREE_SPACE_LOW_COLOR_B
+        return FOOTER_FREE_SPACE_ZERO_COLOR_R,
+            FOOTER_FREE_SPACE_ZERO_COLOR_G,
+            FOOTER_FREE_SPACE_ZERO_COLOR_B
+    elseif
+        totalSlots > 0
+        and freeSlots <= totalSlots * FOOTER_FREE_SPACE_LOW_RATIO
+    then
+        return FOOTER_FREE_SPACE_LOW_COLOR_R,
+            FOOTER_FREE_SPACE_LOW_COLOR_G,
+            FOOTER_FREE_SPACE_LOW_COLOR_B
     end
 
     return FOOTER_TEXT_COLOR_R, FOOTER_TEXT_COLOR_G, FOOTER_TEXT_COLOR_B
 end
 
 local function ShowInventoryStatsTooltip(frame)
-    if not NS.Inventory then
-        return
-    end
+    if not NS.Inventory then return end
 
     local stats = NS.Inventory:GetStats()
     GameTooltip:SetOwner(frame, "ANCHOR_RIGHT")
     GameTooltip:ClearLines()
-    GameTooltip:AddDoubleLine("Used / Total", ("%d / %d"):format(stats.usedSlots or 0, stats.totalSlots or 0), 1, 1, 1, 1, 1, 1)
+    GameTooltip:AddDoubleLine(
+        "Used / Total",
+        ("%d / %d"):format(stats.usedSlots or 0, stats.totalSlots or 0),
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+    )
     AddTooltipDivider(GameTooltip)
 
     for _, container in ipairs(NS.Inventory:GetContainers()) do
         local name = container.name or ("Bag %d"):format(container.id or 0)
-        GameTooltip:AddDoubleLine(name, ("%d / %d"):format(container.usedSlots or 0, container.numSlots or 0), 0.86, 0.86, 0.86, 1, 1, 1)
+        GameTooltip:AddDoubleLine(
+            name,
+            ("%d / %d"):format(
+                container.usedSlots or 0,
+                container.numSlots or 0
+            ),
+            0.86,
+            0.86,
+            0.86,
+            1,
+            1,
+            1
+        )
     end
 
     AddTooltipDivider(GameTooltip)
@@ -177,19 +208,21 @@ local function SortBagsFromStatsDisplay()
 end
 
 local function UpdateInventoryStats(frame)
-    if not frame.statsText then
-        return
-    end
+    if not frame.statsText then return end
 
     local stats = NS.Inventory:GetStats()
-    frame.statsText:SetText(("%d/%d"):format(
-        stats.usedSlots or 0,
-        stats.totalSlots or 0
-    ))
+    frame.statsText:SetText(
+        ("%d/%d"):format(stats.usedSlots or 0, stats.totalSlots or 0)
+    )
 
     frame.statsText:SetTextColor(GetInventoryStatsTextColor(stats))
 
-    frame.statsHoverFrame:SetWidth(math.max(FOOTER_STATS_HOVER_MIN_WIDTH, frame.statsText:GetStringWidth() + FOOTER_STATS_HOVER_PADDING))
+    frame.statsHoverFrame:SetWidth(
+        math.max(
+            FOOTER_STATS_HOVER_MIN_WIDTH,
+            frame.statsText:GetStringWidth() + FOOTER_STATS_HOVER_PADDING
+        )
+    )
 end
 
 -- Bag button tooltips
@@ -197,14 +230,16 @@ local function GetBagUsageCounts(button)
     if button.containerID then
         local container = NS.Inventory:GetContainer(button.containerID)
         if container then
-            return container.usedSlots or 0, container.numSlots or button.numSlots or 0
+            return container.usedSlots or 0,
+                container.numSlots or button.numSlots or 0
         end
     end
 
     local totalSlots = button.numSlots or 0
     if button.containerID then
         if C_Container and C_Container.GetContainerNumSlots then
-            totalSlots = C_Container.GetContainerNumSlots(button.containerID) or totalSlots
+            totalSlots = C_Container.GetContainerNumSlots(button.containerID)
+                or totalSlots
         elseif GetContainerNumSlots then
             totalSlots = GetContainerNumSlots(button.containerID) or totalSlots
         end
@@ -213,7 +248,8 @@ local function GetBagUsageCounts(button)
     local freeSlots = 0
     if button.containerID then
         if C_Container and C_Container.GetContainerNumFreeSlots then
-            freeSlots = C_Container.GetContainerNumFreeSlots(button.containerID) or 0
+            freeSlots = C_Container.GetContainerNumFreeSlots(button.containerID)
+                or 0
         elseif GetContainerNumFreeSlots then
             freeSlots = GetContainerNumFreeSlots(button.containerID) or 0
         end
@@ -223,20 +259,20 @@ local function GetBagUsageCounts(button)
 end
 
 local function AddBagUsageTooltipLine(button)
-    if not button.containerID then
-        return false
-    end
+    if not button.containerID then return false end
 
     local usedSlots, totalSlots = GetBagUsageCounts(button)
-    if totalSlots <= 0 then
-        return false
-    end
+    if totalSlots <= 0 then return false end
 
     GameTooltip:AddDoubleLine(
         "Used / Total",
         ("%d / %d"):format(usedSlots, totalSlots),
-        0.86, 0.86, 0.86,
-        1, 1, 1
+        0.86,
+        0.86,
+        0.86,
+        1,
+        1,
+        1
     )
     return true
 end
@@ -246,8 +282,12 @@ local function ShowBagButtonTooltip(button)
     GameTooltip:ClearLines()
 
     local hasInventoryItem
-    if button.inventoryID and GetInventoryItemLink("player", button.inventoryID) then
-        hasInventoryItem = GameTooltip:SetInventoryItem("player", button.inventoryID)
+    if
+        button.inventoryID
+        and GetInventoryItemLink("player", button.inventoryID)
+    then
+        hasInventoryItem =
+            GameTooltip:SetInventoryItem("player", button.inventoryID)
     end
 
     if not hasInventoryItem then
@@ -255,20 +295,23 @@ local function ShowBagButtonTooltip(button)
         if button.isBackpack then
             title = BACKPACK_TOOLTIP or "Backpack"
         else
-            title = button.isReagentBag and (EQUIP_CONTAINER_REAGENT or "Equip Reagent Bag") or (EQUIP_CONTAINER or "Equip Bag")
+            title = button.isReagentBag
+                    and (EQUIP_CONTAINER_REAGENT or "Equip Reagent Bag")
+                or (EQUIP_CONTAINER or "Equip Bag")
         end
 
         GameTooltip:SetText(title, 1, 1, 1)
     end
 
     AddTooltipDivider(GameTooltip)
-    if AddBagUsageTooltipLine(button) then
-        AddTooltipDivider(GameTooltip)
-    end
+    if AddBagUsageTooltipLine(button) then AddTooltipDivider(GameTooltip) end
     if button.isBackpack then
         AddTooltipActionLine(GameTooltip, "Left-click to show Blizzard bags")
     else
-        AddTooltipActionLine(GameTooltip, "Left-click or drag to pick up this bag")
+        AddTooltipActionLine(
+            GameTooltip,
+            "Left-click or drag to pick up this bag"
+        )
     end
     AddTooltipActionLine(GameTooltip, "Right-click to empty this bag")
     if not button.isBackpack and not button.isEquipped then
@@ -283,9 +326,7 @@ end
 
 -- Bag button interactions
 local function OnBagButtonEnter(button)
-    if button.highlight then
-        button.highlight:Show()
-    end
+    if button.highlight then button.highlight:Show() end
 
     NS.frame.itemList:SetHighlightedBagID(button.containerID)
 
@@ -293,9 +334,7 @@ local function OnBagButtonEnter(button)
 end
 
 local function OnBagButtonLeave(button)
-    if button.highlight then
-        button.highlight:Hide()
-    end
+    if button.highlight then button.highlight:Hide() end
 
     if NS.frame.itemList.highlightedBagID == button.containerID then
         NS.frame.itemList:SetHighlightedBagID(nil)
@@ -337,23 +376,39 @@ local function UpdateBagButton(button, slot)
 
     button.icon:SetTexture(slot.icon)
     button.icon:SetDesaturated(not slot.isEquipped)
-    button.icon:SetAlpha(slot.isEquipped and FOOTER_BAG_BUTTON_FILLED_ALPHA or FOOTER_BAG_BUTTON_EMPTY_ALPHA)
+    button.icon:SetAlpha(
+        slot.isEquipped and FOOTER_BAG_BUTTON_FILLED_ALPHA
+            or FOOTER_BAG_BUTTON_EMPTY_ALPHA
+    )
 
     if slot.isReagentBag and slot.isEquipped then
-        button.iconAppearance:SetBorderColor(FOOTER_BAG_BUTTON_REAGENT_BORDER_R, FOOTER_BAG_BUTTON_REAGENT_BORDER_G, FOOTER_BAG_BUTTON_REAGENT_BORDER_B, FOOTER_BAG_BUTTON_BORDER_ALPHA)
+        button.iconAppearance:SetBorderColor(
+            FOOTER_BAG_BUTTON_REAGENT_BORDER_R,
+            FOOTER_BAG_BUTTON_REAGENT_BORDER_G,
+            FOOTER_BAG_BUTTON_REAGENT_BORDER_B,
+            FOOTER_BAG_BUTTON_BORDER_ALPHA
+        )
     elseif slot.isEquipped then
-        button.iconAppearance:SetBorderColor(FOOTER_BAG_BUTTON_BORDER_R, FOOTER_BAG_BUTTON_BORDER_G, FOOTER_BAG_BUTTON_BORDER_B, FOOTER_BAG_BUTTON_BORDER_ALPHA)
+        button.iconAppearance:SetBorderColor(
+            FOOTER_BAG_BUTTON_BORDER_R,
+            FOOTER_BAG_BUTTON_BORDER_G,
+            FOOTER_BAG_BUTTON_BORDER_B,
+            FOOTER_BAG_BUTTON_BORDER_ALPHA
+        )
     else
-        button.iconAppearance:SetBorderColor(FOOTER_BAG_BUTTON_EMPTY_BORDER_R, FOOTER_BAG_BUTTON_EMPTY_BORDER_G, FOOTER_BAG_BUTTON_EMPTY_BORDER_B, FOOTER_BAG_BUTTON_EMPTY_BORDER_ALPHA)
+        button.iconAppearance:SetBorderColor(
+            FOOTER_BAG_BUTTON_EMPTY_BORDER_R,
+            FOOTER_BAG_BUTTON_EMPTY_BORDER_G,
+            FOOTER_BAG_BUTTON_EMPTY_BORDER_B,
+            FOOTER_BAG_BUTTON_EMPTY_BORDER_ALPHA
+        )
     end
 
     button:Show()
 end
 
 function Footer.UpdateBagButtons(frame)
-    if not frame.bagButtons then
-        return
-    end
+    if not frame.bagButtons then return end
 
     local slots = NS.BagManagement.GetBagSlots()
     for index, button in ipairs(frame.bagButtons) do
@@ -373,16 +428,23 @@ local function CreateBagButton(frame, parent)
     button:RegisterForDrag("LeftButton")
 
     button.highlight = NS.Skins:CreateTexture(button, {
-        geometryRoot = frame, layer = TEXTURE_LAYER_BACKGROUND,
-        colorToken = "accent", alpha = FOOTER_BAG_BUTTON_HIGHLIGHT_ALPHA,
+        geometryRoot = frame,
+        layer = TEXTURE_LAYER_BACKGROUND,
+        colorToken = "accent",
+        alpha = FOOTER_BAG_BUTTON_HIGHLIGHT_ALPHA,
     })
     button.highlight:SetAllPoints(button)
     button.highlight:Hide()
 
     button.icon, button.iconAppearance = NS.Skins:CreateIcon(button, {
-        geometryRoot = frame, width = FOOTER_BAG_BUTTON_ICON_SIZE, artworkOutset = 1,
-        borderOutset = (FOOTER_BAG_BUTTON_BORDER_SIZE - FOOTER_BAG_BUTTON_ICON_SIZE) / 2,
-        layer = TEXTURE_LAYER_ARTWORK, borderLayer = TEXTURE_LAYER_OVERLAY,
+        geometryRoot = frame,
+        width = FOOTER_BAG_BUTTON_ICON_SIZE,
+        artworkOutset = 1,
+        borderOutset = (
+            FOOTER_BAG_BUTTON_BORDER_SIZE - FOOTER_BAG_BUTTON_ICON_SIZE
+        ) / 2,
+        layer = TEXTURE_LAYER_ARTWORK,
+        borderLayer = TEXTURE_LAYER_OVERLAY,
     })
     button.icon:SetPoint("CENTER", button, "CENTER", 0, 0)
 
@@ -408,11 +470,19 @@ local function CreateBagButtons(frame, footer)
 end
 
 local function RefreshFooterLayout(frame, height)
-    local xOffset = NS.Skins:GetAppliedSkin() == "flat" and 0 or FOOTER_BAG_BUTTONS_X_OFFSET
+    local xOffset = NS.Skins:GetAppliedSkin() == "flat" and 0
+        or FOOTER_BAG_BUTTONS_X_OFFSET
     for index, button in ipairs(frame.bagButtons) do
         button:ClearAllPoints()
-        button:SetPoint("LEFT", frame.footer, "LEFT",
-            xOffset + (index - 1) * (FOOTER_BAG_BUTTON_SIZE + FOOTER_BAG_BUTTON_GAP), 0)
+        button:SetPoint(
+            "LEFT",
+            frame.footer,
+            "LEFT",
+            xOffset
+                + (index - 1)
+                    * (FOOTER_BAG_BUTTON_SIZE + FOOTER_BAG_BUTTON_GAP),
+            0
+        )
     end
     frame.statsHoverFrame:SetHeight(height)
     frame.moneyHoverFrame:SetHeight(height)
@@ -431,8 +501,13 @@ function Footer.Create(frame)
     CreateBagButtons(frame, footer)
 
     local statsHoverFrame = CreateFrame(BUTTON_TYPE, nil, footer)
-    statsHoverFrame:SetPoint("LEFT", frame.bagButtons[#frame.bagButtons], "RIGHT",
-        FOOTER_STATS_TO_BAG_BUTTON_PADDING, FOOTER_STATS_Y_OFFSET)
+    statsHoverFrame:SetPoint(
+        "LEFT",
+        frame.bagButtons[#frame.bagButtons],
+        "RIGHT",
+        FOOTER_STATS_TO_BAG_BUTTON_PADDING,
+        FOOTER_STATS_Y_OFFSET
+    )
     statsHoverFrame:SetSize(FOOTER_STATS_HOVER_MIN_WIDTH, footer:GetHeight())
     statsHoverFrame:RegisterForClicks("LeftButtonUp")
     statsHoverFrame:SetScript("OnEnter", ShowInventoryStatsTooltip)
@@ -441,18 +516,42 @@ function Footer.Create(frame)
     frame.statsHoverFrame = statsHoverFrame
 
     local statsText = NS.Skins:CreateText(statsHoverFrame, {
-        geometryRoot = frame, layer = FOOTER_FONT_LAYER, fontSize = FOOTER_TEXT_SIZE,
+        geometryRoot = frame,
+        layer = FOOTER_FONT_LAYER,
+        fontSize = FOOTER_TEXT_SIZE,
     })
-    statsText:SetTextColor(FOOTER_TEXT_COLOR_R, FOOTER_TEXT_COLOR_G, FOOTER_TEXT_COLOR_B)
-    statsText:SetPoint("TOPLEFT", statsHoverFrame, "TOPLEFT", 0, FOOTER_TEXT_Y_OFFSET)
-    statsText:SetPoint("BOTTOMRIGHT", statsHoverFrame, "BOTTOMRIGHT", 0, FOOTER_TEXT_Y_OFFSET)
+    statsText:SetTextColor(
+        FOOTER_TEXT_COLOR_R,
+        FOOTER_TEXT_COLOR_G,
+        FOOTER_TEXT_COLOR_B
+    )
+    statsText:SetPoint(
+        "TOPLEFT",
+        statsHoverFrame,
+        "TOPLEFT",
+        0,
+        FOOTER_TEXT_Y_OFFSET
+    )
+    statsText:SetPoint(
+        "BOTTOMRIGHT",
+        statsHoverFrame,
+        "BOTTOMRIGHT",
+        0,
+        FOOTER_TEXT_Y_OFFSET
+    )
     statsText:SetJustifyH("LEFT")
     statsText:SetJustifyV("MIDDLE")
     statsText:SetText("")
     frame.statsText = statsText
 
     local moneyHoverFrame = CreateFrame(FRAME_TYPE, nil, footer)
-    moneyHoverFrame:SetPoint("RIGHT", footer, "RIGHT", FOOTER_MONEY_X_OFFSET, FOOTER_MONEY_Y_OFFSET)
+    moneyHoverFrame:SetPoint(
+        "RIGHT",
+        footer,
+        "RIGHT",
+        FOOTER_MONEY_X_OFFSET,
+        FOOTER_MONEY_Y_OFFSET
+    )
     moneyHoverFrame:SetSize(FOOTER_MONEY_HOVER_MIN_WIDTH, footer:GetHeight())
     moneyHoverFrame:EnableMouse(true)
     NS.Skins:RegisterWindowDragRegion(frame, moneyHoverFrame)
@@ -461,11 +560,29 @@ function Footer.Create(frame)
     frame.moneyHoverFrame = moneyHoverFrame
 
     local moneyText = NS.Skins:CreateText(moneyHoverFrame, {
-        geometryRoot = frame, layer = FOOTER_FONT_LAYER, fontSize = FOOTER_TEXT_SIZE,
+        geometryRoot = frame,
+        layer = FOOTER_FONT_LAYER,
+        fontSize = FOOTER_TEXT_SIZE,
     })
-    moneyText:SetTextColor(FOOTER_TEXT_COLOR_R, FOOTER_TEXT_COLOR_G, FOOTER_TEXT_COLOR_B)
-    moneyText:SetPoint("TOPLEFT", moneyHoverFrame, "TOPLEFT", 0, FOOTER_TEXT_Y_OFFSET)
-    moneyText:SetPoint("BOTTOMRIGHT", moneyHoverFrame, "BOTTOMRIGHT", 0, FOOTER_TEXT_Y_OFFSET)
+    moneyText:SetTextColor(
+        FOOTER_TEXT_COLOR_R,
+        FOOTER_TEXT_COLOR_G,
+        FOOTER_TEXT_COLOR_B
+    )
+    moneyText:SetPoint(
+        "TOPLEFT",
+        moneyHoverFrame,
+        "TOPLEFT",
+        0,
+        FOOTER_TEXT_Y_OFFSET
+    )
+    moneyText:SetPoint(
+        "BOTTOMRIGHT",
+        moneyHoverFrame,
+        "BOTTOMRIGHT",
+        0,
+        FOOTER_TEXT_Y_OFFSET
+    )
     moneyText:SetJustifyH("RIGHT")
     moneyText:SetJustifyV("MIDDLE")
     moneyText:SetText("")

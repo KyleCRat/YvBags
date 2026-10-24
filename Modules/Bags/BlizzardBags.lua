@@ -39,9 +39,7 @@ end
 
 local function CallOriginal(name, ...)
     local original = originals[name]
-    if not original then
-        return nil
-    end
+    if not original then return nil end
 
     local wasCallingOriginal = callingOriginal
     callingOriginal = true
@@ -55,9 +53,7 @@ local function ShouldUseReplacement()
 end
 
 local function AnyBlizzardBagOpen()
-    if originals.IsAnyBagOpen then
-        return CallOriginal("IsAnyBagOpen")
-    end
+    if originals.IsAnyBagOpen then return CallOriginal("IsAnyBagOpen") end
 
     return false
 end
@@ -68,17 +64,13 @@ function BlizzardBags.IsReplacementEnabled()
 end
 
 function BlizzardBags.HideBlizzardBags()
-    if not GetFeatureEnabled() or not AnyBlizzardBagOpen() then
-        return false
-    end
+    if not GetFeatureEnabled() or not AnyBlizzardBagOpen() then return false end
 
     return CallOriginal("CloseAllBags")
 end
 
 function BlizzardBags.ShowReplacement()
-    if not CanOpenBags() then
-        return false
-    end
+    if not CanOpenBags() then return false end
 
     BlizzardBags.HideBlizzardBags()
 
@@ -87,9 +79,7 @@ function BlizzardBags.ShowReplacement()
 end
 
 function BlizzardBags.ToggleReplacement()
-    if not CanOpenBags() then
-        return false
-    end
+    if not CanOpenBags() then return false end
 
     if IsReplacementFrameShown() then
         NS.MainFrame.Hide()
@@ -106,9 +96,7 @@ end
 
 function BlizzardBags.CloseReplacement(frame, forceUpdate)
     local wasShown = IsReplacementFrameShown()
-    if wasShown then
-        NS.MainFrame.Hide()
-    end
+    if wasShown then NS.MainFrame.Hide() end
 
     local closedBlizzardBags = CallOriginal("CloseAllBags", frame, forceUpdate)
     return wasShown or closedBlizzardBags
@@ -126,9 +114,7 @@ end
 
 -- Blizzard global wrapper installation
 local function WrapBagFunctions()
-    if wrappersInstalled then
-        return
-    end
+    if wrappersInstalled then return end
 
     for _, name in ipairs(BAG_FUNCTION_NAMES) do
         originals[name] = _G[name]
@@ -143,9 +129,7 @@ local function WrapBagFunctions()
     end
 
     _G.OpenAllBags = function(frame, forceUpdate)
-        if ShouldUseReplacement() then
-            return BlizzardBags.ShowReplacement()
-        end
+        if ShouldUseReplacement() then return BlizzardBags.ShowReplacement() end
 
         return CallOriginal("OpenAllBags", frame, forceUpdate)
     end
@@ -167,9 +151,7 @@ local function WrapBagFunctions()
     end
 
     _G.OpenBag = function(id, force)
-        if ShouldUseReplacement() then
-            return BlizzardBags.ShowReplacement()
-        end
+        if ShouldUseReplacement() then return BlizzardBags.ShowReplacement() end
 
         return CallOriginal("OpenBag", id, force)
     end
@@ -177,9 +159,7 @@ local function WrapBagFunctions()
     _G.CloseBag = function(id)
         if ShouldUseReplacement() then
             local wasShown = IsReplacementFrameShown()
-            if wasShown then
-                NS.MainFrame.Hide()
-            end
+            if wasShown then NS.MainFrame.Hide() end
 
             local closedBlizzardBag = CallOriginal("CloseBag", id)
             return wasShown or closedBlizzardBag
@@ -197,9 +177,7 @@ local function WrapBagFunctions()
     end
 
     _G.OpenBackpack = function()
-        if ShouldUseReplacement() then
-            return BlizzardBags.ShowReplacement()
-        end
+        if ShouldUseReplacement() then return BlizzardBags.ShowReplacement() end
 
         return CallOriginal("OpenBackpack")
     end
@@ -207,9 +185,7 @@ local function WrapBagFunctions()
     _G.CloseBackpack = function()
         if ShouldUseReplacement() then
             local wasShown = IsReplacementFrameShown()
-            if wasShown then
-                NS.MainFrame.Hide()
-            end
+            if wasShown then NS.MainFrame.Hide() end
 
             local closedBlizzardBackpack = CallOriginal("CloseBackpack")
             return wasShown or closedBlizzardBackpack
@@ -226,8 +202,6 @@ NS:RegisterInitCallback(function()
     BlizzardBags.HideBlizzardBags()
 
     NS.globalDB:RegisterCallback(function(_, enabled)
-        if enabled ~= false then
-            BlizzardBags.HideBlizzardBags()
-        end
+        if enabled ~= false then BlizzardBags.HideBlizzardBags() end
     end, "features", "replaceBlizzardBags")
 end)
